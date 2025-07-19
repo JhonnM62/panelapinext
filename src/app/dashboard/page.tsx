@@ -32,7 +32,7 @@ import {
   CreditCard
 } from 'lucide-react'
 import Link from 'next/link'
-import { sessionsAPI, webhooksAPI, utilsAPI, chatsAPI, authAPI } from '@/lib/api'
+import { sessionsAPI, webhooksAPI, utilsAPI, chatsAPI, authAPI, analyticsAPI } from '@/lib/api'
 import { SessionData, WebhookStats } from '@/lib/api'
 import { toast } from '@/components/ui/use-toast'
 
@@ -42,6 +42,9 @@ interface DashboardStats {
   connectedSessions: number
   totalChats: number
   totalMessages: number
+  totalMessagesYesterday: number
+  totalMessagesWeek: number
+  totalMessagesMonth: number
   unreadNotifications: number
   webhooksActive: number
   daysRemaining: number
@@ -66,6 +69,9 @@ export default function DashboardPage() {
     connectedSessions: 0,
     totalChats: 0,
     totalMessages: 0,
+    totalMessagesYesterday: 0,
+    totalMessagesWeek: 0,
+    totalMessagesMonth: 0,
     unreadNotifications: 0,
     webhooksActive: 0,
     daysRemaining: 0,
@@ -173,31 +179,20 @@ export default function DashboardPage() {
         }
       ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
-      // Calcular mensajes reales desde las sesiones activas
-      let totalMessages = 0
+      // 🔧 OBTENER ANALYTICS REALES DEL BACKEND
+      let analyticsData = { messages: { today: 0, yesterday: 0, week: 0, month: 0 } }
       try {
-        // Solo contar mensajes si hay sesiones autenticadas
-        if (activeSessions > 0) {
-          // Enfoque simplificado: usar health data si está disponible
-          if (health?.messages?.total) {
-            totalMessages = health.messages.total
-          } else {
-            // Fallback: intentar obtener desde cada sesión
-            for (const session of sessionsData.filter(s => s.status === 'authenticated')) {
-              try {
-                const chatsResponse = await chatsAPI.getList(session.id)
-                if (chatsResponse.success && chatsResponse.data) {
-                  totalMessages += chatsResponse.data.length || 0
-                }
-              } catch (error) {
-                console.warn(`Error obteniendo chats de sesión ${session.id}:`, error)
-              }
-            }
-          }
+        console.log('🔧 [Dashboard] Obteniendo analytics desde backend...')
+        const analyticsResponse = await analyticsAPI.getDashboard()
+        
+        if (analyticsResponse.success && analyticsResponse.data) {
+          analyticsData = analyticsResponse.data
+          console.log('🔧 [Dashboard] Analytics obtenido:', analyticsData)
+        } else {
+          console.warn('🔧 [Dashboard] Analytics no disponible:', analyticsResponse.message)
         }
       } catch (error) {
-        console.warn('Error calculando mensajes totales:', error)
-        totalMessages = 0
+        console.warn('🔧 [Dashboard] Error obteniendo analytics:', error)
       }
 
       setStats({
@@ -205,7 +200,10 @@ export default function DashboardPage() {
         activeSessions,
         connectedSessions,
         totalChats: health?.sessions?.active || 0,
-        totalMessages,
+        totalMessages: analyticsData.messages?.today || 0,
+        totalMessagesYesterday: analyticsData.messages?.yesterday || 0,
+        totalMessagesWeek: analyticsData.messages?.week || 0,
+        totalMessagesMonth: analyticsData.messages?.month || 0,
         unreadNotifications: webhookStats?.unreadNotifications || 0,
         webhooksActive: webhookStats?.webhookActive ? 1 : 0,
         daysRemaining,
@@ -412,20 +410,25 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card key="stats-card-chats" className="hover:shadow-lg transition-shadow">
+        <Card key="stats-card-messages-today" className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Chats Activos</CardTitle>
+            <CardTitle className="text-sm font-medium">Mensajes Hoy</CardTitle>
             <MessageSquare className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{stats.totalChats}</div>
+            <div className="text-3xl font-bold text-purple-600">{stats.totalMessages}</div>
             <div className="flex items-center mt-2">
-              <Send className="h-4 w-4 text-purple-600 mr-1" />
-              <span className="text-sm text-purple-600 font-medium">{stats.totalMessages}</span>
-              <span className="text-sm text-gray-500 ml-1">mensajes</span>
+              <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
+              <span className="text-sm text-green-600 font-medium">
+                {stats.totalMessagesYesterday > 0 
+                  ? `${stats.totalMessages > stats.totalMessagesYesterday ? '+' : ''}${Math.round(((stats.totalMessages - stats.totalMessagesYesterday) / stats.totalMessagesYesterday) * 100)}%`
+                  : stats.totalMessages > 0 ? '+100%' : '0%'
+                }
+              </span>
+              <span className="text-sm text-gray-500 ml-1">vs ayer</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Conversaciones en curso
+              {stats.totalMessagesWeek} esta semana • {stats.totalMessagesMonth} este mes
             </p>
           </CardContent>
         </Card>

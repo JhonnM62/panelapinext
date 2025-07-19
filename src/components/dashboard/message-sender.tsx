@@ -568,7 +568,9 @@ export default function MessageSenderComponent() {
                   <SelectValue placeholder="Seleccionar sesión" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sessions.map((session) => (
+                  {sessions
+                    .filter(session => session.id && session.id.trim() !== '')
+                    .map((session) => (
                     <SelectItem key={session.id} value={session.id}>
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full" />
@@ -784,7 +786,9 @@ export default function MessageSenderComponent() {
                         <SelectValue placeholder="Seleccionar plantilla" />
                       </SelectTrigger>
                       <SelectContent>
-                        {templates.map((template) => (
+                        {templates
+                          .filter(template => template.id && template.id.trim() !== '')
+                          .map((template) => (
                           <SelectItem key={template.id} value={template.id}>
                             {template.name}
                           </SelectItem>
@@ -868,7 +872,9 @@ export default function MessageSenderComponent() {
                           <SelectValue placeholder="Seleccionar plantilla" />
                         </SelectTrigger>
                         <SelectContent>
-                          {templates.map((template) => (
+                          {templates
+                            .filter(template => template.id && template.id.trim() !== '')
+                            .map((template) => (
                             <SelectItem key={template.id} value={template.id}>
                               <div>
                                 <p className="font-medium">{template.name}</p>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -19,7 +19,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToast } from '@/components/ui/use-toast'
 import { useSessionsStore } from '@/store/sessions'
 import { Session } from '@/types'
-import { AlertCircle, CheckCircle, Trash2 } from 'lucide-react'
+import { AlertCircle, CheckCircle, RefreshCw } from 'lucide-react'
 
 const createSessionSchema = z.object({
   nombrebot: z.string()
@@ -43,6 +43,7 @@ type CreationStep =
   | 'form' 
   | 'cleaning' 
   | 'creating' 
+  | 'qr_display'
   | 'monitoring' 
   | 'success' 
   | 'error'
@@ -51,8 +52,12 @@ export function CreateSessionDialog({ open, onOpenChange, onSessionCreated }: Cr
   const [currentStep, setCurrentStep] = useState<CreationStep>('form')
   const [creationProgress, setCreationProgress] = useState<string[]>([])
   const [errorDetails, setErrorDetails] = useState<string | null>(null)
+  const [currentSession, setCurrentSession] = useState<Session | null>(null)
+  const [qrTimer, setQrTimer] = useState(30)
+  const [isPolling, setIsPolling] = useState(false)
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
   const { toast } = useToast()
-  const { createSession, sessions } = useSessionsStore()
+  const { createSession, sessions, getSessionStatus } = useSessionsStore()
 
   const {
     register,
@@ -70,6 +75,78 @@ export function CreateSessionDialog({ open, onOpenChange, onSessionCreated }: Cr
   const addProgress = (message: string) => {
     setCreationProgress(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`])
   }
+
+  // Timer y polling para QR
+  useEffect(() => {
+    if (currentStep === 'qr_display' && currentSession) {
+      // Timer de 30 segundos
+      const timer = setInterval(() => {
+        setQrTimer(prev => {
+          if (prev <= 1) {
+            setCurrentStep('error')
+            setErrorDetails('Tiempo agotado. El código QR expiró después de 30 segundos.')
+            toast({
+              title: 'Código QR expirado',
+              description: 'El tiempo para escanear el código QR ha expirado.',
+              variant: 'destructive',
+            })
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      // Polling para verificar estado cada 2 segundos
+      const polling = setInterval(async () => {
+        if (currentSession && currentSession.status !== 'authenticated') {
+          try {
+            await getSessionStatus(currentSession.id)
+            // El estado se actualiza automáticamente en el store
+            const updatedSessions = useSessionsStore.getState().sessions
+            const updatedSession = updatedSessions.find(s => s.id === currentSession.id)
+            
+            if (updatedSession && updatedSession.status === 'authenticated') {
+              clearInterval(timer)
+              clearInterval(polling)
+              setCurrentStep('success')
+              addProgress('¡Sesión autenticada exitosamente!')
+              
+              toast({
+                title: 'Conexión exitosa',
+                description: 'Tu sesión de WhatsApp se conectó correctamente.',
+              })
+              
+              if (onSessionCreated) {
+                onSessionCreated(updatedSession)
+              }
+              
+              setTimeout(() => {
+                onOpenChange(false)
+                handleClose()
+              }, 2000)
+            }
+          } catch (error) {
+            console.error('Error verificando estado:', error)
+          }
+        }
+      }, 2000)
+
+      setPollingInterval(polling)
+
+      return () => {
+        clearInterval(timer)
+        clearInterval(polling)
+      }
+    }
+  }, [currentStep, currentSession, getSessionStatus, onSessionCreated, onOpenChange, toast])
+
+  // Limpiar intervalos al cerrar
+  useEffect(() => {
+    if (!open && pollingInterval) {
+      clearInterval(pollingInterval)
+      setPollingInterval(null)
+    }
+  }, [open, pollingInterval])
 
   const onSubmit = async (data: CreateSessionFormData) => {
     try {
@@ -94,40 +171,50 @@ export function CreateSessionDialog({ open, onOpenChange, onSessionCreated }: Cr
       })
 
       addProgress('Sesión creada exitosamente')
-      addProgress('Código de verificación generado')
       
-      setCurrentStep('monitoring')
-      addProgress('Iniciando monitoreo de estado...')
-      
-      // Simular un breve período de monitoreo antes de mostrar éxito
-      setTimeout(() => {
-        setCurrentStep('success')
-        addProgress('Proceso completado exitosamente')
+      // Verificar si se recibió QR
+      if (newSession.qr) {
+        addProgress('Código QR generado')
+        setCurrentSession(newSession)
+        setCurrentStep('qr_display')
+        setQrTimer(30) // Reiniciar timer
+        addProgress('Escanea el código QR con WhatsApp')
         
         toast({
-          title: 'Sesión creada exitosamente',
-          description: 'Tu código de verificación está listo para usar',
+          title: 'Código QR generado',
+          description: 'Escanea el código con WhatsApp para conectar tu sesión',
         })
-
-        // Limpiar formulario
-        reset({
-          nombrebot: '',
-          phoneNumber: ''
-        })
+      } else {
+        // Fallback si no hay QR
+        setCurrentStep('monitoring')
+        addProgress('Iniciando monitoreo de estado...')
         
-        // Mostrar el código inmediatamente con la sesión devuelta
-        if (onSessionCreated && newSession) {
-          onSessionCreated(newSession)
-        }
-        
-        // Cerrar diálogo después de un momento
         setTimeout(() => {
-          onOpenChange(false)
-          setCurrentStep('form')
-          setCreationProgress([])
+          setCurrentStep('success')
+          addProgress('Proceso completado exitosamente')
+          
+          toast({
+            title: 'Sesión creada exitosamente',
+            description: 'Tu sesión está lista para usar',
+          })
+
+          // Limpiar formulario
+          reset({
+            nombrebot: '',
+            phoneNumber: ''
+          })
+          
+          if (onSessionCreated && newSession) {
+            onSessionCreated(newSession)
+          }
+          
+          setTimeout(() => {
+            onOpenChange(false)
+            setCurrentStep('form')
+            setCreationProgress([])
+          }, 2000)
         }, 2000)
-        
-      }, 2000)
+      }
       
     } catch (error: any) {
       console.error('Error en creación de sesión:', error)
@@ -146,6 +233,12 @@ export function CreateSessionDialog({ open, onOpenChange, onSessionCreated }: Cr
 
   const handleClose = () => {
     if (currentStep === 'form' || currentStep === 'success' || currentStep === 'error') {
+      // Limpiar intervalos
+      if (pollingInterval) {
+        clearInterval(pollingInterval)
+        setPollingInterval(null)
+      }
+      
       reset({
         nombrebot: '',
         phoneNumber: ''
@@ -153,14 +246,26 @@ export function CreateSessionDialog({ open, onOpenChange, onSessionCreated }: Cr
       setCurrentStep('form')
       setCreationProgress([])
       setErrorDetails(null)
+      setCurrentSession(null)
+      setQrTimer(30)
+      setIsPolling(false)
       onOpenChange(false)
     }
   }
 
   const handleRetry = () => {
+    // Limpiar intervalos
+    if (pollingInterval) {
+      clearInterval(pollingInterval)
+      setPollingInterval(null)
+    }
+    
     setCurrentStep('form')
     setCreationProgress([])
     setErrorDetails(null)
+    setCurrentSession(null)
+    setQrTimer(30)
+    setIsPolling(false)
   }
 
   const renderStepContent = () => {
@@ -259,6 +364,70 @@ export function CreateSessionDialog({ open, onOpenChange, onSessionCreated }: Cr
           </div>
         )
 
+      case 'qr_display':
+        return (
+          <div className="space-y-4">
+            <div className="text-center">
+              <h3 className="text-lg font-medium mb-2">Escanea el código QR</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Tiempo restante: <span className="font-bold text-blue-600">{qrTimer}s</span>
+              </p>
+            </div>
+
+            {currentSession?.qr ? (
+              <div className="flex flex-col items-center space-y-4">
+                <div className="relative">
+                  <img 
+                    src={currentSession.qr} 
+                    alt="QR Code" 
+                    className="w-64 h-64 border rounded-lg"
+                  />
+                  {isPolling && (
+                    <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded text-xs">
+                      Verificando...
+                    </div>
+                  )}
+                </div>
+                
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    1. Abre WhatsApp en tu teléfono
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    2. Ve a Configuración → Dispositivos Vinculados
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    3. Toca "Vincular un dispositivo" y escanea este código
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Estado: Esperando conexión...
+                </div>
+              </div>
+            ) : (
+              <div className="text-center space-y-4">
+                <LoadingSpinner size={32} />
+                <p className="text-sm text-muted-foreground">
+                  Generando código QR...
+                </p>
+              </div>
+            )}
+            
+            <div className="bg-gray-50 rounded-md p-3 max-h-32 overflow-y-auto">
+              <h4 className="text-sm font-medium mb-2">Progreso:</h4>
+              <div className="space-y-1">
+                {creationProgress.slice(-3).map((step, index) => (
+                  <p key={index} className="text-xs text-gray-600 font-mono">
+                    {step}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+
       case 'success':
         return (
           <div className="space-y-4 text-center">
@@ -341,12 +510,14 @@ export function CreateSessionDialog({ open, onOpenChange, onSessionCreated }: Cr
           <DialogTitle>
             {currentStep === 'form' && 'Crear Nueva Sesión'}
             {(currentStep === 'cleaning' || currentStep === 'creating' || currentStep === 'monitoring') && 'Creando Sesión'}
+            {currentStep === 'qr_display' && 'Conectar WhatsApp'}
             {currentStep === 'success' && 'Sesión Creada'}
             {currentStep === 'error' && 'Error en Creación'}
           </DialogTitle>
           <DialogDescription>
             {currentStep === 'form' && 'Crea una nueva sesión de WhatsApp para enviar y recibir mensajes.'}
             {(currentStep === 'cleaning' || currentStep === 'creating' || currentStep === 'monitoring') && 'Por favor espera mientras se configura tu sesión...'}
+            {currentStep === 'qr_display' && 'Escanea el código QR con WhatsApp para completar la conexión.'}
             {currentStep === 'success' && 'Tu sesión de WhatsApp ha sido configurada correctamente.'}
             {currentStep === 'error' && 'Ocurrió un problema durante la creación de la sesión.'}
           </DialogDescription>

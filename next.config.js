@@ -6,7 +6,6 @@ const nextConfig = {
 
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://100.42.185.2:8015',
-    NEXT_PUBLIC_IA_API_URL: process.env.NEXT_PUBLIC_IA_API_URL || 'http://100.42.185.2:8014',
   },
 
   webpack: (config, { dev, isServer }) => {
@@ -39,7 +38,7 @@ const nextConfig = {
 
   output: 'standalone',
   poweredByHeader: false,
-  reactStrictMode: true,
+  reactStrictMode: false, // Temporalmente desactivado para solucionar notificaciones duplicadas
 
   typescript: {
     ignoreBuildErrors: false,

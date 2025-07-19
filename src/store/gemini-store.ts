@@ -1,8 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useEnhancedBaileysAPI, type GeminiConfigData, type ProcessIARequest, type ProcessIAResponse } from '@/lib/enhanced-baileys-api';
+import { useGeminiAPI, type GeminiConfigData, type ProcessIARequest, type ProcessIAResponse, syncWithServerConfig } from '@/lib/gemini-api';
+import { useServerConfigStore } from './server-config-store';
 
 export interface GeminiConfig {
+  botId?: string; // ID del bot asociado (nuevo)
+  sesionId: string; // ID de la sesión de WhatsApp (requerido)
+  phoneNumber?: string; // Número de teléfono (opcional - se extrae del webhook)
   userbot: string;
   apikey: string;
   server: string;
@@ -37,7 +41,7 @@ export interface GeminiStore {
   loadConfig: (token: string) => Promise<void>;
   saveConfig: (token: string) => Promise<void>;
   deleteConfig: (token: string) => Promise<void>;
-  testConfig: (testMessage?: string) => Promise<ProcessIAResponse>;
+  testConfig: (testMessage?: string, token?: string) => Promise<ProcessIAResponse>;
   processMessage: (token: string, body: string, number: string) => Promise<ProcessIAResponse>;
   resetConfig: () => void;
   clearError: () => void;
@@ -45,7 +49,7 @@ export interface GeminiStore {
 }
 
 const defaultGeminiConfig: Partial<GeminiConfig> = {
-  server: 'http://100.42.185.2:8015',
+  server: 'http://100.42.185.2:8015', // 🔧 VALOR POR DEFECTO: Se actualiza dinámicamente desde configuración del usuario
   pais: 'colombia',
   idioma: 'es',
   numerodemensajes: 8,
@@ -74,40 +78,82 @@ export const useGeminiStore = create<GeminiStore>()(
       setConfig: (newConfig) => {
         set((state) => ({
           config: { ...state.defaultConfig, ...newConfig } as GeminiConfig,
-          isConfigured: !!(newConfig.userbot && newConfig.apikey && newConfig.promt),
+          isConfigured: !!(newConfig.userbot && newConfig.apikey && newConfig.promt && newConfig.sesionId),
           error: null,
         }));
       },
 
       updateField: (field, value) => {
-        set((state) => ({
-          config: state.config 
+        set((state) => {
+          const updatedConfig = state.config 
             ? { ...state.config, [field]: value }
-            : { ...state.defaultConfig, [field]: value } as GeminiConfig,
-          isConfigured: field === 'userbot' || field === 'apikey' || field === 'promt' 
-            ? !!(value && state.config?.userbot && state.config?.apikey && state.config?.promt)
-            : state.isConfigured,
-          error: null,
-        }));
+            : { ...state.defaultConfig, [field]: value } as GeminiConfig;
+          
+          // 🔧 VALIDACIÓN actualizada - phoneNumber ya NO es requerido
+          const isConfigured = !!(updatedConfig.userbot && 
+                                   updatedConfig.apikey && 
+                                   updatedConfig.promt &&
+                                   updatedConfig.sesionId);
+          
+          console.log('🤖 [STORE] updateField:', {
+            field,
+            value,
+            userbot: !!updatedConfig.userbot,
+            apikey: !!updatedConfig.apikey,
+            promt: !!updatedConfig.promt,
+            sesionId: !!updatedConfig.sesionId,
+            phoneNumber: !!updatedConfig.phoneNumber,
+            isConfigured
+          });
+          
+          return {
+            config: updatedConfig,
+            isConfigured,
+            error: null,
+          };
+        });
       },
 
       loadConfig: async (token: string) => {
+        // Validar token antes de hacer la petición
+        if (!token || token.trim() === '') {
+          set({ 
+            config: null, 
+            isConfigured: false, 
+            isLoading: false, 
+            error: 'Token de autenticación no disponible' 
+          });
+          return;
+        }
+
+        // 🔧 SINCRONIZAR con configuración de servidor antes de cargar
+        const serverConfigStore = useServerConfigStore.getState();
+        if (serverConfigStore.config) {
+          syncWithServerConfig(serverConfigStore.config);
+        }
+
         set({ isLoading: true, error: null });
         
         try {
-          const api = useEnhancedBaileysAPI();
+          const api = useGeminiAPI();
           const response = await api.getGeminiConfig(token);
           
           if (response.success) {
             const configData = response.data;
+            console.log('🤖 [STORE] Configuración cargada:', {
+              hasApikey: !!configData.apikey,
+              apikeyPreview: configData.apikey,
+              apikey_full: configData.apikey_full
+            });
+            
             set({
               config: {
                 ...defaultGeminiConfig,
                 ...configData,
-                // No mostrar la API key real por seguridad
-                apikey: configData.apikey === '***HIDDEN***' ? '' : configData.apikey,
+                // 🔧 MANTENER API key si existe (parcial para mostrar, completa en backend)
+                apikey: configData.apikey_full ? (configData.apikey || 'API Key configurada') : '',
               } as GeminiConfig,
-              isConfigured: !!(configData.userbot && configData.apikey !== '***HIDDEN***' && configData.promt),
+              isConfigured: !!(configData.userbot && configData.apikey_full && configData.promt && configData.sesionId),
               isLoading: false,
               error: null,
             });
@@ -137,7 +183,7 @@ export const useGeminiStore = create<GeminiStore>()(
         set({ isLoading: true, error: null });
         
         try {
-          const api = useEnhancedBaileysAPI();
+          const api = useGeminiAPI();
           const response = await api.saveGeminiConfig({
             token,
             config: {
@@ -172,7 +218,7 @@ export const useGeminiStore = create<GeminiStore>()(
         set({ isLoading: true, error: null });
         
         try {
-          const api = useEnhancedBaileysAPI();
+          const api = useGeminiAPI();
           const response = await api.deleteGeminiConfig({
             token,
             configId: '', // No se usa en el backend actual
@@ -200,7 +246,7 @@ export const useGeminiStore = create<GeminiStore>()(
         }
       },
 
-      testConfig: async (testMessage = 'Hola, este es un mensaje de prueba para verificar la configuración de Gemini') => {
+      testConfig: async (testMessage = 'Hola, este es un mensaje de prueba para verificar la configuración de Gemini', token?: string) => {
         const { config } = get();
         if (!config) {
           const error = { success: false, error: 'No hay configuración para probar' };
@@ -211,11 +257,30 @@ export const useGeminiStore = create<GeminiStore>()(
         set({ isLoading: true, error: null });
         
         try {
-          const api = useEnhancedBaileysAPI();
-          const testData: ProcessIARequest = {
+          const api = useGeminiAPI();
+          
+          // 🔧 USAR token proporcionado o fallback a localStorage
+          const authToken = token || localStorage.getItem('token');
+          console.log('🤖 [TEST] Token para autenticación:', {
+            fromParam: !!token,
+            fromLocalStorage: !!localStorage.getItem('token'),
+            hasToken: !!authToken,
+            tokenLength: authToken ? authToken.length : 0,
+            tokenPreview: authToken ? authToken.substring(0, 20) + '...' : 'NO_TOKEN'
+          });
+          
+          if (!authToken || authToken.trim() === '') {
+            throw new Error('No se encontró token de autenticación. Por favor inicia sesión nuevamente.');
+          }
+          
+          // 🔧 USAR endpoint correcto con datos simplificados
+          const result = await api.processIADirect({
             body: testMessage,
-            number: '123456789', // Número de prueba
-            userbot: config.userbot,
+            number: config.phoneNumber || '123456789',
+            token: authToken,
+            botId: config.botId, // ID del bot si está disponible
+            // Campos requeridos por compatibilidad
+            userbot: config.sesionId || config.userbot, // 🔧 CORREGIDO: Usar sesionId como userbot
             apikey: config.apikey,
             server: config.server,
             promt: config.promt,
@@ -228,10 +293,8 @@ export const useGeminiStore = create<GeminiStore>()(
             maxOutputTokens: config.maxOutputTokens,
             pause_timeout_minutes: config.pause_timeout_minutes,
             ai_model: config.ai_model,
-            thinking_budget: config.thinking_budget,
-          };
-
-          const result = await api.processIADirect(testData);
+            thinking_budget: config.thinking_budget
+          });
           
           set({
             lastTest: result,
@@ -264,7 +327,7 @@ export const useGeminiStore = create<GeminiStore>()(
         set({ isLoading: true, error: null });
         
         try {
-          const api = useEnhancedBaileysAPI();
+          const api = useGeminiAPI();
           const result = await api.processWithIA({
             token,
             body,
@@ -329,7 +392,7 @@ export const useGeminiConfig = () => {
   return {
     ...store,
     // Métodos de conveniencia
-    hasValidConfig: store.config && store.config.userbot && store.config.apikey && store.config.promt,
+    hasValidConfig: store.config && store.config.userbot && store.config.apikey && store.config.promt && store.config.sesionId,
     isReadyToUse: store.isConfigured && !store.isLoading && !store.error,
   };
 };

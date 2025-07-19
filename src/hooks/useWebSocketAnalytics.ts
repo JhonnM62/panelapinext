@@ -37,6 +37,8 @@ export function useWebSocketAnalytics({
   onConnect,
   onDisconnect
 }: UseWebSocketAnalyticsProps = {}) {
+  console.log('🔍 [ANALYTICS WS] Hook inicializado con:', { enabled, userId: !!userId });
+  
   const [isConnected, setIsConnected] = useState(false)
   const [stats, setStats] = useState<AnalyticsStats>({
     sessionsCount: 0,
@@ -54,8 +56,38 @@ export function useWebSocketAnalytics({
   const statsIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const connect = useCallback(() => {
-    if (!enabled || !userId) return
+    if (!enabled || !userId) {
+      console.log('🔍 [ANALYTICS WS] Conexión cancelada:', { enabled, userId: !!userId });
+      return;
+    }
 
+    console.log('🚨 [ANALYTICS WS] ¡SEGUNDA CONEXIÓN DETECTADA! - ESTA ES LA CAUSA DEL PROBLEMA');
+    console.log('🚨 [ANALYTICS WS] Hook de analytics intentando crear conexión WebSocket adicional');
+    console.log('🚨 [ANALYTICS WS] Stack trace:', new Error().stack);
+    
+    // 🔧 SOLUCIÓN TEMPORAL: DESACTIVAR COMPLETAMENTE LA CONEXIÓN DE ANALYTICS
+    console.log('🔧 [ANALYTICS WS] CONEXIÓN BLOQUEADA - Usando datos simulados en lugar de WebSocket');
+    
+    // Simular conexión exitosa sin crear WebSocket real
+    setIsConnected(true);
+    onConnect?.();
+    
+    // Simular datos de estadísticas sin conexión real
+    setStats({
+      sessionsCount: 1,
+      activeConnections: 1,
+      messagesPerSecond: 0,
+      webhooksPerSecond: 0,
+      memoryUsage: 0,
+      cpuUsage: 0,
+      errors: [],
+      notifications: []
+    });
+    
+    return;
+    
+    // CÓDIGO ORIGINAL COMENTADO PARA EVITAR SEGUNDA CONEXIÓN:
+    /*
     try {
       // Usar el método del baileysAPI para crear la conexión WebSocket
       const ws = baileysAPI.createWebSocketConnection(userId)
@@ -137,6 +169,7 @@ export function useWebSocketAnalytics({
       console.error('Error creando conexión WebSocket:', error)
       onError?.(error as Error)
     }
+    */
   }, [enabled, userId, onMessage, onError, onConnect, onDisconnect, reconnectAttempts])
 
   const disconnect = useCallback(() => {

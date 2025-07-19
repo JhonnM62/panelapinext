@@ -68,8 +68,19 @@ export function ChatList({ sessionId }: ChatListProps) {
       setLoading(true)
       const response = await baileysAPI.getChatList(sessionId)
       
+      console.log('[CHATLIST] Response:', response)
+      
       if (response.success) {
-        const formattedChats = response.data.map((chat: any) => ({
+        // 🔧 SOLUCION: Validar que response.data sea un array
+        const chatData = Array.isArray(response.data) ? response.data : []
+        
+        if (chatData.length === 0) {
+          console.log('[CHATLIST] No chats found or data is not an array')
+          setChats([])
+          return
+        }
+        
+        const formattedChats = chatData.map((chat: any) => ({
           id: chat.id,
           name: extractNameFromJid(chat.id),
           unreadCount: chat.unreadCount || 0,
@@ -77,10 +88,15 @@ export function ChatList({ sessionId }: ChatListProps) {
           isGroup: chat.id.includes('@g.us')
         }))
         
+        console.log('[CHATLIST] Formatted chats:', formattedChats.length)
         setChats(formattedChats)
+      } else {
+        console.log('[CHATLIST] Response not successful:', response)
+        setChats([])
       }
     } catch (error) {
       console.error('Error loading chats:', error)
+      setChats([]) // Asegurar array vacío en caso de error
       toast({
         title: 'Error',
         description: 'No se pudieron cargar los chats',
@@ -103,12 +119,22 @@ export function ChatList({ sessionId }: ChatListProps) {
         chat.isGroup || false
       )
       
+      console.log('[CHATLIST] Messages response:', response)
+      
       if (response.success) {
-        setMessages(response.data || [])
+        // 🔧 SOLUCION: Validar que response.data sea un array
+        const messageData = Array.isArray(response.data) ? response.data : []
+        console.log('[CHATLIST] Messages loaded:', messageData.length)
+        
+        setMessages(messageData)
         setSelectedChat(chat)
+      } else {
+        console.log('[CHATLIST] Messages response not successful:', response)
+        setMessages([])
       }
     } catch (error) {
       console.error('Error loading messages:', error)
+      setMessages([]) // Asegurar array vacío en caso de error
       toast({
         title: 'Error',
         description: 'No se pudieron cargar los mensajes',

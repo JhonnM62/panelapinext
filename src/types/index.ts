@@ -186,7 +186,7 @@ export interface SessionEnhanced {
   userId: string // NUEVO: Referencia al usuario propietario
   
   // Estado de la sesión
-  estadoSesion: 'creada' | 'conectando' | 'conectada' | 'desconectada' | 'error' | 'eliminada'
+  estadoSesion: 'creada' | 'conectando' | 'autenticada' | 'conectada' | 'desconectada' | 'error' | 'eliminada'
   tipoAuth: 'qr' | 'code'
   codigoQR?: string
   ultimoQR?: string

@@ -68,52 +68,110 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
         }
       }
       
-      // **FALLBACK: Usar API legacy**
-      const response = await sessionsAPI.list()
-      const sessionIds = response.data.data || []
+      // **FALLBACK: Usar API legacy pero con endpoint de usuario**
+      const token = localStorage.getItem('token')
+      let response
       
-      // Obtener sesiones actuales del estado local
-      const currentLocalSessions = get().sessions
-      
-      // Obtener el estado de cada sesión del servidor
-      const serverSessions: Session[] = []
-      for (const id of sessionIds) {
-        try {
-          const statusResponse = await sessionsAPI.status(id)
-          serverSessions.push({
-            id,
-            status: statusResponse.data.data?.status || 'disconnected',
-            createdAt: new Date().toISOString()
-          })
-        } catch (error) {
-          serverSessions.push({
-            id,
-            status: 'disconnected',
-            createdAt: new Date().toISOString()
-          })
-        }
+      if (token) {
+        // Usar endpoint V2 específico del usuario
+        response = await sessionsAPI.listForUser(token)
+      } else {
+        // Fallback a endpoint V1 básico
+        response = await sessionsAPI.list()
       }
       
-      // PRESERVAR sesiones locales que no están en el servidor (recién creadas)
-      const localOnlyIDs = new Set(sessionIds)
-      const sessionsToPreserve = currentLocalSessions.filter(localSession => {
-        // Preservar si la sesión local no está en el servidor Y fue creada recientemente (últimos 2 minutos)
-        const isRecent = new Date().getTime() - new Date(localSession.createdAt).getTime() < 120000 // 2 minutos
-        const notInServer = !localOnlyIDs.has(localSession.id)
-        
-        if (notInServer && isRecent) {
-          console.log(`Preservando sesión recién creada: ${localSession.id}`)
-          return true
-        }
-        return false
+      console.log('🔧 [Sessions] Respuesta de API:', {
+        success: response.success,
+        dataType: typeof response.data,
+        dataKeys: response.data ? Object.keys(response.data) : 'N/A',
+        hasUserSessions: !!(response.data && response.data.sesiones),
+        userSessionsLength: response.data?.sesiones?.length || 0
       })
       
-      // Combinar sesiones del servidor con sesiones locales preservadas
-      const finalSessions = [...serverSessions, ...sessionsToPreserve]
+      // Si es respuesta V2 (sesiones del usuario), mapear directamente
+      if (token && response.data && response.data.sesiones && Array.isArray(response.data.sesiones)) {
+        const userSessions = response.data.sesiones
+        const compatibleSessions: Session[] = userSessions.map(sesion => {
+          // 🔧 CORRECCIÓN: Mapear correctamente los estados
+          let mappedStatus = 'disconnected'
+          if (sesion.estadoSesion === 'conectada') {
+            mappedStatus = 'authenticated'
+          } else if (sesion.estadoSesion === 'conectando') {
+            mappedStatus = 'connecting'
+          } else if (sesion.estadoSesion === 'desconectada' || sesion.estadoSesion === 'eliminada') {
+            mappedStatus = 'disconnected'
+          } else {
+            // Usar función de mapeo para otros estados
+            mappedStatus = mapEstadoToStatus(sesion.estadoSesion || 'disconnected')
+          }
+          
+          return {
+            id: sesion.id || sesion.nombresesion,
+            status: mappedStatus,
+            qr: sesion.qr || sesion.codigoQR,
+            phoneNumber: sesion.lineaWhatsApp || sesion.phoneNumber,
+            createdAt: sesion.fechaCreacion || sesion.createdAt || new Date().toISOString(),
+            userId: sesion.userId
+          }
+        })
+        
+        console.log('🔧 [Sessions] Sesiones V2 mapeadas:', compatibleSessions.length)
+        console.log('🔧 [Sessions] Detalles de mapeo:', compatibleSessions.map(s => `${s.id}: ${s.status}`).join(', '))
+        set({ sessions: compatibleSessions, isLoading: false })
+        return
+      }
       
-      console.log('Sesiones finales después de fetch:', finalSessions.map(s => `${s.id}(${s.status})`).join(', '))
+      // Fallback a lógica V1
+      const sessionIds = response.data?.data || response.data || []
       
-      set({ sessions: finalSessions, isLoading: false })
+      // Solo procesar si tenemos IDs de sesiones (modo V1)
+      if (Array.isArray(sessionIds) && sessionIds.length > 0) {
+        // Obtener sesiones actuales del estado local
+        const currentLocalSessions = get().sessions
+        
+        // Obtener el estado de cada sesión del servidor
+        const serverSessions: Session[] = []
+        for (const id of sessionIds) {
+          try {
+            const statusResponse = await sessionsAPI.status(id)
+            serverSessions.push({
+              id,
+              status: statusResponse.data.data?.status || 'disconnected',
+              createdAt: new Date().toISOString()
+            })
+          } catch (error) {
+            serverSessions.push({
+              id,
+              status: 'disconnected',
+              createdAt: new Date().toISOString()
+            })
+          }
+        }
+        
+        // PRESERVAR sesiones locales que no están en el servidor (recién creadas)
+        const localOnlyIDs = new Set(sessionIds)
+        const sessionsToPreserve = currentLocalSessions.filter(localSession => {
+          // Preservar si la sesión local no está en el servidor Y fue creada recientemente (últimos 2 minutos)
+          const isRecent = new Date().getTime() - new Date(localSession.createdAt).getTime() < 120000 // 2 minutos
+          const notInServer = !localOnlyIDs.has(localSession.id)
+          
+          if (notInServer && isRecent) {
+            console.log(`Preservando sesión recién creada: ${localSession.id}`)
+            return true
+          }
+          return false
+        })
+        
+        // Combinar sesiones del servidor con sesiones locales preservadas
+        const finalSessions = [...serverSessions, ...sessionsToPreserve]
+        
+        console.log('Sesiones finales después de fetch:', finalSessions.map(s => `${s.id}(${s.status})`).join(', '))
+        
+        set({ sessions: finalSessions, isLoading: false })
+      } else {
+        console.log('🔧 [Sessions] No hay sesiones V1, manteniendo estado actual')
+        set({ isLoading: false })
+      }
     } catch (error: any) {
       set({ 
         error: error.response?.data?.message || 'Error al obtener sesiones',
@@ -160,14 +218,25 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
       const currentSessions = get().sessions
       console.log('Sesiones actuales antes de limpiar:', currentSessions.map(s => s.id))
       
-      // === PASO 2: LIMPIEZA PREVIA (SOLO SESIONES EXISTENTES) ===
-      await cleanupSpecificSessions(currentSessions, token)
+      // === PASO 2: LIMPIEZA PREVIA (SOLO SESIONES NO AUTENTICADAS) ===
+      // 🔧 CORRECCIÓN: No eliminar sesiones autenticadas/conectadas
+      const sessionsToClean = currentSessions.filter(session => 
+        session.status !== 'authenticated' && session.status !== 'connected'
+      )
+      
+      if (sessionsToClean.length > 0) {
+        console.log(`🔧 Limpiando ${sessionsToClean.length} sesiones no autenticadas:`, 
+          sessionsToClean.map(s => `${s.id}(${s.status})`).join(', '))
+        await cleanupSpecificSessions(sessionsToClean, token)
+      } else {
+        console.log('🔧 No hay sesiones para limpiar - todas están autenticadas')
+      }
       
       // === PASO 3: CREAR NUEVA SESIÓN ===
       console.log('Creando nueva sesión...')
       const response = await sessionsAPI.add({
         nombrebot: data.nombrebot,
-        typeAuth: 'code', // Siempre usar código
+        typeAuth: 'qr', // Usar QR para mostrar código
         phoneNumber: data.phoneNumber
       })
       
@@ -177,7 +246,7 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
       const newSession: Session = {
         id: data.nombrebot,
         status: 'connecting',
-        qr: response.data.data?.qr,
+        qr: response.data.qrcode || response.data.data?.qr, // QR de la respuesta
         code: response.data.data?.code, // Código de verificación
         phoneNumber: data.phoneNumber,
         createdAt: new Date().toISOString()
@@ -392,13 +461,18 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
 
 /**
  * Mapea estados Enhanced a estados legacy para compatibilidad
+ * 🔧 CORRECCIÓN: 'autenticada' y 'conectada' manejan diferentes niveles de conexión
  */
 function mapEstadoToStatus(estadoSesion: string): 'connecting' | 'connected' | 'authenticated' | 'disconnected' | 'disconnecting' {
   switch (estadoSesion) {
     case 'creada':
     case 'conectando':
       return 'connecting'
+    case 'autenticada':
+      // 🔧 NUEVO: Estado autenticada mapea a authenticated
+      return 'authenticated'
     case 'conectada':
+      // 🔧 CORRECCIÓN: Estado conectada mapea a connected (completamente operativo)
       return 'connected'
     case 'desconectada':
     case 'error':
@@ -411,13 +485,17 @@ function mapEstadoToStatus(estadoSesion: string): 'connecting' | 'connected' | '
 
 /**
  * Mapea estados legacy a estados Enhanced
+ * 🔧 CORRECCIÓN: Mapeo bidireccional correcto con nuevo estado autenticada
  */
-function mapStatusToEstado(status: string): 'creada' | 'conectando' | 'conectada' | 'desconectada' | 'error' | 'eliminada' {
+function mapStatusToEstado(status: string): 'creada' | 'conectando' | 'autenticada' | 'conectada' | 'desconectada' | 'error' | 'eliminada' {
   switch (status) {
     case 'connecting':
       return 'conectando'
-    case 'connected':
     case 'authenticated':
+      // 🔧 NUEVO: authenticated mapea a autenticada
+      return 'autenticada'
+    case 'connected':
+      // 🔧 CORRECCIÓN: connected mapea a conectada (completamente operativo)
       return 'conectada'
     case 'disconnecting':
       return 'desconectada'
@@ -429,39 +507,74 @@ function mapStatusToEstado(status: string): 'creada' | 'conectando' | 'conectada
 }
 
 /**
- * Limpia sesiones específicas (no del estado actual para evitar conflictos)
+ * Limpia sesiones específicas (NO AUTENTICADAS) para evitar eliminar sesiones activas
+ * 🔧 CORRECCIÓN: Solo limpiar sesiones que NO están autenticadas
  */
 async function cleanupSpecificSessions(sessionsToClean: Session[], token: string | null): Promise<void> {
   try {
-    console.log('Iniciando limpieza de sesiones específicas...')
+    console.log('🛠️ Iniciando limpieza de sesiones específicas (solo no autenticadas)...')
     
     if (sessionsToClean.length > 0) {
-      console.log(`Encontradas ${sessionsToClean.length} sesiones para eliminar:`, sessionsToClean.map(s => s.id))
+      console.log(`🛠️ Encontradas ${sessionsToClean.length} sesiones para eliminar:`, 
+        sessionsToClean.map(s => `${s.id}(${s.status})`).join(', '))
       
-      // === PASO 1: ELIMINAR USUARIO DE LA BASE DE DATOS ===
-      if (token) {
-        try {
-          console.log('Eliminando usuario de la base de datos...')
-          await authAPI.deleteUser(token)
-          console.log('Usuario eliminado exitosamente de la base de datos')
-        } catch (error: any) {
-          console.warn('Advertencia al eliminar usuario:', error.response?.data?.message || error.message)
-          // No lanzar error, continuar con el proceso
+      // 🔧 VALIDACIÓN: Verificar que NO hay sesiones autenticadas en la lista
+      const authenticatedSessions = sessionsToClean.filter(s => 
+        s.status === 'authenticated' || s.status === 'connected'
+      )
+      
+      if (authenticatedSessions.length > 0) {
+        console.warn('⚠️ ADVERTENCIA: Se intentó eliminar sesiones autenticadas:', 
+          authenticatedSessions.map(s => `${s.id}(${s.status})`).join(', '))
+        console.warn('⚠️ Estas sesiones se excluirán de la limpieza para preservar conexiones activas')
+        
+        // Filtrar sesiones autenticadas de la lista
+        const filteredSessions = sessionsToClean.filter(s => 
+          s.status !== 'authenticated' && s.status !== 'connected'
+        )
+        
+        if (filteredSessions.length === 0) {
+          console.log('✅ No hay sesiones no autenticadas para limpiar')
+          return
         }
-      } else {
-        console.warn('No hay token disponible para eliminar usuario')
+        
+        // Actualizar lista a solo sesiones no autenticadas
+        sessionsToClean = filteredSessions
+        console.log(`🛠️ Lista filtrada: ${sessionsToClean.length} sesiones no autenticadas a eliminar`)
       }
       
-      // === PASO 2: ELIMINAR CADA SESIÓN ===
+      // === PASO 1: NO ELIMINAR USUARIO SI HAY SESIONES AUTENTICADAS ===
+      // 🔧 CORRECCIÓN: Solo eliminar usuario si no hay sesiones autenticadas activas
+      const allCurrentSessions = get().sessions
+      const hasAuthenticatedSessions = allCurrentSessions.some(s => 
+        s.status === 'authenticated' || s.status === 'connected'
+      )
+      
+      if (token && !hasAuthenticatedSessions) {
+        try {
+          console.log('🛠️ Eliminando usuario de la base de datos (no hay sesiones autenticadas)...')
+          await authAPI.deleteUser(token)
+          console.log('✅ Usuario eliminado exitosamente de la base de datos')
+        } catch (error: any) {
+          console.warn('⚠️ Advertencia al eliminar usuario:', error.response?.data?.message || error.message)
+          // No lanzar error, continuar con el proceso
+        }
+      } else if (hasAuthenticatedSessions) {
+        console.log('🔒 Usuario preservado - hay sesiones autenticadas activas')
+      } else {
+        console.warn('⚠️ No hay token disponible para eliminar usuario')
+      }
+      
+      // === PASO 2: ELIMINAR CADA SESIÓN NO AUTENTICADA ===
       const deletionResults = await Promise.allSettled(
         sessionsToClean.map(async (session) => {
           try {
-            console.log(`Eliminando sesión: ${session.id}`)
+            console.log(`🛠️ Eliminando sesión no autenticada: ${session.id} (${session.status})`)
             await sessionsAPI.delete(session.id)
-            console.log(`Sesión ${session.id} eliminada exitosamente`)
+            console.log(`✅ Sesión ${session.id} eliminada exitosamente`)
             return { success: true, sessionId: session.id }
           } catch (error: any) {
-            console.warn(`Error eliminando sesión ${session.id}:`, error.response?.data?.message || error.message)
+            console.warn(`⚠️ Error eliminando sesión ${session.id}:`, error.response?.data?.message || error.message)
             return { success: false, sessionId: session.id, error: error.message }
           }
         })
@@ -472,17 +585,17 @@ async function cleanupSpecificSessions(sessionsToClean: Session[], token: string
         result.status === 'fulfilled' && result.value.success
       ).length
       
-      console.log(`Limpieza completada: ${successful}/${sessionsToClean.length} sesiones eliminadas`)
+      console.log(`✅ Limpieza completada: ${successful}/${sessionsToClean.length} sesiones no autenticadas eliminadas`)
       
     } else {
-      console.log('No hay sesiones para limpiar')
+      console.log('✅ No hay sesiones no autenticadas para limpiar')
     }
     
     // Esperar un momento para que las operaciones se completen
     await new Promise(resolve => setTimeout(resolve, 500))
     
   } catch (error: any) {
-    console.error('Error durante la limpieza de sesiones:', error)
+    console.error('❌ Error durante la limpieza de sesiones:', error)
     // No lanzar error para permitir que continúe la creación de sesión
   }
 }

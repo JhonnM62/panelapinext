@@ -117,18 +117,20 @@ export function WhatsAppDashboard() {
                     <SelectValue placeholder="Seleccionar sesión" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sessions.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        No hay sesiones
+                  {sessions.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                  No hay sesiones
+                  </SelectItem>
+                  ) : (
+                  sessions
+                  .filter(session => session.id && session.id.trim() !== '')
+                  .map((session) => (
+                  <SelectItem key={session.id} value={session.id}>
+                      {session.id}
                       </SelectItem>
-                    ) : (
-                      sessions.map((session) => (
-                        <SelectItem key={session.id} value={session.id}>
-                          {session.id}
-                        </SelectItem>
                       ))
-                    )}
-                  </SelectContent>
+                      )}
+                    </SelectContent>
                 </Select>
               </div>
 
