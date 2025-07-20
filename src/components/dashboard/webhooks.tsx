@@ -363,7 +363,7 @@ export default function WebhooksComponent() {
   // Webhook configuration
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [clientWebhookUrl, setClientWebhookUrl] = useState("");
-  const [selectedEvents, setSelectedEvents] = useState<string[]>(["ALL"]);
+  const [selectedEvents, setSelectedEvents] = useState<string[]>(["MESSAGES_UPSERT"]);
   const [webhookActive, setWebhookActive] = useState(true);
 
   // Test webhook
@@ -1371,18 +1371,27 @@ export default function WebhooksComponent() {
 
     // Show toast for new notifications (solo si no está marcada como leída)
     if (!notification.read) {
-      toast({
-        title: "🔔 Nueva Notificación",
-        description: `${notification.eventType} en sesión ${
-          notification.sessionId || "desconocida"
-        }`,
-        duration: 3000,
-      });
+      // 🎯 FILTRO: Solo mostrar toasts para mensajes entrantes
+      if (notification.eventType === 'MESSAGES_UPSERT') {
+        toast({
+          title: "📨 Nuevo Mensaje",
+          description: `Mensaje entrante en sesión ${
+            notification.sessionId || "desconocida"
+          }`,
+          duration: 3000,
+        });
 
-      console.log(
-        "[WEBHOOK WS] 🔔 Toast mostrado para notificación:",
-        notification.eventType
-      );
+        console.log(
+          "[WEBHOOK WS] 📨 Toast mostrado para mensaje entrante:",
+          notification.eventType
+        );
+      } else {
+        console.log(
+          "[WEBHOOK WS] 🔇 Toast omitido para evento:",
+          notification.eventType,
+          "(solo se muestran MESSAGES_UPSERT)"
+        );
+      }
     }
   };
 

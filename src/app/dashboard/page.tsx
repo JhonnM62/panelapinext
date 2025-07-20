@@ -315,11 +315,11 @@ export default function DashboardPage() {
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
-          <Link href="/dashboard/sessions">
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Sesión
-            </Button>
+          <Link href="/dashboard/sessions?create=true">
+          <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+          <Plus className="h-4 w-4 mr-2" />
+          Nueva Sesión
+          </Button>
           </Link>
         </div>
       </div>
@@ -604,11 +604,11 @@ export default function DashboardPage() {
               <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
                 Crea tu primera sesión de WhatsApp para comenzar a enviar mensajes y automatizar tus conversaciones.
               </p>
-              <Link href="/dashboard/sessions">
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Crear Primera Sesión
-                </Button>
+              <Link href="/dashboard/sessions?create=true">
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Primera Sesión
+              </Button>
               </Link>
             </div>
           ) : (

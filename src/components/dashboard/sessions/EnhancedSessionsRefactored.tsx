@@ -57,6 +57,36 @@ export default function EnhancedSessionsComponent() {
     regenerateQRCode
   } = useSessionManagement()
 
+  // 🎯 DETECCIÓN AUTOMÁTICA DE PARÁMETRO create=true
+  useEffect(() => {
+    const checkCreateParam = () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const createParam = urlParams.get('create')
+      
+      console.log('🔍 [Sessions] URL actual:', window.location.href);
+      console.log('🔍 [Sessions] Parámetro create:', createParam);
+      console.log('🔍 [Sessions] showCreateForm actual:', showCreateForm);
+      
+      if (createParam === 'true' && !showCreateForm) {
+        console.log('✅ [Sessions] ABRIENDO FORMULARIO AUTOMÁTICAMENTE');
+        setShowCreateForm(true)
+        
+        // Limpiar URL después de procesar
+        urlParams.delete('create')
+        const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '')
+        window.history.replaceState({}, '', newUrl)
+        console.log('🔧 [Sessions] URL limpia:', newUrl);
+      }
+    }
+    
+    // Verificar inmediatamente
+    checkCreateParam()
+    
+    // Timer adicional para asegurar
+    const timer = setTimeout(checkCreateParam, 200)
+    return () => clearTimeout(timer)
+  }, [showCreateForm, setShowCreateForm])
+
   // Cargar datos de analytics
   useEffect(() => {
     const loadAnalytics = async () => {

@@ -98,12 +98,8 @@ export const useGeminiStore = create<GeminiStore>()(
           console.log('🤖 [STORE] updateField:', {
             field,
             value,
-            userbot: !!updatedConfig.userbot,
-            apikey: !!updatedConfig.apikey,
-            promt: !!updatedConfig.promt,
-            sesionId: !!updatedConfig.sesionId,
-            phoneNumber: !!updatedConfig.phoneNumber,
-            isConfigured
+            isConfigured,
+            autoSave: field === 'activo'
           });
           
           return {
@@ -112,6 +108,27 @@ export const useGeminiStore = create<GeminiStore>()(
             error: null,
           };
         });
+        
+        // 🎯 AUTO-GUARDADO: Si cambia 'activo', guardar automáticamente
+        if (field === 'activo') {
+          const currentConfig = get().config;
+          if (currentConfig?.userbot && currentConfig?.apikey) {
+            // Obtener token de useAuthStore o localStorage
+            const token = localStorage.getItem('auth-token') || 
+                         localStorage.getItem('token') || 
+                         '';
+            if (token) {
+              console.log('🤖 [STORE] Auto-guardando configuración activo:', value);
+              setTimeout(() => {
+                get().saveConfig(token).catch(error => {
+                  console.error('🤖 [STORE] Error auto-guardando:', error);
+                });
+              }, 100); // Pequeño delay para asegurar estado actualizado
+            } else {
+              console.warn('🤖 [STORE] No se encontró token para auto-guardado');
+            }
+          }
+        }
       },
 
       loadConfig: async (token: string) => {
@@ -150,10 +167,10 @@ export const useGeminiStore = create<GeminiStore>()(
               config: {
                 ...defaultGeminiConfig,
                 ...configData,
-                // 🔧 MANTENER API key si existe (parcial para mostrar, completa en backend)
-                apikey: configData.apikey_full ? (configData.apikey || 'API Key configurada') : '',
+                // 🔧 API key completa sin restricciones de seguridad
+                apikey: configData.apikey || '',
               } as GeminiConfig,
-              isConfigured: !!(configData.userbot && configData.apikey_full && configData.promt && configData.sesionId),
+              isConfigured: !!(configData.userbot && configData.apikey && configData.promt && configData.sesionId),
               isLoading: false,
               error: null,
             });
@@ -373,12 +390,9 @@ export const useGeminiStore = create<GeminiStore>()(
     }),
     {
       name: 'gemini-config',
-      // Solo persistir algunos campos por seguridad
+      // Solo persistir algunos campos
       partialize: (state) => ({
-        config: state.config ? {
-          ...state.config,
-          apikey: '', // No persistir la API key por seguridad
-        } : null,
+        config: state.config,
         isConfigured: state.isConfigured,
       }),
     }

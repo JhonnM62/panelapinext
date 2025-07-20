@@ -173,6 +173,7 @@ export const useBotsStore = create<BotsStore>()(
 
           const data = await response.json();
           if (data.success) {
+            console.log('🗑️ Bot eliminado completamente:', data);
             // Recargar bots y sesiones disponibles
             await get().loadBots(token);
             await get().loadSesionesDisponibles(token);
@@ -202,14 +203,12 @@ export const useBotsStore = create<BotsStore>()(
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-              token,
-              ...updateData
-            })
+            body: JSON.stringify(updateData)
           });
 
           const data = await response.json();
           if (data.success) {
+            console.log('🔄 Bot actualizado:', data);
             // Recargar bots
             await get().loadBots(token);
             set({ isLoading: false });

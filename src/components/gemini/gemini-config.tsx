@@ -43,7 +43,8 @@ import {
   Link, // 🆕 Nuevo icono para conexiones
 } from "lucide-react";
 import { useGeminiConfig } from "@/store/gemini-store";
-import { sessionsAPI } from "@/lib/api"; // 🆕 Nuevo import para API de sesiones
+import { sessionsAPI } from "@/lib/api";
+import AutoProcessor from "./AutoProcessor"; // 🆕 Import AutoProcessor
 
 interface GeminiConfigProps {
   userToken: string;
@@ -567,7 +568,7 @@ export default function GeminiConfig({
       <Card>
         <CardContent className="p-6">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger
                 value="basic"
                 className="flex items-center space-x-1"
@@ -581,6 +582,13 @@ export default function GeminiConfig({
               >
                 <Webhook className="w-4 h-4" />
                 <span>Webhook</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="automation"
+                className="flex items-center space-x-1"
+              >
+                <Zap className="w-4 h-4" />
+                <span>Automatización</span>
               </TabsTrigger>
               <TabsTrigger
                 value="behavior"
@@ -675,7 +683,7 @@ export default function GeminiConfig({
                   </Label>
                   <Input
                     id="apikey"
-                    type="password"
+                    type="text"
                     placeholder="Ingresa tu API Key de Google Gemini"
                     value={config?.apikey || ""}
                     onChange={(e) => updateField("apikey", e.target.value)}
@@ -764,7 +772,127 @@ export default function GeminiConfig({
               </div>
             </TabsContent>
 
-            {/* 🆕 NUEVA PESTAÑA: Configuración de Webhook */}
+            {/* 🆕 NUEVA PESTAÑA: Automatización */}
+            <TabsContent value="automation" className="space-y-6">
+              <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
+                <CardContent className="p-4">
+                  <div className="flex items-start space-x-3">
+                    <Zap className="w-5 h-5 text-green-600 mt-0.5" />
+                    <div className="space-y-1">
+                      <h3 className="font-medium text-green-900 dark:text-green-100">
+                        Procesamiento Automático de Mensajes
+                      </h3>
+                      <p className="text-sm text-green-800 dark:text-green-200">
+                        Cuando está activo, el bot procesará automáticamente todos los mensajes entrantes de WhatsApp usando IA.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                {/* Control principal de automatización */}
+                <Card className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-orange-600" />
+                        Automatización del Bot
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {config?.activo ? 
+                          'El bot está procesando mensajes automáticamente' : 
+                          'El bot solo responderá cuando se envíen mensajes manualmente'
+                        }
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Badge variant={config?.activo ? "default" : "secondary"} 
+                             className={config?.activo ? "bg-green-100 text-green-800" : ""}>
+                        {config?.activo ? "Activo" : "Inactivo"}
+                      </Badge>
+                      <Switch
+                        checked={config?.activo || false}
+                        onCheckedChange={(checked) => {
+                          updateField("activo", checked);
+                          toast({
+                            title: checked ? "🚀 Automatización activada" : "⏸️ Automatización pausada",
+                            description: checked ? 
+                              "El bot procesará mensajes automáticamente" : 
+                              "El bot no procesará mensajes automáticamente",
+                            duration: 3000
+                          });
+                        }}
+                        className="data-[state=checked]:bg-green-600"
+                      />
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Estado de la automatización */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="p-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className={`w-4 h-4 ${hasValidConfig ? 'text-green-600' : 'text-gray-400'}`} />
+                        <Label className="text-sm font-medium">Configuración</Label>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        {hasValidConfig ? '✓ Lista para usar' : '✗ Configuración incompleta'}
+                      </p>
+                    </div>
+                  </Card>
+
+                  <Card className="p-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Webhook className={`w-4 h-4 ${config?.sesionId ? 'text-green-600' : 'text-gray-400'}`} />
+                        <Label className="text-sm font-medium">Sesión WhatsApp</Label>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        {config?.sesionId ? `✓ ${config.sesionId}` : '✗ Sin sesión'}
+                      </p>
+                    </div>
+                  </Card>
+
+                  <Card className="p-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Brain className={`w-4 h-4 ${config?.apikey ? 'text-green-600' : 'text-gray-400'}`} />
+                        <Label className="text-sm font-medium">Gemini IA</Label>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        {config?.apikey ? '✓ API Key configurada' : '✗ Sin API Key'}
+                      </p>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Advertencias y recomendaciones */}
+                <div className="space-y-3">
+                  {!hasValidConfig && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Configuración incompleta:</strong> Completa la configuración básica antes de activar la automatización.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {hasValidConfig && config?.activo && (
+                    <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                        <strong>Automatización activa:</strong> El bot procesará todos los mensajes entrantes automáticamente. 
+                        Asegúrate de que el prompt esté bien configurado para evitar respuestas no deseadas.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* 🆕 PESTAÑA: Configuración de Webhook */}
             <TabsContent value="webhook" className="space-y-6">
               <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
                 <CardContent className="p-4">
@@ -1352,6 +1480,24 @@ export default function GeminiConfig({
           Guardar Configuración
         </Button>
       </div>
+
+      {/* 🤖 AutoProcessor - Automatización webhook → IA */}
+      {hasValidConfig && config?.activo && (
+        <AutoProcessor
+          key={`auto-${config.sesionId}-${config.activo}`}
+          userToken={userToken}
+          enabled={true}
+          onProcessingStart={(message) => {
+            console.log('🤖 [AutoProcessor] Procesando mensaje:', message.key?.id);
+          }}
+          onProcessingComplete={(result) => {
+            console.log('🤖 [AutoProcessor] ✅ Mensaje procesado:', result);
+          }}
+          onError={(error) => {
+            console.error('🤖 [AutoProcessor] ❌ Error:', error);
+          }}
+        />
+      )}
     </div>
   );
 }
