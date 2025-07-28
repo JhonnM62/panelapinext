@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useGeminiAPI, type GeminiConfigData, type ProcessIARequest, type ProcessIAResponse, syncWithServerConfig } from '@/lib/gemini-api';
+import { useGeminiAPI, type GeminiConfigData, type ProcessIARequest, type ProcessIAResponse } from '@/lib/gemini-api';
 import { useServerConfigStore } from './server-config-store';
 
 export interface GeminiConfig {
@@ -40,7 +40,7 @@ export interface GeminiStore {
   updateField: (field: keyof GeminiConfig, value: any) => void;
   loadConfig: (token: string) => Promise<void>;
   saveConfig: (token: string) => Promise<void>;
-  deleteConfig: (token: string) => Promise<void>;
+  deleteConfig: (token: string, options?: { botId?: string; sesionId?: string }) => Promise<void>;
   testConfig: (testMessage?: string, token?: string) => Promise<ProcessIAResponse>;
   processMessage: (token: string, body: string, number: string) => Promise<ProcessIAResponse>;
   resetConfig: () => void;
@@ -145,8 +145,9 @@ export const useGeminiStore = create<GeminiStore>()(
 
         // 🔧 SINCRONIZAR con configuración de servidor antes de cargar
         const serverConfigStore = useServerConfigStore.getState();
-        if (serverConfigStore.config) {
-          syncWithServerConfig(serverConfigStore.config);
+        if (serverConfigStore.config?.server) {
+          // Actualizar el servidor por defecto si está configurado
+          defaultGeminiConfig.server = serverConfigStore.config.server;
         }
 
         set({ isLoading: true, error: null });
@@ -231,31 +232,56 @@ export const useGeminiStore = create<GeminiStore>()(
         }
       },
 
-      deleteConfig: async (token: string) => {
+      deleteConfig: async (token: string, options?: { botId?: string; sesionId?: string }) => {
         set({ isLoading: true, error: null });
         
         try {
+          console.log('🗑️ [STORE] Iniciando eliminación de bot:', {
+            hasToken: !!token,
+            botId: options?.botId,
+            sesionId: options?.sesionId
+          });
+          
           const api = useGeminiAPI();
           const response = await api.deleteGeminiConfig({
             token,
-            configId: '', // No se usa en el backend actual
+            botId: options?.botId,
+            sesionId: options?.sesionId || get().config?.sesionId
           });
           
           if (response.success) {
+            console.log('🗑️ [STORE] Bot eliminado exitosamente, limpiando estado...');
+            
+            // 🔧 LIMPIAR COMPLETAMENTE el estado y localStorage
             set({
               config: null,
               isConfigured: false,
               isLoading: false,
               error: null,
+              lastTest: null
             });
+            
+            // 🔧 LIMPIAR localStorage completamente
+            try {
+              localStorage.removeItem('gemini-config');
+              localStorage.removeItem('gemini-store');
+              localStorage.removeItem('gemini-automation');
+              localStorage.removeItem('bot-config');
+              console.log('🗑️ [STORE] localStorage limpiado completamente');
+            } catch (storageError) {
+              console.warn('🗑️ [STORE] Error limpiando localStorage:', storageError);
+            }
+            
+            console.log('🗑️ [STORE] Eliminación completada exitosamente');
           } else {
+            console.error('🗑️ [STORE] Error en respuesta de eliminación:', response.message);
             set({
               isLoading: false,
               error: response.message || 'Error eliminando configuración',
             });
           }
         } catch (error) {
-          console.error('Error deleting Gemini config:', error);
+          console.error('🗑️ [STORE] Error eliminando configuración Gemini:', error);
           set({
             isLoading: false,
             error: error instanceof Error ? error.message : 'Error desconocido',
@@ -372,12 +398,28 @@ export const useGeminiStore = create<GeminiStore>()(
       },
 
       resetConfig: () => {
+        console.log('🔄 [STORE] Reiniciando configuración a valores por defecto...');
+        
+        // Limpiar localStorage
+        try {
+          localStorage.removeItem('gemini-config');
+          localStorage.removeItem('gemini-store');
+          localStorage.removeItem('gemini-automation');
+          localStorage.removeItem('bot-config');
+          console.log('🔄 [STORE] localStorage limpiado durante reset');
+        } catch (storageError) {
+          console.warn('🔄 [STORE] Error limpiando localStorage durante reset:', storageError);
+        }
+        
         set({
-          config: { ...defaultGeminiConfig } as GeminiConfig,
+          config: null,
           isConfigured: false,
           error: null,
           lastTest: null,
+          isLoading: false
         });
+        
+        console.log('🔄 [STORE] Configuración reiniciada completamente');
       },
 
       clearError: () => {

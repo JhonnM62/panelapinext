@@ -45,6 +45,7 @@ import {
 import { useGeminiConfig } from "@/store/gemini-store";
 import { sessionsAPI } from "@/lib/api";
 import AutoProcessor from "./AutoProcessor"; // 🆕 Import AutoProcessor
+import AutomationToggle from "./AutomationToggle"; // 🆕 Import AutomationToggle
 
 interface GeminiConfigProps {
   userToken: string;
@@ -423,16 +424,59 @@ export default function GeminiConfig({
   };
 
   const handleDelete = async () => {
+    // 🔧 CONFIRMACIÓN antes de eliminar
+    const confirmDelete = window.confirm(
+      "¿ÂEstás seguro de que quieres eliminar completamente la configuración del bot? \n\n🗑️ Esta acción:"
+      + "\n• Eliminará el bot de la base de datos"
+      + "\n• Limpiará toda la configuración local"
+      + "\n• Dejará de procesar mensajes automáticamente"
+      + "\n\n⚠️ Esta acción NO se puede deshacer."
+    );
+    
+    if (!confirmDelete) {
+      return;
+    }
+    
     try {
-      await deleteConfig(userToken);
-      toast({
-        title: "🗑️ Configuración eliminada",
-        description: "La configuración de Gemini ha sido eliminada",
+      console.log('🗑️ [DELETE] Iniciando eliminación completa del bot:', {
+        sesionId: config?.sesionId,
+        botId: config?.botId,
+        nombreBot: config?.userbot
       });
-    } catch (error) {
+      
+      // 🔧 Usar la nueva función mejorada con parámetros
+      await deleteConfig(userToken, {
+        botId: config?.botId,
+        sesionId: config?.sesionId
+      });
+      
+      console.log('🗑️ [DELETE] Bot eliminado exitosamente');
+      
+      // 🔧 Reiniciar completamente la UI
+      setSelectedSessionId("");
+      setSelectedWebhookId("");
+      setSessions([]);
+      setWebhooks([]);
+      setIsInitialized(false);
+      
       toast({
-        title: "Error al eliminar",
-        description: "No se pudo eliminar la configuración",
+        title: "🗑️ Bot eliminado completamente",
+        description: 
+          "El bot y toda su configuración han sido eliminados permanentemente. " +
+          "La página se recargará para limpiar completamente la interfaz.",
+        duration: 5000
+      });
+      
+      // 🔧 Recargar la página después de un momento para asegurar limpieza completa
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+      
+    } catch (error) {
+      console.error('🗑️ [DELETE] Error eliminando bot:', error);
+      toast({
+        title: "Error al eliminar el bot",
+        description: "No se pudo eliminar completamente la configuración. Inténtalo de nuevo.",
         variant: "destructive",
       });
     }
@@ -790,106 +834,13 @@ export default function GeminiConfig({
                 </CardContent>
               </Card>
 
-              <div className="space-y-6">
-                {/* Control principal de automatización */}
-                <Card className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-orange-600" />
-                        Automatización del Bot
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {config?.activo ? 
-                          'El bot está procesando mensajes automáticamente' : 
-                          'El bot solo responderá cuando se envíen mensajes manualmente'
-                        }
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Badge variant={config?.activo ? "default" : "secondary"} 
-                             className={config?.activo ? "bg-green-100 text-green-800" : ""}>
-                        {config?.activo ? "Activo" : "Inactivo"}
-                      </Badge>
-                      <Switch
-                        checked={config?.activo || false}
-                        onCheckedChange={(checked) => {
-                          updateField("activo", checked);
-                          toast({
-                            title: checked ? "🚀 Automatización activada" : "⏸️ Automatización pausada",
-                            description: checked ? 
-                              "El bot procesará mensajes automáticamente" : 
-                              "El bot no procesará mensajes automáticamente",
-                            duration: 3000
-                          });
-                        }}
-                        className="data-[state=checked]:bg-green-600"
-                      />
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Estado de la automatización */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="p-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className={`w-4 h-4 ${hasValidConfig ? 'text-green-600' : 'text-gray-400'}`} />
-                        <Label className="text-sm font-medium">Configuración</Label>
-                      </div>
-                      <p className="text-xs text-gray-600">
-                        {hasValidConfig ? '✓ Lista para usar' : '✗ Configuración incompleta'}
-                      </p>
-                    </div>
-                  </Card>
-
-                  <Card className="p-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Webhook className={`w-4 h-4 ${config?.sesionId ? 'text-green-600' : 'text-gray-400'}`} />
-                        <Label className="text-sm font-medium">Sesión WhatsApp</Label>
-                      </div>
-                      <p className="text-xs text-gray-600">
-                        {config?.sesionId ? `✓ ${config.sesionId}` : '✗ Sin sesión'}
-                      </p>
-                    </div>
-                  </Card>
-
-                  <Card className="p-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Brain className={`w-4 h-4 ${config?.apikey ? 'text-green-600' : 'text-gray-400'}`} />
-                        <Label className="text-sm font-medium">Gemini IA</Label>
-                      </div>
-                      <p className="text-xs text-gray-600">
-                        {config?.apikey ? '✓ API Key configurada' : '✗ Sin API Key'}
-                      </p>
-                    </div>
-                  </Card>
-                </div>
-
-                {/* Advertencias y recomendaciones */}
-                <div className="space-y-3">
-                  {!hasValidConfig && (
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        <strong>Configuración incompleta:</strong> Completa la configuración básica antes de activar la automatización.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  {hasValidConfig && config?.activo && (
-                    <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
-                      <AlertCircle className="h-4 w-4 text-yellow-600" />
-                      <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-                        <strong>Automatización activa:</strong> El bot procesará todos los mensajes entrantes automáticamente. 
-                        Asegúrate de que el prompt esté bien configurado para evitar respuestas no deseadas.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-              </div>
+              {/* 🆕 NUEVO: Usar componente AutomationToggle mejorado */}
+              <AutomationToggle 
+                userToken={userToken}
+                onStateChange={(isActive) => {
+                  console.log('🤖 [GEMINI CONFIG] Estado de automatización cambiado:', isActive);
+                }}
+              />
             </TabsContent>
 
             {/* 🆕 PESTAÑA: Configuración de Webhook */}
@@ -1462,9 +1413,10 @@ export default function GeminiConfig({
           variant="destructive"
           onClick={handleDelete}
           disabled={!isConfigured || isLoading}
+          className="bg-red-600 hover:bg-red-700"
         >
           <Trash2 className="w-4 h-4 mr-2" />
-          Eliminar Configuración
+          Eliminar Bot Completamente
         </Button>
 
         <Button

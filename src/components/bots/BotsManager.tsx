@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Settings, Plus, Bot, Phone } from 'lucide-react';
+import { Trash2, Settings, Plus, Bot, Phone, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 interface BotCreado {
   _id: string;
@@ -45,6 +46,9 @@ export default function BotsManager() {
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [planUsuario, setPlanUsuario] = useState<keyof PlanLimites>('14dias');
+  
+  // 🎯 Confirmación elegante en lugar de confirm() del navegador
+  const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -186,36 +190,46 @@ export default function BotsManager() {
     }
   };
 
-  const handleDeleteBot = async (botId: string) => {
-    if (!confirm('¿Estás seguro de eliminar este bot? Se perderá toda su configuración.')) {
-      return;
-    }
+  const handleDeleteBot = (botId: string, nombreBot: string) => {
+    showConfirmation({
+      title: 'Eliminar Bot',
+      description: `¿Estás seguro de que deseas eliminar el bot "${nombreBot}"? Esta acción no se puede deshacer y se perderá toda su configuración.`,
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      variant: 'destructive',
+      icon: (
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+          <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+        </div>
+      ),
+      onConfirm: async () => {
+        try {
+          setIsLoading(true);
+          const token = localStorage.getItem('token');
+          const response = await fetch(`/api/v2/bots/delete/${botId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
 
-    try {
-      setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/v2/bots/delete/${botId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          const data = await response.json();
+          if (data.success) {
+            toast.success('Bot eliminado exitosamente');
+            loadBots();
+            loadSesionesDisponibles();
+          } else {
+            toast.error(data.message || 'Error eliminando bot');
+          }
+        } catch (error) {
+          console.error('Error eliminando bot:', error);
+          toast.error('Error eliminando bot');
+        } finally {
+          setIsLoading(false);
         }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Bot eliminado exitosamente');
-        loadBots();
-        loadSesionesDisponibles();
-      } else {
-        toast.error(data.message || 'Error eliminando bot');
       }
-    } catch (error) {
-      console.error('Error eliminando bot:', error);
-      toast.error('Error eliminando bot');
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   const toggleBotStatus = async (botId: string, nuevoEstado: 'activo' | 'inactivo') => {
@@ -372,7 +386,7 @@ export default function BotsManager() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDeleteBot(bot._id)}
+                    onClick={() => handleDeleteBot(bot._id, bot.nombreBot)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -400,6 +414,9 @@ export default function BotsManager() {
           </CardContent>
         </Card>
       )}
+      
+      {/* 🎯 Modal de confirmación elegante */}
+      <ConfirmationDialog />
     </div>
   );
 }

@@ -3,6 +3,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://100.42.185.2:8015'
 
 // Tipos e interfaces
 export interface GeminiConfigData {
+  botId?: string; // ID del bot asociado (nuevo)
+  nombreBot?: string; // Nombre del bot
+  sesionId?: string; // ID de la sesión de WhatsApp
+  estado?: string; // Estado del bot (activo, pausado, eliminado)
   userbot: string;
   apikey: string;
   server: string;
@@ -190,9 +194,13 @@ class EnhancedBaileysAPI {
     }
   }
 
-  async deleteGeminiConfig(params: { token: string; configId?: string }): Promise<{ success: boolean; data?: any; message?: string }> {
+  async deleteGeminiConfig(params: { token: string; botId?: string; sesionId?: string }): Promise<{ success: boolean; data?: any; message?: string }> {
     try {
       console.log('🔧 [GEMINI API] Eliminando configuración con token:', params.token ? 'TOKEN_PRESENTE' : 'NO_TOKEN');
+      console.log('🔧 [GEMINI API] Parámetros de eliminación:', {
+        botId: params.botId,
+        sesionId: params.sesionId
+      });
       
       const response = await this.request<any>(`/api/v2/gemini/config/delete`, {
         method: 'DELETE',
@@ -202,11 +210,12 @@ class EnhancedBaileysAPI {
         },
         body: JSON.stringify({
           token: params.token,
-          configId: params.configId
+          botId: params.botId,
+          sesionId: params.sesionId
         })
       });
       
-      console.log('🔧 [GEMINI API] Configuración eliminada exitosamente');
+      console.log('🔧 [GEMINI API] Configuración eliminada exitosamente:', response.data);
       
       return {
         success: true,
