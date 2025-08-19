@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { 
   MessageSquare, 
   Plus, 
@@ -30,30 +31,19 @@ import {
   Clock,
   Tag,
   PlayCircle,
-  Settings,
-  Zap,
   BarChart3,
-  Bell,
   Brain,
-  Cpu,
-  Sparkles
+  Sparkles,
+  ArrowLeft,
+  Bot
 } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import { useAuthStore } from '@/store/auth'
-import dynamic from 'next/dynamic'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
+import { GeminiConfigRefactored } from '@/components/gemini'
+import { ChatBotsList, ChatBotForm } from '@/components/chatbots'
 
-// Importar el componente dinámicamente para evitar problemas de hydratación
-const GeminiConfig = dynamic(() => import('@/components/gemini/gemini-config'), {
-  ssr: false,
-  loading: () => (
-    <Card>
-      <CardContent className="flex items-center justify-center p-8">
-        <div className="animate-pulse">Cargando configuración de IA...</div>
-      </CardContent>
-    </Card>
-  )
-})
-
+// 📝 INTERFACES PARA TEMPLATES
 interface MessageTemplate {
   id: string
   name: string
@@ -121,9 +111,9 @@ const mockTemplates: MessageTemplate[] = [
 const categoryOptions = [
   { value: 'all', label: 'Todas las categorías', icon: MessageSquare },
   { value: 'marketing', label: 'Marketing', icon: BarChart3 },
-  { value: 'support', label: 'Soporte', icon: Settings },
-  { value: 'sales', label: 'Ventas', icon: Zap },
-  { value: 'notification', label: 'Notificaciones', icon: Bell },
+  { value: 'support', label: 'Soporte', icon: MessageSquare },
+  { value: 'sales', label: 'Ventas', icon: MessageSquare },
+  { value: 'notification', label: 'Notificaciones', icon: MessageSquare },
   { value: 'greeting', label: 'Saludos', icon: User },
   { value: 'custom', label: 'Personalizado', icon: Star }
 ]
@@ -139,6 +129,9 @@ const typeOptions = [
 
 export default function TemplatesPage() {
   const { user } = useAuthStore()
+  const { suscripcion, resourceLimits, loading: planLoading } = usePlanLimits()
+  
+  // 📝 ESTADOS PARA TEMPLATES
   const [templates, setTemplates] = useState<MessageTemplate[]>(mockTemplates)
   const [filteredTemplates, setFilteredTemplates] = useState<MessageTemplate[]>(mockTemplates)
   const [searchQuery, setSearchQuery] = useState('')
@@ -151,6 +144,24 @@ export default function TemplatesPage() {
   const [previewData, setPreviewData] = useState<{ [key: string]: string }>({})
   const [activeTab, setActiveTab] = useState('templates')
 
+  // 🆕 Funciones para manejar navegación entre tabs
+  const handleOpenGeminiConfig = () => {
+    setActiveTab('gemini')
+  }
+
+  const handleBackToTemplates = () => {
+    setActiveTab('templates')
+  }
+
+  const handleConfigSaved = () => {
+    toast({
+      title: "Configuración guardada",
+      description: "¡ChatBot IA configurado exitosamente!",
+    })
+    handleBackToTemplates()
+  }
+
+  // 📝 EFECTOS PARA TEMPLATES
   useEffect(() => {
     let filtered = templates
 
@@ -183,6 +194,7 @@ export default function TemplatesPage() {
     setFilteredTemplates(filtered)
   }, [templates, searchQuery, selectedCategory, selectedType, showFavoritesOnly])
 
+  // 📝 FUNCIONES PARA TEMPLATES
   const toggleFavorite = (templateId: string) => {
     setTemplates(prev =>
       prev.map(template =>
@@ -284,6 +296,35 @@ export default function TemplatesPage() {
     return formatDate(dateString)
   }
 
+  if (planLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600 dark:text-gray-400">Cargando sistema de templates...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!suscripcion || !resourceLimits) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
+          <CardContent className="p-6 text-center">
+            <Brain className="h-12 w-12 text-amber-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-amber-900 dark:text-amber-100 mb-2">
+              Plan Requerido
+            </h3>
+            <p className="text-amber-800 dark:text-amber-200">
+              Necesitas una suscripción activa para acceder al sistema de templates y chatbots IA.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8 p-6">
       <div className="flex items-center justify-between">
@@ -301,6 +342,12 @@ export default function TemplatesPage() {
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Template
+            </Button>
+          )}
+          {activeTab === 'gemini' && (
+            <Button variant="outline" onClick={handleBackToTemplates}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver a Templates
             </Button>
           )}
         </div>
@@ -322,274 +369,282 @@ export default function TemplatesPage() {
         {/* Templates Tab */}
         <TabsContent value="templates" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Templates</p>
-                <p className="text-2xl font-bold">{templates.length}</p>
-              </div>
-              <MessageSquare className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Favoritos</p>
-                <p className="text-2xl font-bold">{templates.filter(t => t.isFavorite).length}</p>
-              </div>
-              <Star className="h-8 w-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Más Usado</p>
-                <p className="text-2xl font-bold">{Math.max(...templates.map(t => t.usageCount))}</p>
-              </div>
-              <BarChart3 className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Uso Total</p>
-                <p className="text-2xl font-bold">{templates.reduce((sum, t) => sum + t.usageCount, 0)}</p>
-              </div>
-              <Send className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Filter className="h-5 w-5 mr-2" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Buscar</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar templates..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Categoría</label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {categoryOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo</label>
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los tipos</SelectItem>
-                  {typeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Mostrar</label>
-              <Button
-                variant={showFavoritesOnly ? 'default' : 'outline'}
-                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                className="w-full"
-              >
-                <Star className={`h-4 w-4 mr-2 ${showFavoritesOnly ? 'fill-current' : ''}`} />
-                Solo Favoritos
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTemplates.map((template) => {
-          const CategoryIcon = getCategoryIcon(template.category)
-          const TypeIcon = getTypeIcon(template.type)
-          
-          return (
-            <Card key={template.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <CategoryIcon className="h-5 w-5 text-muted-foreground" />
-                    <Badge variant="outline" className="text-xs">
-                      {template.category}
-                    </Badge>
-                    <TypeIcon className="h-4 w-4 text-muted-foreground" />
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Templates</p>
+                    <p className="text-2xl font-bold">{templates.length}</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleFavorite(template.id)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Star className={`h-4 w-4 ${template.isFavorite ? 'fill-current text-yellow-500' : 'text-muted-foreground'}`} />
-                  </Button>
-                </div>
-                
-                <CardTitle className="text-lg">{template.name}</CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {template.description}
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {template.content.text || template.content.image?.caption || template.content.video?.caption || 'Contenido multimedia'}
-                    </p>
-                  </div>
-                  
-                  {template.variables.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-2">Variables:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {template.variables.slice(0, 3).map((variable) => (
-                          <Badge key={variable} variant="secondary" className="text-xs">
-                            {`{{${variable}}}`}
-                          </Badge>
-                        ))}
-                        {template.variables.length > 3 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{template.variables.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {template.tags.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-2">Tags:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {template.tags.slice(0, 2).map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag}
-                          </Badge>
-                        ))}
-                        {template.tags.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{template.tags.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <BarChart3 className="h-3 w-3" />
-                      {template.usageCount} usos
-                    </span>
-                    {template.lastUsed && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatTimeAgo(template.lastUsed)}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => useTemplate(template.id)}
-                      className="flex-1"
-                    >
-                      <PlayCircle className="h-4 w-4 mr-2" />
-                      Usar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedTemplate(template)
-                        setIsPreviewDialogOpen(true)
-                      }}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => duplicateTemplate(template)}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => deleteTemplate(template.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <MessageSquare className="h-8 w-8 text-blue-600" />
                 </div>
               </CardContent>
             </Card>
-          )
-        })}
-      </div>
 
-      {filteredTemplates.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              No se encontraron templates
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Intenta ajustar los filtros o crear un nuevo template
-            </p>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Crear Template
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Favoritos</p>
+                    <p className="text-2xl font-bold">{templates.filter(t => t.isFavorite).length}</p>
+                  </div>
+                  <Star className="h-8 w-8 text-yellow-600" />
+                </div>
+              </CardContent>
+            </Card>
 
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Más Usado</p>
+                    <p className="text-2xl font-bold">{Math.max(...templates.map(t => t.usageCount))}</p>
+                  </div>
+                  <BarChart3 className="h-8 w-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Uso Total</p>
+                    <p className="text-2xl font-bold">{templates.reduce((sum, t) => sum + t.usageCount, 0)}</p>
+                  </div>
+                  <Send className="h-8 w-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Filter className="h-5 w-5 mr-2" />
+                Filtros
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Buscar</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar templates..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Categoría</label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Tipo</label>
+                  <Select value={selectedType} onValueChange={setSelectedType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los tipos</SelectItem>
+                      {typeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Mostrar</label>
+                  <Button
+                    variant={showFavoritesOnly ? 'default' : 'outline'}
+                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                    className="w-full"
+                  >
+                    <Star className={`h-4 w-4 mr-2 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+                    Solo Favoritos
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTemplates.map((template) => {
+              const CategoryIcon = getCategoryIcon(template.category)
+              const TypeIcon = getTypeIcon(template.type)
+              
+              return (
+                <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <CategoryIcon className="h-5 w-5 text-muted-foreground" />
+                        <Badge variant="outline" className="text-xs">
+                          {template.category}
+                        </Badge>
+                        <TypeIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleFavorite(template.id)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Star className={`h-4 w-4 ${template.isFavorite ? 'fill-current text-yellow-500' : 'text-muted-foreground'}`} />
+                      </Button>
+                    </div>
+                    
+                    <CardTitle className="text-lg">{template.name}</CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {template.description}
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {template.content.text || template.content.image?.caption || template.content.video?.caption || 'Contenido multimedia'}
+                        </p>
+                      </div>
+                      
+                      {template.variables.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Variables:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {template.variables.slice(0, 3).map((variable) => (
+                              <Badge key={variable} variant="secondary" className="text-xs">
+                                {`{{${variable}}}`}
+                              </Badge>
+                            ))}
+                            {template.variables.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{template.variables.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {template.tags.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Tags:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {template.tags.slice(0, 2).map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                <Tag className="h-3 w-3 mr-1" />
+                                {tag}
+                              </Badge>
+                            ))}
+                            {template.tags.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{template.tags.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <BarChart3 className="h-3 w-3" />
+                          {template.usageCount} usos
+                        </span>
+                        {template.lastUsed && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatTimeAgo(template.lastUsed)}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => useTemplate(template.id)}
+                          className="flex-1"
+                        >
+                          <PlayCircle className="h-4 w-4 mr-2" />
+                          Usar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedTemplate(template)
+                            setIsPreviewDialogOpen(true)
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => duplicateTemplate(template)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteTemplate(template.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+
+          {filteredTemplates.length === 0 && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  No se encontraron templates
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Intenta ajustar los filtros o crear un nuevo template
+                </p>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear Template
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Gemini IA Tab - Lista de ChatBots */}
+        <TabsContent value="gemini" className="space-y-6">
+          <ChatBotsList />
+        </TabsContent>
+      </Tabs>
+
+      {/* DIALOGS PARA TEMPLATES */}
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -645,49 +700,6 @@ export default function TemplatesPage() {
           )}
         </DialogContent>
       </Dialog>
-        </TabsContent>
-
-        {/* Gemini IA Tab */}
-        <TabsContent value="gemini" className="space-y-6">
-          <Card className="border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-900/20">
-            <CardContent className="p-4">
-              <div className="flex items-start space-x-3">
-                <Sparkles className="w-5 h-5 text-purple-600 mt-0.5" />
-                <div className="space-y-1">
-                  <h3 className="font-medium text-purple-900 dark:text-purple-100">ChatBot Inteligente con Gemini IA</h3>
-                  <p className="text-sm text-purple-800 dark:text-purple-200">
-                    Configura tu asistente de inteligencia artificial para responder automáticamente 
-                    a los mensajes de WhatsApp con tecnología de Google Gemini.
-                  </p>
-                  <div className="mt-2 space-y-1">
-                    <p className="text-xs text-purple-700 dark:text-purple-300">
-                      • <strong>Respuestas naturales:</strong> IA conversacional avanzada
-                    </p>
-                    <p className="text-xs text-purple-700 dark:text-purple-300">
-                      • <strong>Contexto inteligente:</strong> Recuerda conversaciones previas
-                    </p>
-                    <p className="text-xs text-purple-700 dark:text-purple-300">
-                      • <strong>Personalización:</strong> Configura el comportamiento según tu negocio
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {user && (
-            <GeminiConfig 
-              userToken={user.token} 
-              onConfigSaved={() => {
-                toast({
-                  title: "Configuración guardada",
-                  description: "Tu ChatBot IA ha sido configurado exitosamente",
-                })
-              }}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
     </div>
   )
 }

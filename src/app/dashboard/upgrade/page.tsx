@@ -17,21 +17,14 @@ import {
   Star,
   Infinity,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Users,
+  Bot,
+  Webhook,
+  Smartphone
 } from 'lucide-react'
-
-interface PricingPlan {
-  id: string
-  name: string
-  price: number
-  originalPrice?: number
-  discount?: number
-  duration: number
-  maxSessions: number
-  features: string[]
-  popular?: boolean
-  isActive: boolean
-}
+import { planesApi, Plan } from '@/lib/plans'
+import { toast } from '@/components/ui/use-toast'
 
 declare global {
   interface Window {
@@ -42,97 +35,46 @@ declare global {
 function UpgradePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { toast } = useToast()
-  const { user, renewMembership } = useAuthStore()
+  const { user } = useAuthStore()
   
+  const [planes, setPlanes] = useState<Plan[]>([])
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [paypalLoaded, setPaypalLoaded] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const plans: PricingPlan[] = [
-    {
-      id: 'monthly',
-      name: 'Plan Mensual',
-      price: 7,
-      duration: 30,
-      maxSessions: 1,
-      features: [
-        '1 sesión de WhatsApp',
-        'Mensajes ilimitados',
-        'Automatización básica',
-        'Soporte 24/7',
-        'Analytics básicos'
-      ],
-      isActive: true
-    },
-    {
-      id: 'semiannual',
-      name: 'Plan 6 Meses',
-      price: 37.8,
-      originalPrice: 42,
-      discount: 10,
-      duration: 180,
-      maxSessions: 1,
-      features: [
-        '1 sesión de WhatsApp',
-        'Mensajes ilimitados',
-        'Automatización avanzada',
-        'Soporte prioritario 24/7',
-        'Analytics completos',
-        'Plantillas personalizadas',
-        '10% de descuento'
-      ],
-      popular: true,
-      isActive: true
-    },
-    {
-      id: 'annual',
-      name: 'Plan Anual',
-      price: 67.2,
-      originalPrice: 84,
-      discount: 20,
-      duration: 365,
-      maxSessions: 1,
-      features: [
-        '1 sesión de WhatsApp',
-        'Mensajes ilimitados',
-        'Automatización completa',
-        'Soporte VIP 24/7',
-        'Analytics avanzados',
-        'Plantillas premium',
-        'API personalizada',
-        '20% de descuento'
-      ],
-      isActive: true
-    },
-    {
-      id: 'lifetime',
-      name: 'Plan Vitalicio',
-      price: 100,
-      duration: 36500,
-      maxSessions: 15,
-      features: [
-        'Hasta 15 sesiones de WhatsApp',
-        'Mensajes ilimitados',
-        'Todas las funciones premium',
-        'Soporte VIP de por vida',
-        'Analytics profesionales',
-        'API completa',
-        'Actualizaciones gratuitas',
-        'Garantía de 1 año',
-        'Acceso vitalicio'
-      ],
-      isActive: true
-    }
-  ]
-
+  // Cargar planes desde la API
   useEffect(() => {
-    const planFromUrl = searchParams.get('plan')
-    if (planFromUrl && plans.find(p => p.id === planFromUrl)) {
-      setSelectedPlan(planFromUrl)
-    } else {
-      setSelectedPlan('semiannual')
+    const cargarPlanes = async () => {
+      try {
+        setLoading(true)
+        const planesData = await planesApi.obtenerPlanes()
+        // Filtrar solo planes no gratuitos para la página de upgrade
+        const planesPagos = planesData.filter(plan => !plan.esGratuito)
+        setPlanes(planesPagos)
+        
+        // Seleccionar plan por defecto desde URL o el semestral como más popular
+        const planFromUrl = searchParams.get('plan')
+        if (planFromUrl && planesPagos.find(p => p.id === planFromUrl)) {
+          setSelectedPlan(planFromUrl)
+        } else {
+          // Buscar el plan semestral como predeterminado
+          const planSemestral = planesPagos.find(p => p.tipo === 'semestral')
+          setSelectedPlan(planSemestral?.id || planesPagos[0]?.id || null)
+        }
+      } catch (error) {
+        console.error('Error cargando planes:', error)
+        toast({
+          title: 'Error',
+          description: 'Error al cargar los planes de suscripción',
+          variant: 'destructive'
+        })
+      } finally {
+        setLoading(false)
+      }
     }
+
+    cargarPlanes()
   }, [searchParams])
 
   useEffect(() => {
@@ -162,7 +104,7 @@ function UpgradePageContent() {
   const initializePayPal = () => {
     if (!window.paypal || !selectedPlan) return
 
-    const plan = plans.find(p => p.id === selectedPlan)
+    const plan = planes.find(p => p.id === selectedPlan)
     if (!plan) return
 
     const container = document.getElementById('paypal-button-container')
@@ -175,9 +117,9 @@ function UpgradePageContent() {
         return actions.order.create({
           purchase_units: [{
             amount: {
-              value: plan.price.toString()
+              value: plan.precioConDescuento.toString()
             },
-            description: `${plan.name} - WhatsApp Pro`
+            description: `${plan.nombre} - WhatsApp Pro API`
           }]
         })
       },
@@ -189,13 +131,14 @@ function UpgradePageContent() {
           await handlePaymentSuccess({
             paymentId: details.id,
             planId: selectedPlan,
-            amount: plan.price
+            amount: plan.precioConDescuento,
+            transactionId: details.id
           })
           
         } catch (error) {
           console.error('Error processing payment:', error)
           toast({
-            title: 'Error en el pago',
+            title: 'Error',
             description: 'Hubo un problema procesando tu pago',
             variant: 'destructive'
           })
@@ -206,14 +149,14 @@ function UpgradePageContent() {
       onError: (err: any) => {
         console.error('PayPal error:', err)
         toast({
-          title: 'Error de PayPal',
+          title: 'Error',
           description: 'Hubo un problema con PayPal. Intenta de nuevo.',
           variant: 'destructive'
         })
       },
       onCancel: () => {
         toast({
-          title: 'Pago cancelado',
+          title: 'Cancelado',
           description: 'El pago fue cancelado',
           variant: 'destructive'
         })
@@ -225,21 +168,31 @@ function UpgradePageContent() {
     paymentId: string
     planId: string
     amount: number
+    transactionId: string
   }) => {
     try {
-      const plan = plans.find(p => p.id === paymentData.planId)
+      const plan = planes.find(p => p.id === paymentData.planId)
       if (!plan) throw new Error('Plan no encontrado')
 
-      await renewMembership(plan.duration)
+      // Suscribirse al plan usando la API
+      const resultado = await planesApi.suscribirse(
+        paymentData.planId, 
+        'paypal', 
+        paymentData.transactionId
+      )
       
-      toast({
-        title: '¡Pago exitoso!',
-        description: `Tu plan ${plan.name} ha sido activado correctamente`,
-      })
-      
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 2000)
+      if (resultado.success) {
+        toast({
+          title: '¡Pago exitoso!',
+          description: `Tu plan ${plan.nombre} ha sido activado correctamente`
+        })
+        
+        setTimeout(() => {
+          router.push('/dashboard/plans')
+        }, 2000)
+      } else {
+        throw new Error(resultado.error || 'Error activando el plan')
+      }
       
     } catch (error) {
       console.error('Error updating membership:', error)
@@ -258,13 +211,30 @@ function UpgradePageContent() {
     }).format(price)
   }
 
-  const getPlanIcon = (planId: string) => {
-    switch (planId) {
-      case 'monthly': return <Zap className="h-6 w-6" />
-      case 'semiannual': return <Star className="h-6 w-6" />
-      case 'annual': return <Crown className="h-6 w-6" />
-      case 'lifetime': return <Infinity className="h-6 w-6" />
-      default: return <Zap className="h-6 w-6" />
+  const getPlanIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'mensual': return <Zap className="h-6 w-6" />
+      case 'semestral': return <Star className="h-6 w-6" />
+      case 'anual': return <Crown className="h-6 w-6" />
+      case 'vitalicio': return <Infinity className="h-6 w-6" />
+      default: return <Smartphone className="h-6 w-6" />
+    }
+  }
+
+  const isPlanPopular = (plan: Plan) => {
+    return plan.tipo === 'semestral' || plan.categoria === 'estandar'
+  }
+
+  const getPlanBadgeColor = (tipo: string) => {
+    switch (tipo) {
+      case 'vitalicio':
+        return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+      case 'anual':
+        return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+      case 'semestral':
+        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+      default:
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
     }
   }
 
@@ -276,7 +246,22 @@ function UpgradePageContent() {
     )
   }
 
-  const currentPlan = plans.find(p => p.id === selectedPlan)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
+              <p className="text-lg text-gray-600 dark:text-gray-400">Cargando planes...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const currentPlan = planes.find(p => p.id === selectedPlan)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -296,15 +281,16 @@ function UpgradePageContent() {
           <div></div>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-8">
-            <div className="space-y-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Lista de planes */}
+            <div className="lg:col-span-2 space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
                   Selecciona tu plan
                 </h2>
                 <div className="grid gap-4">
-                  {plans.map((plan) => (
+                  {planes.map((plan) => (
                     <Card 
                       key={plan.id}
                       className={`cursor-pointer transition-all duration-200 ${
@@ -312,61 +298,85 @@ function UpgradePageContent() {
                           ? 'ring-2 ring-blue-500 shadow-lg'
                           : 'hover:shadow-md'
                       } ${
-                        plan.id === 'lifetime'
+                        plan.tipo === 'vitalicio'
                           ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20'
+                          : isPlanPopular(plan)
+                          ? 'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20'
                           : ''
                       }`}
                       onClick={() => setSelectedPlan(plan.id)}
                     >
-                      <CardContent className="p-4">
+                      <CardContent className="p-6">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className={`p-2 rounded-lg ${
-                              plan.id === 'lifetime'
-                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                                : plan.popular
-                                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                            }`}>
-                              {getPlanIcon(plan.id)}
+                          <div className="flex items-center space-x-4">
+                            <div className={`p-3 rounded-xl ${getPlanBadgeColor(plan.tipo)}`}>
+                              {getPlanIcon(plan.tipo)}
                             </div>
                             <div>
-                              <div className="flex items-center space-x-2">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">
-                                  {plan.name}
+                              <div className="flex items-center space-x-2 mb-1">
+                                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
+                                  {plan.nombre}
                                 </h3>
-                                {plan.popular && (
+                                {isPlanPopular(plan) && (
                                   <Badge className="bg-blue-500 text-white text-xs">
-                                    Popular
+                                    Más Popular
+                                  </Badge>
+                                )}
+                                {plan.tipo === 'vitalicio' && (
+                                  <Badge className="bg-purple-500 text-white text-xs">
+                                    Mejor Valor
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {plan.maxSessions === 1 ? '1 sesión' : `${plan.maxSessions} sesiones`} · 
-                                {plan.id === 'lifetime' ? 'Acceso vitalicio' : `${plan.duration} días`}
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                {plan.descripcion}
                               </p>
+                              
+                              {/* Límites del plan */}
+                              <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                                <div className="flex items-center space-x-1">
+                                  <Users className="h-4 w-4" />
+                                  <span>{plan.limites.sesiones} sesión{plan.limites.sesiones > 1 ? 'es' : ''}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Bot className="h-4 w-4" />
+                                  <span>{plan.limites.botsIA} bot{plan.limites.botsIA > 1 ? 's' : ''} IA</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Webhook className="h-4 w-4" />
+                                  <span>{plan.limites.webhooks} webhook{plan.limites.webhooks > 1 ? 's' : ''}</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                           <div className="text-right">
                             <div className="flex items-center space-x-2">
-                              {plan.originalPrice && (
+                              {plan.descuento.porcentaje > 0 && (
                                 <span className="text-sm text-gray-500 line-through">
-                                  {formatPrice(plan.originalPrice)}
+                                  {formatPrice(plan.precio.valor)}
                                 </span>
                               )}
-                              <span className={`text-lg font-bold ${
-                                plan.id === 'lifetime'
+                              <span className={`text-xl font-bold ${
+                                plan.tipo === 'vitalicio'
                                   ? 'text-purple-600 dark:text-purple-400'
+                                  : isPlanPopular(plan)
+                                  ? 'text-blue-600 dark:text-blue-400'
                                   : 'text-gray-900 dark:text-white'
                               }`}>
-                                {formatPrice(plan.price)}
+                                {formatPrice(plan.precioConDescuento)}
                               </span>
                             </div>
-                            {plan.discount && (
-                              <Badge variant="secondary" className="text-xs mt-1">
-                                {plan.discount}% OFF
+                            {plan.descuento.porcentaje > 0 && (
+                              <Badge variant="secondary" className="text-xs mt-1 bg-green-100 text-green-800">
+                                {plan.descuento.porcentaje}% OFF
                               </Badge>
                             )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              {plan.esVitalicio 
+                                ? 'Pago único' 
+                                : `Por ${plan.duracion.cantidad} ${plan.duracion.unidad}`
+                              }
+                            </p>
                           </div>
                         </div>
                       </CardContent>
@@ -376,6 +386,7 @@ function UpgradePageContent() {
               </div>
             </div>
 
+            {/* Panel de checkout */}
             <div className="space-y-6">
               {currentPlan && (
                 <Card>
@@ -387,40 +398,72 @@ function UpgradePageContent() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex justify-between items-center py-2 border-b">
-                      <span className="font-medium">{currentPlan.name}</span>
-                      <span className="font-semibold">{formatPrice(currentPlan.price)}</span>
+                      <span className="font-medium">{currentPlan.nombre}</span>
+                      <span className="font-semibold">{formatPrice(currentPlan.precioConDescuento)}</span>
                     </div>
                     
-                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span>{currentPlan.maxSessions === 1 ? '1 sesión' : `${currentPlan.maxSessions} sesiones`} de WhatsApp</span>
+                    {currentPlan.descuento.porcentaje > 0 && (
+                      <div className="flex justify-between items-center text-sm text-green-600">
+                        <span>Descuento ({currentPlan.descuento.porcentaje}%)</span>
+                        <span>-{formatPrice(currentPlan.precio.valor - currentPlan.precioConDescuento)}</span>
                       </div>
+                    )}
+                    
+                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                      <h4 className="font-medium text-gray-900 dark:text-white">Lo que incluye:</h4>
+                      
+                      {/* Límites incluidos */}
+                      <div className="grid grid-cols-3 gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="text-center">
+                          <div className="font-bold text-blue-600">{currentPlan.limites.sesiones}</div>
+                          <div className="text-xs">Sesiones</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold text-purple-600">{currentPlan.limites.botsIA}</div>
+                          <div className="text-xs">Bots IA</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold text-green-600">{currentPlan.limites.webhooks}</div>
+                          <div className="text-xs">Webhooks</div>
+                        </div>
+                      </div>
+                      
+                      {/* Características principales */}
+                      {currentPlan.caracteristicas.slice(0, 5).map((feature, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>{feature.nombre}</span>
+                        </div>
+                      ))}
+                      
                       <div className="flex items-center space-x-2">
                         <CheckCircle className="h-4 w-4 text-green-500" />
                         <span>
-                          {currentPlan.id === 'lifetime' 
-                            ? 'Acceso de por vida' 
-                            : `Acceso por ${currentPlan.duration} días`
+                          {currentPlan.esVitalicio 
+                            ? 'Acceso vitalicio' 
+                            : `Acceso por ${currentPlan.duracion.cantidad} ${currentPlan.duracion.unidad}`
                           }
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span>Todas las funciones premium</span>
-                      </div>
-                      {currentPlan.id === 'lifetime' && (
+                      
+                      {currentPlan.tipo === 'vitalicio' && (
                         <div className="flex items-center space-x-2">
                           <Shield className="h-4 w-4 text-blue-500" />
-                          <span>Garantía de 1 año</span>
+                          <span>Garantía de por vida</span>
                         </div>
                       )}
                     </div>
 
                     <div className="flex justify-between items-center py-2 border-t font-semibold text-lg">
                       <span>Total:</span>
-                      <span className={currentPlan.id === 'lifetime' ? 'text-purple-600 dark:text-purple-400' : ''}>
-                        {formatPrice(currentPlan.price)}
+                      <span className={
+                        currentPlan.tipo === 'vitalicio' 
+                          ? 'text-purple-600 dark:text-purple-400' 
+                          : isPlanPopular(currentPlan)
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : ''
+                      }>
+                        {formatPrice(currentPlan.precioConDescuento)}
                       </span>
                     </div>
                   </CardContent>
@@ -437,7 +480,7 @@ function UpgradePageContent() {
                       </h4>
                       <p className="text-sm text-orange-700 dark:text-orange-300">
                         Al actualizar tu plan, el nuevo período comenzará inmediatamente y 
-                        tendrás acceso a todas las funciones premium.
+                        tendrás acceso a todas las funciones premium según los límites del plan seleccionado.
                       </p>
                     </div>
                   </div>
@@ -461,7 +504,7 @@ function UpgradePageContent() {
                         </p>
                       </div>
                     </div>
-                  ) : paypalLoaded ? (
+                  ) : paypalLoaded && selectedPlan ? (
                     <div id="paypal-button-container"></div>
                   ) : (
                     <div className="flex items-center justify-center py-8">

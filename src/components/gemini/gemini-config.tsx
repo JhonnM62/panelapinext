@@ -226,25 +226,12 @@ export default function GeminiConfig({
 
         setSessions(authenticatedSessions);
 
-        // 🔧 AUTO-SELECCIÓN: Si hay solo una sesión, seleccionarla automáticamente
-        if (authenticatedSessions.length === 1 && !selectedSessionId) {
-          const session = authenticatedSessions[0];
-          setSelectedSessionId(session.id);
-          // 🔧 NUEVO: Actualizar también el campo sesionId en el config
-          updateField("sesionId", session.id);
-          // 🔧 NUEVO: Auto-completar número de teléfono si está disponible
-          if (session.phone && !config?.phoneNumber) {
-            updateField("phoneNumber", session.phone);
-            console.log(
-              "🤖 [CHATBOT] Auto-completando número de teléfono:",
-              session.phone
-            );
-          }
-          console.log(
-            "🤖 [CHATBOT] Auto-seleccionando única sesión y actualizando config:",
-            session.id
-          );
-        }
+        // 🚫 DESACTIVADO: Auto-selección para permitir elección manual
+        // Usuario debe seleccionar manualmente la sesión y webhook deseados
+        console.log(
+          "🤖 [CHATBOT] Sesiones disponibles para selección manual:",
+          authenticatedSessions.length
+        );
       } else {
         console.warn("🤖 [CHATBOT] No se encontraron sesiones");
         setSessions([]);
@@ -318,14 +305,11 @@ export default function GeminiConfig({
       );
       setWebhooks(webhooksFromSessions);
 
-      // 🔧 AUTO-SELECCIÓN: Si hay solo un webhook, seleccionarlo automáticamente
-      if (webhooksFromSessions.length === 1 && !selectedWebhookId) {
-        setSelectedWebhookId(webhooksFromSessions[0].id);
-        console.log(
-          "🤖 [CHATBOT] Auto-seleccionando único webhook:",
-          webhooksFromSessions[0].id
-        );
-      }
+      // 🚫 DESACTIVADO: Auto-selección de webhook para elección manual
+      console.log(
+        "🤖 [CHATBOT] Webhooks disponibles para selección manual:",
+        webhooksFromSessions.length
+      );
     } catch (error) {
       console.error(
         "🤖 [CHATBOT] Error general en loadAvailableWebhooks:",
@@ -957,7 +941,9 @@ export default function GeminiConfig({
                           placeholder={
                             loadingWebhooks
                               ? "Cargando webhooks..."
-                              : "Webhook automático"
+                              : webhooks.length > 0 
+                                ? "Selecciona un webhook" 
+                                : "Auto-detección automática"
                           }
                         />
                       </SelectTrigger>
@@ -965,7 +951,7 @@ export default function GeminiConfig({
                         <SelectItem value="auto-detect">
                           <div className="flex items-center gap-2">
                             <Globe className="w-4 h-4 text-gray-600" />
-                            <span>Detección automática</span>
+                            <span>Detección automática (Recomendado)</span>
                           </div>
                         </SelectItem>
                         {webhooks.map((webhook) => (

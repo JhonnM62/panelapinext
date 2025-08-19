@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Settings, Plus, Bot, Phone, AlertTriangle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Trash2, Settings, Plus, Bot, AlertTriangle, Crown, Zap, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { useAuthStore } from '@/store/auth';
+import LimitsCard from '@/components/plans/LimitsCard';
+import { GeminiConfigRefactored } from '@/components/gemini';
 
 interface BotCreado {
   _id: string;
@@ -17,51 +19,31 @@ interface BotCreado {
   numeroWhatsapp: string;
   estadoBot: 'activo' | 'inactivo' | 'configurando';
   fechaCreacion: string;
+  tipoBot?: string;
+  configIA?: any;
 }
-
-interface SesionDisponible {
-  sesionId: string;
-  numeroWhatsapp: string;
-  estado: string;
-  disponible: boolean;
-}
-
-interface PlanLimites {
-  '14dias': number;
-  '6meses': number;
-  '1año': number;
-  'vitalicio': number;
-}
-
-const LIMITES_PLAN: PlanLimites = {
-  '14dias': 1,
-  '6meses': 3,
-  '1año': 5,
-  'vitalicio': 10
-};
 
 export default function BotsManager() {
+  const { user } = useAuthStore();
+  const { suscripcion, resourceLimits, canCreateResource, refreshData, loading: limitsLoading } = usePlanLimits();
+  
   const [bots, setBots] = useState<BotCreado[]>([]);
-  const [sesionesDisponibles, setSesionesDisponibles] = useState<SesionDisponible[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [planUsuario, setPlanUsuario] = useState<keyof PlanLimites>('14dias');
+  const [activeTab, setActiveTab] = useState('bots'); // 🆕 Estado para controlar tabs
   
   // 🎯 Confirmación elegante en lugar de confirm() del navegador
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
-  
-  // Form state
-  const [formData, setFormData] = useState({
-    nombreBot: '',
-    descripcion: '',
-    sesionId: ''
-  });
 
   useEffect(() => {
     loadBots();
-    loadSesionesDisponibles();
-    loadPlanUsuario();
   }, []);
+
+  // 🔄 Refrescar datos cuando cambie la suscripción
+  useEffect(() => {
+    if (suscripcion) {
+      loadBots();
+    }
+  }, [suscripcion]);
 
   const loadBots = async () => {
     try {
@@ -77,117 +59,53 @@ export default function BotsManager() {
       
       const data = await response.json();
       if (data.success) {
+        console.log('🤖 [BOTS] Datos recibidos:', data.data);
         setBots(data.data || []);
+      } else {
+        console.error('🤖 [BOTS] Error en respuesta:', data.message);
+        toast.error(data.message || 'Error cargando bots');
       }
     } catch (error) {
-      console.error('Error cargando bots:', error);
+      console.error('🤖 [BOTS] Error cargando bots:', error);
       toast.error('Error cargando bots');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadSesionesDisponibles = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v2/bots/sessions-available', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        // 🔧 VALIDACIÓN: Filtrar sesiones con datos válidos
-        const sesionesValidas = (data.data || [])
-          .filter((sesion: any) => 
-            sesion && 
-            typeof sesion.sesionId === 'string' && 
-            sesion.sesionId.trim() !== '' &&
-            sesion.sesionId !== 'undefined' &&
-            sesion.sesionId !== 'null'
-          )
-          .map((sesion: any) => ({
-            sesionId: sesion.sesionId.trim(),
-            numeroWhatsapp: sesion.numeroWhatsapp || 'Sin número',
-            estado: sesion.estado || 'desconocido',
-            disponible: Boolean(sesion.disponible)
-          }));
-          
-        console.log('🔍 [BOTS] Sesiones válidas cargadas:', sesionesValidas);
-        setSesionesDisponibles(sesionesValidas);
-      } else {
-        console.warn('⚠️ [BOTS] Error en respuesta:', data.message);
-        setSesionesDisponibles([]);
-      }
-    } catch (error) {
-      console.error('🚨 [BOTS] Error cargando sesiones:', error);
-      setSesionesDisponibles([]);
-    }
-  };
-
-  const loadPlanUsuario = () => {
-    // Obtener plan del localStorage o contexto de auth
-    const authData = JSON.parse(localStorage.getItem('auth-storage') || '{}');
-    const plan = authData.state?.user?.tipoplan || '14dias';
-    setPlanUsuario(plan);
-  };
-
+  // 🎯 **NUEVA LÓGICA**: Usar sistema de límites dinámico
   const canCreateBot = () => {
-    const limite = LIMITES_PLAN[planUsuario];
-    return bots.length < limite;
+    if (!resourceLimits) return false;
+    return canCreateResource('botsIA');
   };
 
-  const handleCreateBot = async () => {
-    if (!formData.nombreBot || !formData.sesionId) {
-      toast.error('Nombre del bot y sesión son requeridos');
-      return;
-    }
+  // Memorizar información de límites para evitar re-renders
+  const limitsInfo = useMemo(() => {
+    if (!resourceLimits || !suscripcion) return null;
+    return {
+      current: resourceLimits.botsIA.current,
+      limit: resourceLimits.botsIA.limit,
+      remaining: resourceLimits.botsIA.remaining,
+      planName: suscripcion.plan.nombre
+    };
+  }, [resourceLimits, suscripcion]);
 
-    // 🔧 VALIDACIÓN ADICIONAL: Verificar que sesionId sea válido
-    if (formData.sesionId.trim() === '' || formData.sesionId === 'no-sessions') {
-      toast.error('Debes seleccionar una sesión válida');
-      return;
-    }
+  // 🆕 Función para abrir configuración avanzada
+  const handleOpenAdvancedConfig = () => {
+    setActiveTab('config');
+  };
 
-    if (!canCreateBot()) {
-      toast.error(`Límite alcanzado. Tu plan ${planUsuario} permite máximo ${LIMITES_PLAN[planUsuario]} bots`);
-      return;
-    }
+  // 🆕 Función para volver a la lista de bots
+  const handleBackToBots = () => {
+    setActiveTab('bots');
+    loadBots(); // Recargar bots por si se creó uno nuevo
+    refreshData(); // Refrescar datos de límites
+  };
 
-    try {
-      setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v2/bots/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          token,
-          ...formData
-        })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Bot creado exitosamente');
-        setFormData({ nombreBot: '', descripcion: '', sesionId: '' });
-        setShowCreateForm(false);
-        loadBots();
-        loadSesionesDisponibles();
-      } else {
-        toast.error(data.message || 'Error creando bot');
-      }
-    } catch (error) {
-      console.error('Error creando bot:', error);
-      toast.error('Error creando bot');
-    } finally {
-      setIsLoading(false);
-    }
+  // 🆕 Callback cuando se guarda configuración
+  const handleConfigSaved = () => {
+    toast.success('¡Bot configurado exitosamente!');
+    handleBackToBots();
   };
 
   const handleDeleteBot = (botId: string, nombreBot: string) => {
@@ -218,7 +136,7 @@ export default function BotsManager() {
           if (data.success) {
             toast.success('Bot eliminado exitosamente');
             loadBots();
-            loadSesionesDisponibles();
+            refreshData();
           } else {
             toast.error(data.message || 'Error eliminando bot');
           }
@@ -262,158 +180,205 @@ export default function BotsManager() {
 
   return (
     <div className="space-y-6">
-      {/* Header con límites */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Mis Bots</h2>
-          <p className="text-muted-foreground">
-            {bots.length} de {LIMITES_PLAN[planUsuario]} bots creados (Plan {planUsuario})
-          </p>
-        </div>
-        
-        {canCreateBot() && (
-          <Button onClick={() => setShowCreateForm(true)} disabled={isLoading}>
-            <Plus className="w-4 h-4 mr-2" />
-            Crear Bot
-          </Button>
-        )}
-      </div>
-
-      {/* Formulario crear bot */}
-      {showCreateForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Crear Nuevo Bot</CardTitle>
-            <CardDescription>
-              Configura un nuevo chatbot con IA para una de tus sesiones de WhatsApp
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="nombreBot">Nombre del Bot</Label>
-              <Input
-                id="nombreBot"
-                placeholder="Ej: Bot Ventas"
-                value={formData.nombreBot}
-                onChange={(e) => setFormData(prev => ({ ...prev, nombreBot: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="descripcion">Descripción (opcional)</Label>
-              <Input
-                id="descripcion"
-                placeholder="Ej: Bot para atención al cliente"
-                value={formData.descripcion}
-                onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="sesionId">Sesión de WhatsApp</Label>
-              <Select value={formData.sesionId} onValueChange={(value) => setFormData(prev => ({ ...prev, sesionId: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una sesión disponible" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sesionesDisponibles
-                    .filter(s => s.disponible && s.sesionId && s.sesionId.trim() !== '')
-                    .map((sesion) => (
-                      <SelectItem key={sesion.sesionId} value={sesion.sesionId}>
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4" />
-                          {sesion.numeroWhatsapp || 'Sin número'} ({sesion.sesionId})
-                        </div>
-                      </SelectItem>
-                    ))}
-                  {sesionesDisponibles.filter(s => s.disponible && s.sesionId && s.sesionId.trim() !== '').length === 0 && (
-                    <SelectItem value="no-sessions" disabled>
-                      No hay sesiones disponibles
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleCreateBot} disabled={isLoading}>
-                Crear Bot
-              </Button>
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-                Cancelar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* 📊 Mostrar límites si hay suscripción activa */}
+      {suscripcion && resourceLimits && (
+        <LimitsCard 
+          suscripcion={suscripcion} 
+          resourceLimits={resourceLimits} 
+          showActions={false}
+          title="Resumen de tu Plan"
+          className="mb-6"
+        />
       )}
 
-      {/* Lista de bots */}
-      <div className="grid gap-4">
-        {bots.map((bot) => (
-          <Card key={bot._id}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Bot className="w-8 h-8" />
-                  <div>
-                    <h3 className="font-semibold">{bot.nombreBot}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {bot.numeroWhatsapp} • {bot.sesionId}
-                    </p>
-                    {bot.descripcion && (
-                      <p className="text-sm text-muted-foreground mt-1">{bot.descripcion}</p>
-                    )}
-                  </div>
-                </div>
+      {/* 🆕 Interfaz con Tabs - SIN REDIRECCIÓN */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="bots" className="flex items-center gap-2">
+            <Bot className="h-4 w-4" />
+            Mis ChatBots
+          </TabsTrigger>
+          <TabsTrigger value="config" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            Configuración Avanzada
+          </TabsTrigger>
+        </TabsList>
 
-                <div className="flex items-center gap-2">
-                  <Badge variant={bot.estadoBot === 'activo' ? 'default' : 'secondary'}>
-                    {bot.estadoBot}
+        {/* TAB 1: Lista de Bots */}
+        <TabsContent value="bots" className="space-y-6">
+          {/* Header */}
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <Bot className="h-8 w-8 text-purple-600" />
+              <div>
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  Mis ChatBots con IA
+                  <Zap className="h-5 w-5 text-yellow-500" />
+                </h2>
+                <p className="text-muted-foreground">
+                  {limitsInfo 
+                    ? `${limitsInfo.current} de ${limitsInfo.limit} bots creados (Plan ${limitsInfo.planName})`
+                    : `${bots.length} bots creados`
+                  }
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* 🆕 BOTÓN SIN REDIRECCIÓN */}
+              <Button 
+                onClick={handleOpenAdvancedConfig} 
+                disabled={isLoading || limitsLoading}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Ir a Configuración Avanzada de IA
+              </Button>
+              {!canCreateBot() && (
+                <div className="text-right ml-2">
+                  <Badge variant="outline">
+                    <AlertTriangle className="w-4 h-4 mr-1" />
+                    Límite: {limitsInfo && `${limitsInfo.current}/${limitsInfo.limit}`}
                   </Badge>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleBotStatus(bot._id, bot.estadoBot === 'activo' ? 'inactivo' : 'activo')}
-                  >
-                    {bot.estadoBot === 'activo' ? 'Desactivar' : 'Activar'}
-                  </Button>
-
-                  <Button variant="outline" size="sm">
-                    <Settings className="w-4 h-4" />
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteBot(bot._id, bot.nombreBot)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
+              )}
+            </div>
+          </div>
+
+          {/* Información sobre configuración avanzada */}
+          <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <Zap className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    Configuración Avanzada de IA disponible
+                    <Crown className="h-4 w-4 text-yellow-500" />
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Usa la configuración avanzada para crear chatbots con todas las opciones de IA, webhooks y automatización.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={handleOpenAdvancedConfig}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configurar
+                </Button>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {bots.length === 0 && !isLoading && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Bot className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="font-semibold mb-2">No tienes bots creados</h3>
-            <p className="text-muted-foreground mb-4">
-              Crea tu primer bot con IA para automatizar respuestas en WhatsApp
-            </p>
-            {canCreateBot() && (
-              <Button onClick={() => setShowCreateForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Crear Mi Primer Bot
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+          {/* Lista de bots */}
+          <div className="grid gap-4">
+            {bots.map((bot) => (
+              <Card key={bot._id}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Bot className="w-8 h-8" />
+                      <div>
+                        <h3 className="font-semibold">{bot.nombreBot}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {bot.numeroWhatsapp} • {bot.sesionId}
+                        </p>
+                        {bot.descripcion && (
+                          <p className="text-sm text-muted-foreground mt-1">{bot.descripcion}</p>
+                        )}
+                        {bot.tipoBot && (
+                          <Badge variant="outline" className="text-xs mt-1">
+                            {bot.tipoBot === 'ia' ? 'IA' : bot.tipoBot}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Badge variant={bot.estadoBot === 'activo' ? 'default' : 'secondary'}>
+                        {bot.estadoBot}
+                      </Badge>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleBotStatus(bot._id, bot.estadoBot === 'activo' ? 'inactivo' : 'activo')}
+                      >
+                        {bot.estadoBot === 'activo' ? 'Desactivar' : 'Activar'}
+                      </Button>
+
+                      {/* 🆕 BOTÓN SIN REDIRECCIÓN */}
+                      <Button variant="outline" size="sm" onClick={handleOpenAdvancedConfig}>
+                        <Settings className="w-4 h-4" />
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteBot(bot._id, bot.nombreBot)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {bots.length === 0 && !isLoading && (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Bot className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="font-semibold mb-2 flex items-center gap-2 justify-center">
+                  <Zap className="h-5 w-5 text-yellow-500" />
+                  ¡Crea tu primer ChatBot con IA!
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Automatiza respuestas inteligentes en WhatsApp con tecnología de IA avanzada.
+                  Responde a tus clientes 24/7 de manera natural y efectiva.
+                </p>
+                {/* 🆕 BOTÓN SIN REDIRECCIÓN */}
+                <Button onClick={handleOpenAdvancedConfig}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Crear Mi Primer Bot
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Loading indicator */}
+          {isLoading && (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                <p className="text-muted-foreground">Cargando chatbots...</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* TAB 2: Configuración Avanzada */}
+        <TabsContent value="config" className="space-y-6">
+          <div className="flex items-center gap-4 mb-6">
+            <Button variant="outline" onClick={handleBackToBots}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver a Mis Bots
+            </Button>
+            <div className="flex items-center gap-2">
+              <Zap className="h-6 w-6 text-purple-600" />
+              <h2 className="text-2xl font-bold">Configuración Avanzada de IA</h2>
+            </div>
+          </div>
+
+          {/* 🆕 Integración del componente refactorizado - SIN REDIRECCIÓN */}
+          {user && (
+            <GeminiConfigRefactored 
+              userToken={user.token || localStorage.getItem('token') || ''} 
+              onConfigSaved={handleConfigSaved}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
       
       {/* 🎯 Modal de confirmación elegante */}
       <ConfirmationDialog />

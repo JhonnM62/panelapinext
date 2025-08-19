@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/auth'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -29,12 +30,16 @@ import {
   Wifi,
   WifiOff,
   User,
-  CreditCard
+  CreditCard,
+  Crown,
+  Bot,
+  Webhook
 } from 'lucide-react'
 import Link from 'next/link'
 import { sessionsAPI, webhooksAPI, utilsAPI, chatsAPI, authAPI, analyticsAPI } from '@/lib/api'
 import { SessionData, WebhookStats } from '@/lib/api'
 import { toast } from '@/components/ui/use-toast'
+import { ResourceLimitBanner, LoadingState } from '@/components/common'
 
 interface DashboardStats {
   totalSessions: number
@@ -63,6 +68,8 @@ interface ActivityItem {
 
 export default function DashboardPage() {
   const { user } = useAuthStore()
+  const { suscripcion, resourceLimits, loading: limitsLoading } = usePlanLimits()
+  
   const [stats, setStats] = useState<DashboardStats>({
     totalSessions: 0,
     activeSessions: 0,
@@ -293,8 +300,42 @@ export default function DashboardPage() {
 
   if (!user) return null
 
+  // 🚀 Mostrar loading state mejorado
+  if (limitsLoading) {
+    return (
+      <LoadingState 
+        isLoading={true}
+        title="Cargando dashboard"
+        className="max-w-4xl mx-auto mt-8"
+      />
+    )
+  }
+
   return (
     <div className="space-y-8">
+      {/* 📊 Banner de límites críticos */}
+      {suscripcion && resourceLimits && (
+        <>
+          <ResourceLimitBanner 
+            suscripcion={suscripcion}
+            resourceLimits={resourceLimits}
+            resourceType="sesiones"
+            resourceDisplayName="Sesiones WhatsApp"
+          />
+          <ResourceLimitBanner 
+            suscripcion={suscripcion}
+            resourceLimits={resourceLimits}
+            resourceType="botsIA"
+            resourceDisplayName="ChatBots con IA"
+          />
+          <ResourceLimitBanner 
+            suscripcion={suscripcion}
+            resourceLimits={resourceLimits}
+            resourceType="webhooks"
+            resourceDisplayName="Webhooks"
+          />
+        </>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -370,13 +411,22 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card key="stats-card-total-sessions" className="hover:shadow-lg transition-shadow">
+        <Card key="stats-card-total-sessions" className="hover:shadow-lg transition-shadow border-blue-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sesiones Totales</CardTitle>
-            <Smartphone className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Smartphone className="h-4 w-4 text-blue-600" />
+              Sesiones WhatsApp
+            </CardTitle>
+            {resourceLimits && (
+              <Badge variant="outline" className="text-xs">
+                {resourceLimits.sesiones.current}/{resourceLimits.sesiones.limit}
+              </Badge>
+            )}
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{stats.totalSessions}</div>
+            <div className="text-3xl font-bold text-blue-600">
+              {resourceLimits?.sesiones.current || stats.totalSessions}
+            </div>
             <div className="flex items-center mt-2 space-x-2">
               <div className="flex items-center text-green-600">
                 <Wifi className="h-4 w-4 mr-1" />
@@ -385,79 +435,109 @@ export default function DashboardPage() {
               <span className="text-sm text-gray-500">conectadas</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.activeSessions} autenticadas y activas
+              {resourceLimits 
+                ? `${resourceLimits.sesiones.remaining} disponibles en tu plan`
+                : `${stats.activeSessions} autenticadas y activas`
+              }
             </p>
           </CardContent>
         </Card>
 
-        <Card key="stats-card-active-sessions" className="hover:shadow-lg transition-shadow">
+        <Card key="stats-card-bots-ia" className="hover:shadow-lg transition-shadow border-purple-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sesiones Activas</CardTitle>
-            <CheckCircle className="h-5 w-5 text-green-600" />
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Bot className="h-4 w-4 text-purple-600" />
+              ChatBots con IA
+            </CardTitle>
+            {resourceLimits && (
+              <Badge variant="outline" className="text-xs">
+                {resourceLimits.botsIA.current}/{resourceLimits.botsIA.limit}
+              </Badge>
+            )}
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">{stats.activeSessions}</div>
+            <div className="text-3xl font-bold text-purple-600">
+              {resourceLimits?.botsIA.current || 0}
+            </div>
             <div className="flex items-center mt-2">
-              <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
-              <span className="text-sm text-green-600 font-medium">
-                {stats.totalSessions > 0 ? Math.round((stats.activeSessions / stats.totalSessions) * 100) : 0}%
+              <Zap className="h-4 w-4 text-yellow-500 mr-1" />
+              <span className="text-sm text-purple-600 font-medium">
+                {resourceLimits?.botsIA.percentage || 0}%
               </span>
-              <span className="text-sm text-gray-500 ml-1">tasa de éxito</span>
+              <span className="text-sm text-gray-500 ml-1">en uso</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Listas para enviar mensajes
+              {resourceLimits 
+                ? `${resourceLimits.botsIA.remaining} disponibles en tu plan`
+                : 'Crea bots inteligentes para automatizar'
+              }
             </p>
           </CardContent>
         </Card>
 
-        <Card key="stats-card-messages-today" className="hover:shadow-lg transition-shadow">
+        <Card key="stats-card-webhooks" className="hover:shadow-lg transition-shadow border-green-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mensajes Hoy</CardTitle>
-            <MessageSquare className="h-5 w-5 text-purple-600" />
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Webhook className="h-4 w-4 text-green-600" />
+              Webhooks
+            </CardTitle>
+            {resourceLimits && (
+              <Badge variant="outline" className="text-xs">
+                {resourceLimits.webhooks.current}/{resourceLimits.webhooks.limit}
+              </Badge>
+            )}
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{stats.totalMessages}</div>
+            <div className="text-3xl font-bold text-green-600">
+              {resourceLimits?.webhooks.current || stats.webhooksActive}
+            </div>
             <div className="flex items-center mt-2">
-              <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
+              <Globe className="h-4 w-4 text-green-600 mr-1" />
               <span className="text-sm text-green-600 font-medium">
-                {stats.totalMessagesYesterday > 0 
-                  ? `${stats.totalMessages > stats.totalMessagesYesterday ? '+' : ''}${Math.round(((stats.totalMessages - stats.totalMessagesYesterday) / stats.totalMessagesYesterday) * 100)}%`
-                  : stats.totalMessages > 0 ? '+100%' : '0%'
-                }
+                {resourceLimits?.webhooks.percentage || 0}%
               </span>
-              <span className="text-sm text-gray-500 ml-1">vs ayer</span>
+              <span className="text-sm text-gray-500 ml-1">configurados</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.totalMessagesWeek} esta semana • {stats.totalMessagesMonth} este mes
+              {resourceLimits 
+                ? `${resourceLimits.webhooks.remaining} disponibles en tu plan`
+                : 'Recibe notificaciones en tiempo real'
+              }
             </p>
           </CardContent>
         </Card>
 
-        <Card key="stats-card-days-remaining" className="hover:shadow-lg transition-shadow">
+        <Card key="stats-card-plan-status" className="hover:shadow-lg transition-shadow border-orange-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Días Restantes</CardTitle>
-            <Calendar className="h-5 w-5 text-orange-600" />
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Crown className="h-4 w-4 text-orange-600" />
+              Estado del Plan
+            </CardTitle>
+            {suscripcion && (
+              <Badge variant={suscripcion.estaActiva ? 'default' : 'destructive'}>
+                {suscripcion.estado}
+              </Badge>
+            )}
           </CardHeader>
           <CardContent>
             <div className={`text-3xl font-bold ${
-              stats.daysRemaining <= 3 ? 'text-red-600' : 
-              stats.daysRemaining <= 7 ? 'text-yellow-600' : 
+              (suscripcion?.diasRestantes || stats.daysRemaining) <= 3 ? 'text-red-600' : 
+              (suscripcion?.diasRestantes || stats.daysRemaining) <= 7 ? 'text-yellow-600' : 
               'text-green-600'
             }`}>
-              {stats.daysRemaining}
+              {suscripcion?.diasRestantes || stats.daysRemaining}
             </div>
             <div className="flex items-center mt-2">
               <Clock className="h-4 w-4 text-orange-600 mr-1" />
               <span className="text-sm text-orange-600 font-medium">
-                Hasta {formatDate(user.fechaFin).split(',')[0]}
+                {suscripcion ? suscripcion.plan.nombre : (user.tipoplan || 'Básico')}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Plan {user.tipoplan === '14dias' ? 'Gratuito (14 días)' : 
-                   user.tipoplan === '6meses' ? 'Básico (6 meses)' : 
-                   user.tipoplan === '1año' ? 'Estándar (1 año)' : 
-                   user.tipoplan === 'vitalicio' ? 'Premium (Vitalicio)' : 
-                   user.tipoplan || 'básico'}
+              {suscripcion 
+                ? `Hasta ${new Date(suscripcion.fechas.fin).toLocaleDateString()}`
+                : `Hasta ${formatDate(user.fechaFin).split(',')[0]}`
+              }
             </p>
           </CardContent>
         </Card>

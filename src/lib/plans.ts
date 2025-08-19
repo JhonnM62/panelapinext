@@ -1,5 +1,304 @@
 import { User } from '@/types'
 
+// 🎯 **NUEVA API DE PLANES DE SUSCRIPCIÓN**
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://100.42.185.2:8015'
+
+// Interfaces para el nuevo sistema de planes
+export interface Plan {
+  id: string
+  nombre: string
+  descripcion: string
+  tipo: 'prueba_gratuita' | 'mensual' | 'semestral' | 'anual' | 'vitalicio'
+  precio: {
+    valor: number
+    moneda: string
+  }
+  precioConDescuento: number
+  duracion: {
+    cantidad: number
+    unidad: 'dias' | 'meses' | 'anos' | 'vitalicio'
+  }
+  limites: {
+    sesiones: number
+    botsIA: number
+    webhooks: number
+    mensajesDiarios: number
+    almacenamientoMB: number
+  }
+  descuento: {
+    porcentaje: number
+    descripcion: string
+  }
+  caracteristicas: Array<{
+    nombre: string
+    incluido: boolean
+    descripcion: string
+  }>
+  categoria: string
+  tags: string[]
+  esGratuito: boolean
+  esVitalicio: boolean
+}
+
+export interface Suscripcion {
+  suscripcionId: string
+  plan: {
+    id: string
+    nombre: string
+    tipo: string
+    limites: {
+      sesiones: number
+      botsIA: number
+      webhooks: number
+      mensajesDiarios: number
+      almacenamientoMB: number
+    }
+  }
+  estado: 'activa' | 'pausada' | 'cancelada' | 'expirada' | 'pendiente_pago'
+  fechas: {
+    inicio: string
+    fin: string
+    ultimoPago: string | null
+    proximoPago: string | null
+    cancelacion: string | null
+  }
+  usoActual: {
+    sesiones: number
+    botsIA: number
+    webhooks: number
+    mensajesEnviados: number
+    ultimaActualizacionUso: string
+  }
+  diasRestantes: number
+  estaActiva: boolean
+  renovacionAutomatica: {
+    activa: boolean
+    intentos: number
+    ultimoIntento: string | null
+  }
+}
+
+export interface VerificacionLimites {
+  permitido: boolean
+  usoActual: number
+  limite: number
+  plan: string
+  razon?: string
+}
+
+// 🔧 **FUNCIONES DE API PARA PLANES**
+export const planesApi = {
+  // Obtener todos los planes disponibles
+  async obtenerPlanes(): Promise<Plan[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/planes`)
+      if (!response.ok) throw new Error('Error al obtener planes')
+      const data = await response.json()
+      return data.success ? data.data : []
+    } catch (error) {
+      console.error('Error obteniendo planes:', error)
+      return []
+    }
+  },
+
+  // Obtener plan específico por ID
+  async obtenerPlan(planId: string): Promise<Plan | null> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/planes/${planId}`)
+      if (!response.ok) throw new Error('Plan no encontrado')
+      const data = await response.json()
+      return data.success ? data.data : null
+    } catch (error) {
+      console.error('Error obteniendo plan:', error)
+      return null
+    }
+  },
+
+  // Suscribirse a un plan
+  async suscribirse(planId: string, metodoPago: string = 'gratuito', transaccionId?: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('No autenticado')
+
+      const response = await fetch(`${API_BASE_URL}/planes/suscribirse`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          planId,
+          metodoPago,
+          transaccionId
+        })
+      })
+
+      const data = await response.json()
+      return {
+        success: data.success,
+        data: data.data,
+        error: data.success ? undefined : data.message
+      }
+    } catch (error) {
+      console.error('Error suscribiéndose:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      }
+    }
+  },
+
+  // Obtener suscripción actual del usuario
+  async obtenerSuscripcionActual(): Promise<Suscripcion | null> {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('No autenticado')
+
+      const response = await fetch(`${API_BASE_URL}/planes/usuario/actual`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+      return data.success && data.data ? data.data : null
+    } catch (error) {
+      console.error('Error obteniendo suscripción:', error)
+      return null
+    }
+  },
+
+  // Verificar límites para un tipo de recurso
+  async verificarLimites(tipo: 'sesion' | 'botIA' | 'webhook'): Promise<VerificacionLimites> {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('No autenticado')
+
+      const response = await fetch(`${API_BASE_URL}/planes/usuario/limites/${tipo}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+      return data.success ? data.data : {
+        permitido: false,
+        usoActual: 0,
+        limite: 0,
+        plan: 'Desconocido',
+        razon: 'Error al verificar límites'
+      }
+    } catch (error) {
+      console.error('Error verificando límites:', error)
+      return {
+        permitido: false,
+        usoActual: 0,
+        limite: 0,
+        plan: 'Desconocido',
+        razon: 'Error de conexión'
+      }
+    }
+  },
+
+  // Obtener información completa del dashboard
+  async obtenerInfoDashboard(): Promise<any> {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('No autenticado')
+
+      const response = await fetch(`${API_BASE_URL}/planes/usuario/dashboard`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+      return data.success ? data.data : null
+    } catch (error) {
+      console.error('Error obteniendo info dashboard:', error)
+      return null
+    }
+  },
+
+  // Cancelar suscripción
+  async cancelarSuscripcion(razon: string = 'usuario', descripcion: string = ''): Promise<{ success: boolean; error?: string }> {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('No autenticado')
+
+      const response = await fetch(`${API_BASE_URL}/planes/usuario/cancelar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ razon, descripcion })
+      })
+
+      const data = await response.json()
+      return {
+        success: data.success,
+        error: data.success ? undefined : data.message
+      }
+    } catch (error) {
+      console.error('Error cancelando suscripción:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      }
+    }
+  },
+
+  // Actualizar uso de recursos
+  async actualizarUso(tipo: 'sesiones' | 'botsIA' | 'webhooks', operacion: 'incrementar' | 'decrementar', cantidad: number = 1): Promise<{ success: boolean; error?: string }> {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('No autenticado')
+
+      const response = await fetch(`${API_BASE_URL}/planes/usuario/uso`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ tipo, operacion, cantidad })
+      })
+
+      const data = await response.json()
+      return {
+        success: data.success,
+        error: data.success ? undefined : data.message
+      }
+    } catch (error) {
+      console.error('Error actualizando uso:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      }
+    }
+  },
+
+  // Obtener historial de suscripciones
+  async obtenerHistorialSuscripciones(): Promise<any[]> {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('No autenticado')
+
+      const response = await fetch(`${API_BASE_URL}/planes/usuario/historial`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+      return data.success ? data.data : []
+    } catch (error) {
+      console.error('Error obteniendo historial:', error)
+      return []
+    }
+  }
+}
+
 // **MEJORA: Mapeo de planes enhanced**
 export const getMaxSessionsForTipoPlan = (tipoplan?: string): number => {
   switch (tipoplan) {

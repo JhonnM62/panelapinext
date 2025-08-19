@@ -9,13 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Brain, ArrowLeft, ExternalLink, Cpu } from 'lucide-react';
 import Link from 'next/link';
 
-// Importar el componente dinámicamente para evitar problemas de hydratación
-const GeminiConfig = dynamic(() => import('@/components/gemini/gemini-config'), {
+// Importar el componente refactorizado dinámicamente para evitar problemas de hydratación
+const GeminiConfigRefactored = dynamic(() => import('@/components/gemini/GeminiConfigRefactored'), {
   ssr: false,
   loading: () => (
     <Card>
       <CardContent className="flex items-center justify-center p-8">
-        <div className="animate-pulse">Cargando configuración...</div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+        <div className="text-center text-muted-foreground">Cargando configuración avanzada...</div>
       </CardContent>
     </Card>
   )
@@ -115,8 +116,8 @@ export default function GeminiConfigPage() {
         </CardContent>
       </Card>
 
-      {/* Componente de configuración */}
-      <GeminiConfig 
+      {/* Componente de configuración refactorizado */}
+      <GeminiConfigRefactored 
         userToken={token} 
         onConfigSaved={handleConfigSaved}
       />

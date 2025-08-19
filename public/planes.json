@@ -1,0 +1,420 @@
+{
+  "success": true,
+  "message": "Planes obtenidos exitosamente",
+  "data": [
+    {
+      "id": "688836c2531a401efa08cc06",
+      "nombre": "Prueba Gratuita",
+      "descripcion": "Plan de prueba gratuita por 14 días con funcionalidades básicas",
+      "tipo": "prueba_gratuita",
+      "precio": {
+        "valor": 0,
+        "moneda": "USD"
+      },
+      "precioConDescuento": 0,
+      "duracion": {
+        "cantidad": 14,
+        "unidad": "dias"
+      },
+      "limites": {
+        "sesiones": 1,
+        "botsIA": 1,
+        "webhooks": 1,
+        "mensajesDiarios": 100,
+        "almacenamientoMB": 100
+      },
+      "descuento": {
+        "porcentaje": 0,
+        "descripcion": ""
+      },
+      "caracteristicas": [
+        {
+          "nombre": "1 Sesión de WhatsApp",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba159564"
+        },
+        {
+          "nombre": "1 ChatBot con IA",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba159565"
+        },
+        {
+          "nombre": "1 Webhook",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba159566"
+        },
+        {
+          "nombre": "100 mensajes por día",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba159567"
+        },
+        {
+          "nombre": "Soporte básico",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba159568"
+        },
+        {
+          "nombre": "Válido por 14 días",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba159569"
+        }
+      ],
+      "categoria": "promocional",
+      "tags": [
+        "gratuito",
+        "prueba",
+        "inicio"
+      ],
+      "esGratuito": true,
+      "esVitalicio": false,
+      "createdAt": "2025-07-29T02:49:38.701Z",
+      "updatedAt": "2025-07-29T13:47:36.545Z"
+    },
+    {
+      "id": "688836c3531a401efa08cc13",
+      "nombre": "Plan Mensual",
+      "descripcion": "Plan mensual perfecto para pequeños negocios",
+      "tipo": "mensual",
+      "precio": {
+        "valor": 7,
+        "moneda": "USD"
+      },
+      "precioConDescuento": 7,
+      "duracion": {
+        "cantidad": 1,
+        "unidad": "meses"
+      },
+      "limites": {
+        "sesiones": 1,
+        "botsIA": 1,
+        "webhooks": 1,
+        "mensajesDiarios": 1000,
+        "almacenamientoMB": 500
+      },
+      "descuento": {
+        "porcentaje": 0,
+        "descripcion": ""
+      },
+      "caracteristicas": [
+        {
+          "nombre": "1 Sesión de WhatsApp",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba15957a"
+        },
+        {
+          "nombre": "1 ChatBot con IA",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba15957b"
+        },
+        {
+          "nombre": "1 Webhook",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba15957c"
+        },
+        {
+          "nombre": "1.000 mensajes por día",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba15957d"
+        },
+        {
+          "nombre": "Soporte prioritario",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba15957e"
+        },
+        {
+          "nombre": "Analytics básicos",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f83b1e0345ba15957f"
+        }
+      ],
+      "categoria": "estandar",
+      "tags": [
+        "mensual",
+        "pequeño-negocio",
+        "basico"
+      ],
+      "esGratuito": false,
+      "esVitalicio": false,
+      "createdAt": "2025-07-29T02:49:39.026Z",
+      "updatedAt": "2025-07-29T13:47:36.862Z"
+    },
+    {
+      "id": "688836c3531a401efa08cc1f",
+      "nombre": "Plan Semestral",
+      "descripcion": "Plan de 6 meses ideal para negocios en crecimiento con 10% de descuento",
+      "tipo": "semestral",
+      "precio": {
+        "valor": 42,
+        "moneda": "USD"
+      },
+      "precioConDescuento": 37.8,
+      "duracion": {
+        "cantidad": 6,
+        "unidad": "meses"
+      },
+      "limites": {
+        "sesiones": 3,
+        "botsIA": 3,
+        "webhooks": 3,
+        "mensajesDiarios": 5000,
+        "almacenamientoMB": 2000
+      },
+      "descuento": {
+        "porcentaje": 10,
+        "descripcion": "10% de descuento por pago semestral"
+      },
+      "caracteristicas": [
+        {
+          "nombre": "3 Sesiones de WhatsApp",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba159590"
+        },
+        {
+          "nombre": "3 ChatBots con IA",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba159591"
+        },
+        {
+          "nombre": "3 Webhooks",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba159592"
+        },
+        {
+          "nombre": "5.000 mensajes por día",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba159593"
+        },
+        {
+          "nombre": "Soporte prioritario",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba159594"
+        },
+        {
+          "nombre": "Analytics avanzados",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba159595"
+        },
+        {
+          "nombre": "10% de descuento",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba159596"
+        }
+      ],
+      "categoria": "premium",
+      "tags": [
+        "semestral",
+        "ahorro",
+        "crecimiento",
+        "descuento"
+      ],
+      "esGratuito": false,
+      "esVitalicio": false,
+      "createdAt": "2025-07-29T02:49:39.357Z",
+      "updatedAt": "2025-07-29T13:47:37.152Z"
+    },
+    {
+      "id": "688836c3531a401efa08cc2d",
+      "nombre": "Plan Anual",
+      "descripcion": "Plan anual para empresas establecidas con 20% de descuento",
+      "tipo": "anual",
+      "precio": {
+        "valor": 84,
+        "moneda": "USD"
+      },
+      "precioConDescuento": 67.2,
+      "duracion": {
+        "cantidad": 1,
+        "unidad": "anos"
+      },
+      "limites": {
+        "sesiones": 6,
+        "botsIA": 6,
+        "webhooks": 6,
+        "mensajesDiarios": 10000,
+        "almacenamientoMB": 5000
+      },
+      "descuento": {
+        "porcentaje": 20,
+        "descripcion": "20% de descuento por pago anual"
+      },
+      "caracteristicas": [
+        {
+          "nombre": "6 Sesiones de WhatsApp",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595a8"
+        },
+        {
+          "nombre": "6 ChatBots con IA",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595a9"
+        },
+        {
+          "nombre": "6 Webhooks",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595aa"
+        },
+        {
+          "nombre": "10.000 mensajes por día",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595ab"
+        },
+        {
+          "nombre": "Soporte premium 24/7",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595ac"
+        },
+        {
+          "nombre": "Analytics completos",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595ad"
+        },
+        {
+          "nombre": "20% de descuento",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595ae"
+        },
+        {
+          "nombre": "Integraciones avanzadas",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595af"
+        }
+      ],
+      "categoria": "premium",
+      "tags": [
+        "anual",
+        "empresa",
+        "máximo-ahorro",
+        "descuento"
+      ],
+      "esGratuito": false,
+      "esVitalicio": false,
+      "createdAt": "2025-07-29T02:49:39.687Z",
+      "updatedAt": "2025-07-29T13:47:37.442Z"
+    },
+    {
+      "id": "688836c4531a401efa08cc38",
+      "nombre": "Plan Vitalicio",
+      "descripcion": "Pago único para acceso de por vida con capacidades máximas",
+      "tipo": "vitalicio",
+      "precio": {
+        "valor": 100,
+        "moneda": "USD"
+      },
+      "precioConDescuento": 100,
+      "duracion": {
+        "cantidad": 0,
+        "unidad": "vitalicio"
+      },
+      "limites": {
+        "sesiones": 12,
+        "botsIA": 12,
+        "webhooks": 12,
+        "mensajesDiarios": 50000,
+        "almacenamientoMB": 20000
+      },
+      "descuento": {
+        "porcentaje": 0,
+        "descripcion": "Pago único, sin renovaciones"
+      },
+      "caracteristicas": [
+        {
+          "nombre": "12 Sesiones de WhatsApp",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595c3"
+        },
+        {
+          "nombre": "12 ChatBots con IA",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595c4"
+        },
+        {
+          "nombre": "12 Webhooks",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595c5"
+        },
+        {
+          "nombre": "50.000 mensajes por día",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595c6"
+        },
+        {
+          "nombre": "Soporte premium vitalicio",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595c7"
+        },
+        {
+          "nombre": "Analytics completos",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595c8"
+        },
+        {
+          "nombre": "Todas las integraciones",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595c9"
+        },
+        {
+          "nombre": "Acceso de por vida",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595ca"
+        },
+        {
+          "nombre": "Actualizaciones gratuitas",
+          "incluido": true,
+          "descripcion": "",
+          "_id": "6888d0f93b1e0345ba1595cb"
+        }
+      ],
+      "categoria": "empresarial",
+      "tags": [
+        "vitalicio",
+        "pago-unico",
+        "ilimitado",
+        "premium"
+      ],
+      "esGratuito": false,
+      "esVitalicio": true,
+      "createdAt": "2025-07-29T02:49:40.017Z",
+      "updatedAt": "2025-07-29T13:47:37.733Z"
+    }
+  ],
+  "meta": {
+    "total": 5,
+    "exportedAt": "2025-07-29T13:49:12.417Z",
+    "version": "2.3.0"
+  }
+}

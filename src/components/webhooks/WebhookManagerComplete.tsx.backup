@@ -1,0 +1,2087 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Webhook,
+  Bell,
+  Settings,
+  Send,
+  RefreshCw,
+  Check,
+  X,
+  ExternalLink,
+  Copy,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Globe,
+  Code,
+  Play,
+  Trash2,
+  Edit,
+  Eye,
+  Download,
+  Upload,
+  Zap,
+  Users,
+  MessageSquare,
+  Smartphone,
+  Lock,
+  CreditCard,
+  Plus,
+  List,
+} from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { useAuthStore } from "@/store/auth";
+import { useRouter } from "next/navigation";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+
+interface NotificationItem {
+  id: string;
+  sessionId: string;
+  eventType: string;
+  eventData: any;
+  timestamp: string;
+  read: boolean;
+  source: "whatsapp" | "external";
+  webhookId?: string;
+}
+
+interface WebhookConfig {
+  userId: string;
+  sessionId: string;
+  webhookId: string;
+  webhookUrl: string;
+  clientWebhookUrl?: string;
+  events: string[];
+  active: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  deliverySettings?: {
+    retryAttempts: number;
+    retryDelay: number;
+    timeout: number;
+  };
+}
+
+interface WebhookStats {
+  totalNotifications: number;
+  unreadNotifications: number;
+  webhookActive: boolean;
+  lastNotification: string | null;
+  connectedClients: number;
+}
+
+interface SessionOption {
+  id: string;
+  status: string;
+  authenticated: boolean;
+  webhook?: {
+    creado?: boolean;
+    activo?: boolean;
+    url?: string;
+  };
+  webhookActivo?: boolean;
+  webhookCreado?: boolean;
+  webhookUrl?: string | null;
+  nombresesion?: string | null;
+  phoneNumber?: string | null;
+}
+
+// Singleton WebSocket Manager (versión anterior completa)
+const globalWebSocketManager = (() => {
+  let instance: WebSocket | null = null;
+  let connectionPromise: Promise<WebSocket> | null = null;
+  let connectionAttempt = false;
+  let subscribers: Set<(ws: WebSocket | null, connected: boolean) => void> = new Set();
+  let lastConnectionUrl: string | null = null;
+  let isConnecting = false;
+  let connectionInProgress = false;
+  let lastConnectionTime = 0;
+  let globalConnectionLock = false;
+  let forcedSingletonMode = true;
+  let connectionId: string | null = null;
+  
+  const cleanup = () => {
+    console.log(`[WS SINGLETON] 🧹 FINAL CLEANUP iniciado (ID: ${connectionId})`);
+    
+    if (instance) {
+      console.log('[WS SINGLETON] 🧹 Cerrando instancia WebSocket existente');
+      instance.onopen = null;
+      instance.onmessage = null;
+      instance.onclose = null;
+      instance.onerror = null;
+      if (instance.readyState !== WebSocket.CLOSED) {
+        instance.close(1000, 'Final cleanup');
+      }
+      instance = null;
+    }
+    
+    connectionPromise = null;
+    connectionAttempt = false;
+    isConnecting = false;
+    connectionInProgress = false;
+    globalConnectionLock = false;
+    lastConnectionUrl = null;
+    lastConnectionTime = 0;
+    connectionId = null;
+    
+    console.log('[WS SINGLETON] 🧹 Notificando a subscribers del cleanup');
+    subscribers.forEach(cb => {
+      try {
+        cb(null, false);
+      } catch (error) {
+        console.warn('[WS SINGLETON] Error en subscriber callback:', error);
+      }
+    });
+    
+    console.log('[WS SINGLETON] ✅ FINAL CLEANUP completado');
+  };
+  
+  return {
+    getInstance: () => instance,
+    isConnected: () => instance?.readyState === WebSocket.OPEN,
+    subscribe: (callback: (ws: WebSocket | null, connected: boolean) => void) => {
+      subscribers.add(callback);
+      callback(instance, instance?.readyState === WebSocket.OPEN || false);
+      return () => subscribers.delete(callback);
+    },
+    connect: async (url: string): Promise<WebSocket> => {
+      const now = Date.now();
+      
+      if (globalConnectionLock) {
+        console.log('[WS SINGLETON] 🔒 FINAL LOCK: Conexión bloqueada por lock global');
+        if (instance && instance.readyState === WebSocket.OPEN) {
+          return instance;
+        }
+        throw new Error('Lock global activo - solo 1 conexión permitida');
+      }
+      
+      if (forcedSingletonMode && instance && instance.readyState === WebSocket.OPEN) {
+        console.log('[WS SINGLETON] 🎯 FINAL: Modo singleton - reutilizando conexión única');
+        return instance;
+      }
+      
+      if (now - lastConnectionTime < 3000) {
+        console.log('[WS SINGLETON] ⏱️ FINAL BLOCK: Rate limiting agresivo activo');
+        if (instance && instance.readyState === WebSocket.OPEN) {
+          return instance;
+        }
+        throw new Error('Rate limiting agresivo activo');
+      }
+      
+      if (isConnecting || connectionInProgress || globalConnectionLock) {
+        console.log('[WS SINGLETON] 🛑 FINAL BLOCK: Triple verificación falló', {
+          isConnecting, connectionInProgress, globalConnectionLock
+        });
+        if (connectionPromise) return connectionPromise;
+        throw new Error('Múltiples flags de bloqueo activos');
+      }
+      
+      if (instance) {
+        console.log('[WS SINGLETON] 💥 FINAL: Forzando cierre de conexión existente');
+        instance.close(1000, 'Forced singleton cleanup');
+        instance = null;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      isConnecting = true;
+      connectionInProgress = true;
+      globalConnectionLock = true;
+      lastConnectionTime = now;
+      connectionId = `conn_${now}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      console.log(`[WS SINGLETON] 🎯 FINAL: Creando conexión ÚNICA (ID: ${connectionId})...`);
+      connectionPromise = new Promise((resolve, reject) => {
+        try {
+          const ws = new WebSocket(url);
+          
+          const connectionTimeout = setTimeout(() => {
+            console.log('[WS SINGLETON] ⏰ FINAL: Timeout de conexión');
+            isConnecting = false;
+            connectionInProgress = false;
+            globalConnectionLock = false;
+            reject(new Error('Connection timeout'));
+            if (ws.readyState !== WebSocket.CLOSED) {
+              ws.close();
+            }
+          }, 5000);
+          
+          ws.onopen = () => {
+            clearTimeout(connectionTimeout);
+            instance = ws;
+            connectionPromise = null;
+            isConnecting = false;
+            connectionInProgress = false;
+            lastConnectionUrl = url;
+            console.log(`[WS SINGLETON] 🎯 FINAL: Conexión ÚNICA establecida (ID: ${connectionId})`);
+            
+            setTimeout(() => {
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                  type: 'set_connection_id',
+                  connectionId: connectionId,
+                  timestamp: Date.now()
+                }));
+              }
+            }, 100);
+            
+            subscribers.forEach(cb => {
+              try {
+                cb(ws, true);
+              } catch (error) {
+                console.warn('[WS SINGLETON] Error en subscriber onopen:', error);
+              }
+            });
+            resolve(ws);
+          };
+          
+          ws.onerror = (error) => {
+            console.error(`[WS SINGLETON] ❌ FINAL: Error de conexión (ID: ${connectionId}):`, error);
+            clearTimeout(connectionTimeout);
+            connectionPromise = null;
+            isConnecting = false;
+            connectionInProgress = false;
+            globalConnectionLock = false;
+            
+            subscribers.forEach(cb => {
+              try {
+                cb(null, false);
+              } catch (cbError) {
+                console.warn('[WS SINGLETON] Error en subscriber onerror:', cbError);
+              }
+            });
+            reject(error);
+          };
+          
+          ws.onclose = (event) => {
+            console.log(`[WS SINGLETON] 🔴 FINAL: Conexión cerrada (ID: ${connectionId})`, {
+              code: event.code, reason: event.reason
+            });
+            instance = null;
+            connectionPromise = null;
+            isConnecting = false;
+            connectionInProgress = false;
+            globalConnectionLock = false;
+            connectionId = null;
+            
+            subscribers.forEach(cb => {
+              try {
+                cb(null, false);
+              } catch (cbError) {
+                console.warn('[WS SINGLETON] Error en subscriber onclose:', cbError);
+              }
+            });
+          };
+          
+        } catch (error) {
+          console.error(`[WS SINGLETON] ❌ FINAL: Excepción en creación (ID: ${connectionId}):`, error);
+          connectionPromise = null;
+          isConnecting = false;
+          connectionInProgress = false;
+          globalConnectionLock = false;
+          connectionId = null;
+          reject(error);
+        }
+      });
+      
+      return connectionPromise;
+    },
+    cleanup
+  };
+})();
+
+interface WebhookManagerCompleteProps {
+  sessions: SessionOption[];
+}
+
+export default function WebhookManagerComplete({ sessions }: WebhookManagerCompleteProps) {
+  const router = useRouter();
+  const { user, token } = useAuthStore();
+  const { suscripcion, resourceLimits, checkLimits } = usePlanLimits();
+  
+  const [activeTab, setActiveTab] = useState("list");
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [webhookConfigs, setWebhookConfigs] = useState<WebhookConfig[]>([]);
+  const [webhookStats, setWebhookStats] = useState<WebhookStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editingEvents, setEditingEvents] = useState(false);
+  const [tempSelectedEvents, setTempSelectedEvents] = useState<string[]>(["ALL"]);
+  const [deleting, setDeleting] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [webhookToDelete, setWebhookToDelete] = useState<string | null>(null);
+
+  // Cache para prevenir notificaciones duplicadas
+  const processedNotificationIds = useRef<Set<string>>(new Set());
+  const lastProcessedTime = useRef<number>(0);
+
+  // WebSocket connection usando singleton
+  const [wsConnected, setWsConnected] = useState(false);
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+
+  // Webhook configuration
+  const [selectedSessionId, setSelectedSessionId] = useState("");
+  const [clientWebhookUrl, setClientWebhookUrl] = useState("");
+  const [selectedEvents, setSelectedEvents] = useState<string[]>(["MESSAGES_UPSERT"]);
+  const [webhookActive, setWebhookActive] = useState(true);
+  const [editingWebhook, setEditingWebhook] = useState<WebhookConfig | null>(null);
+
+  // Test webhook
+  const [testPayload, setTestPayload] = useState("");
+  const [testResult, setTestResult] = useState<any>(null);
+
+  // Available events from Baileys API - optimizado para tipos de mensaje
+  const availableEvents = [
+    "ALL", // Todos los eventos
+    "MESSAGES_UPSERT", // 📩 SOLO MENSAJES ENTRANTES (recomendado para chatbots)
+    "MESSAGES_DELETE",
+    "MESSAGES_UPDATE",
+    "MESSAGES_RECEIPT_UPDATE",
+    "MESSAGES_REACTION",
+    "CONNECTION_UPDATE",
+    "CHATS_SET",
+    "CHATS_UPSERT",
+    "CHATS_DELETE",
+    "CHATS_UPDATE",
+    "CONTACTS_SET",
+    "CONTACTS_UPSERT",
+    "CONTACTS_UPDATE",
+    "GROUPS_UPSERT",
+    "GROUPS_UPDATE",
+    "GROUP_PARTICIPANTS_UPDATE",
+    "PRESENCE_UPDATE",
+  ];
+
+  useEffect(() => {
+    if (!user) return;
+
+    const initializeData = async () => {
+      await loadInitialData();
+      
+      setTimeout(() => {
+        if (sessions.length > 0) {
+          cleanupOrphanedWebhooks();
+        }
+      }, 2000);
+    };
+    
+    initializeData();
+    
+    // Suscribirse al singleton
+    const unsubscribe = globalWebSocketManager.subscribe((ws, connected) => {
+      setWs(ws);
+      setWsConnected(connected);
+      if (ws && connected) {
+        setupWebSocketHandlers(ws);
+      }
+    });
+    unsubscribeRef.current = unsubscribe;
+
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+      cleanup();
+    };
+  }, [user]);
+
+  // Conexión WebSocket con máxima protección contra duplicados
+  useEffect(() => {
+    if (!selectedSessionId || !sessions.length || !user?.nombrebot) {
+      console.log('[WS SINGLETON] ⚠️ ULTRA: Condiciones no cumplidas para conexión', {
+        selectedSessionId: !!selectedSessionId,
+        sessionsLength: sessions.length,
+        userNombrebot: !!user?.nombrebot
+      });
+      return;
+    }
+    
+    console.log(`[WS SINGLETON] 🔄 ULTRA: Solicitud de conexión para sesión: ${selectedSessionId}`);
+    
+    const existingWs = globalWebSocketManager.getInstance();
+    if (existingWs && existingWs.readyState === WebSocket.OPEN) {
+      console.log('[WS SINGLETON] ⚠️ ULTRA: Conexión ya activa, verificando handlers');
+      
+      if (!existingWs.onmessage || existingWs.onmessage.toString().indexOf('authenticate') === -1) {
+        console.log('[WS SINGLETON] 🔧 ULTRA: Configurando handlers en conexión existente');
+        setupWebSocketHandlers(existingWs);
+      } else {
+        console.log('[WS SINGLETON] ✅ ULTRA: Handlers ya configurados, no hay nada que hacer');
+      }
+      return;
+    }
+    
+    const effectId = `effect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`[WS SINGLETON] 🆔 ULTRA: Effect ID: ${effectId}`);
+    
+    const debounceId = setTimeout(() => {
+      if (selectedSessionId && 
+          user?.nombrebot && 
+          !globalWebSocketManager.isConnected() &&
+          !globalWebSocketManager.getInstance()) {
+        console.log(`[WS SINGLETON] 🚀 ULTRA: Iniciando conexión ${effectId}`);
+        connectWebSocket().catch(error => {
+          console.error(`[WS SINGLETON] ❌ ULTRA: Error en conexión ${effectId}:`, error);
+        });
+      } else {
+        console.log(`[WS SINGLETON] 🚫 ULTRA: Conexión cancelada ${effectId}`, {
+          selectedSessionId: !!selectedSessionId,
+          userNombrebot: !!user?.nombrebot,
+          isConnected: globalWebSocketManager.isConnected(),
+          hasInstance: !!globalWebSocketManager.getInstance()
+        });
+      }
+    }, 1500);
+    
+    return () => {
+      console.log(`[WS SINGLETON] 🧹 ULTRA: Limpiando effect ${effectId}`);
+      clearTimeout(debounceId);
+    };
+  }, [selectedSessionId, sessions.length, user?.nombrebot]);
+
+  // Limpiar notificaciones cuando cambien las sesiones
+  useEffect(() => {
+    if (sessions.length > 0) {
+      // Solo ejecutar limpieza si hay notificaciones
+      const notificationsArray = Array.isArray(notifications) ? notifications : [];
+      if (notificationsArray.length > 0) {
+        cleanupOrphanedNotifications(sessions);
+      }
+    }
+  }, [sessions]);
+
+  // Limpieza automática periódica + cache (cada 2 minutos)
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      if (sessions.length >= 0) {
+        // Solo log si hay notificaciones para procesar
+        const notificationsArray = Array.isArray(notifications) ? notifications : [];
+        if (notificationsArray.length > 0) {
+          cleanupOrphanedNotifications(sessions);
+        }
+        
+        const now = Date.now();
+        if (now - lastProcessedTime.current > 300000) {
+          processedNotificationIds.current.clear();
+          lastProcessedTime.current = now;
+        }
+      }
+    }, 120000); // Cada 2 minutos en lugar de 30 segundos
+
+    return () => clearInterval(cleanupInterval);
+  }, [sessions, notifications]);
+
+  const cleanup = () => {
+    console.log('[WS SINGLETON] 🧹 Ejecutando cleanup completo...');
+    
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+      console.log('[WS SINGLETON] 🔥 Timeout de reconexión cancelado');
+    }
+    
+    if (processedNotificationIds.current.size > 0) {
+      console.log('[WS SINGLETON] 🧹 Limpiando cache de notificaciones procesadas');
+      processedNotificationIds.current.clear();
+      lastProcessedTime.current = 0;
+    }
+    
+    setWsConnected(false);
+    setWs(null);
+    
+    console.log('[WS SINGLETON] ✅ Cleanup completado');
+  };
+
+  const loadInitialData = async () => {
+    setLoading(true);
+    try {
+      console.log("🔍 [WEBHOOKS] Iniciando carga de datos - Paso 1: Webhooks");
+      await loadAllWebhooks();
+      
+      console.log("🔍 [WEBHOOKS] Iniciando carga de datos - Paso 2: Stats");
+      await loadWebhookStats();
+      
+      console.log("🔍 [WEBHOOKS] Iniciando carga de datos - Paso 3: Notificaciones");
+      await loadNotifications();
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🆕 CARGAR TODOS LOS WEBHOOKS DEL USUARIO (CRUD COMPLETO)
+  const loadAllWebhooks = async () => {
+    if (!user?.nombrebot) return;
+
+    try {
+      const response = await fetch(
+        `http://100.42.185.2:8015/webhook/user/${user.nombrebot}/list`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (result.success && Array.isArray(result.data)) {
+          setWebhookConfigs(result.data);
+        } else {
+          setWebhookConfigs([]);
+        }
+      } else {
+        setWebhookConfigs([]);
+      }
+    } catch (error) {
+      console.error("Error cargando webhooks:", error);
+      setWebhookConfigs([]);
+    }
+  };
+
+  const loadWebhookStats = async () => {
+    if (!user?.nombrebot) return;
+
+    try {
+      const response = await fetch(
+        `http://100.42.185.2:8015/webhook/stats/${user.nombrebot}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          setWebhookStats(result.data);
+        }
+      }
+    } catch (error) {
+      console.warn("Error cargando stats:", error);
+    }
+  };
+
+  const loadNotifications = async () => {
+    if (!user?.nombrebot) return;
+
+    try {
+      const response = await fetch(
+        `http://100.42.185.2:8015/webhook/notifications/${user.nombrebot}?limit=50&offset=0`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          const notificationsData = Array.isArray(result.data.notifications)
+            ? result.data.notifications
+            : Array.isArray(result.data)
+            ? result.data
+            : [];
+
+          setNotifications(notificationsData);
+        } else {
+          setNotifications([]);
+        }
+      } else {
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.warn("Error cargando notificaciones:", error);
+      setNotifications([]);
+    }
+  };
+
+  const connectWebSocket = async () => {
+    if (!user?.nombrebot || !selectedSessionId) {
+      console.log('[WS SINGLETON] ⚠️ No hay nombrebot o sesión, omitiendo conexión');
+      return;
+    }
+
+    if (globalWebSocketManager.isConnected()) {
+      console.log('[WS SINGLETON] ⚠️ Ya hay conexión activa, omitiendo nueva conexión');
+      return;
+    }
+
+    try {
+      console.log('[WS SINGLETON] 🔌 Solicitando conexión WebSocket...');
+      await globalWebSocketManager.connect("ws://100.42.185.2:8015/ws");
+    } catch (error) {
+      console.error('[WS SINGLETON] ❌ Error conectando:', error);
+      setWsConnected(false);
+      setWs(null);
+      
+      if (user?.nombrebot && selectedSessionId && !globalWebSocketManager.isConnected()) {
+        if (reconnectTimeoutRef.current) {
+          console.log('[WS SINGLETON] 🧹 Limpiando timeout de reconexión previo');
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
+        
+        console.log('[WS SINGLETON] 🔄 Reintentando en 5s...');
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (user?.nombrebot && selectedSessionId && !globalWebSocketManager.isConnected()) {
+            connectWebSocket();
+          } else {
+            console.log('[WS SINGLETON] 🚫 Cancelando reconexión - condiciones no cumplidas');
+          }
+        }, 5000);
+      }
+    }
+  };
+
+  const setupWebSocketHandlers = (ws: WebSocket) => {
+    if (!ws || !user?.nombrebot) return;
+    
+    if (ws.onmessage && ws.onmessage.toString().includes('authenticate')) {
+      console.log('[WS SINGLETON] ⚠️ Handlers ya configurados, omitiendo configuración');
+      return;
+    }
+    
+    console.log('[WS SINGLETON] ⚙️ Configurando handlers para WebSocket');
+    
+    ws.onmessage = null;
+    ws.onerror = null;
+    
+    const sessionUserId = selectedSessionId ? 
+      sessions.find(s => s.id === selectedSessionId)?.nombresesion || user.nombrebot :
+      user.nombrebot;
+      
+    console.log(`[WS SINGLETON] 🔑 Autenticando con userId: ${sessionUserId}`);
+    
+    ws.send(JSON.stringify({
+      type: "authenticate",
+      userId: sessionUserId,
+    }));
+    
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        console.log("[WS SINGLETON] 📨 Mensaje recibido:", message.type);
+
+        switch (message.type) {
+          case "authenticated":
+            console.log("[WS SINGLETON] ✅ Autenticado exitosamente");
+            if (message.stats) setWebhookStats(message.stats);
+            break;
+
+          case "notification":
+            if (message.data) {
+              const formattedNotification = {
+                id: message.data.id || `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                sessionId: message.data.sessionId || "",
+                eventType: message.data.eventType || "UNKNOWN",
+                eventData: message.data.data || message.data.eventData || {},
+                timestamp: message.data.timestamp || new Date().toISOString(),
+                read: message.data.read || false,
+                source: "whatsapp",
+              };
+              console.log("[WS SINGLETON] 📬 Nueva notificación:", formattedNotification);
+              handleNewNotification(formattedNotification);
+            }
+            break;
+
+          case "notifications":
+            const notificationsData = Array.isArray(message.data) ? message.data : [];
+            setNotifications(notificationsData);
+            break;
+
+          case "notificationMarkedAsRead":
+            setNotifications(prev => {
+              const prevArray = Array.isArray(prev) ? prev : [];
+              return prevArray.map(n => 
+                n.id === message.notificationId ? { ...n, read: true } : n
+              );
+            });
+            break;
+
+          case "error":
+            console.warn("[WS SINGLETON] ℹ️ Mensaje del servidor:", message.message || message.error || 'Sin detalles');
+            break;
+            
+          case "ping":
+          case "pong": 
+          case "heartbeat":
+            console.log("[WS SINGLETON] 💓 Keep-alive recibido");
+            break;
+
+          default:
+            console.log("[WS SINGLETON] 📋 Mensaje no manejado (tipo:", message.type || 'undefined', "):", message);
+            
+            if (message.type && typeof message.type === "string" && message.type.includes("_")) {
+              const eventNotification = {
+                id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                sessionId: sessionUserId,
+                eventType: message.type,
+                eventData: message.data || message,
+                timestamp: new Date().toISOString(),
+                read: false,
+                source: "whatsapp",
+              };
+              console.log('[WS SINGLETON] 🎯 Procesando como evento WhatsApp:', eventNotification.eventType);
+              handleNewNotification(eventNotification);
+            }
+        }
+      } catch (error) {
+        console.error("[WS SINGLETON] ❌ Error procesando mensaje:", error);
+      }
+    };
+  };
+
+  const cleanupOrphanedNotifications = (currentSessions: SessionOption[]) => {
+    try {
+      const currentSessionIds = currentSessions.map((s) => s.id);
+      const notificationsArray = Array.isArray(notifications) ? notifications : [];
+
+      if (notificationsArray.length === 0) {
+        return;
+      }
+
+      const validNotifications = notificationsArray.filter((notification) => {
+        if (!notification.sessionId) {
+          return true;
+        }
+
+        const isValid = currentSessionIds.includes(notification.sessionId);
+
+        if (!isValid) {
+          console.log("🧹 [WEBHOOK CLEANUP] Notificación órfana detectada:", {
+            notificationId: notification.id,
+            sessionId: notification.sessionId,
+            eventType: notification.eventType,
+            timestamp: notification.timestamp,
+          });
+        }
+
+        return isValid;
+      });
+
+      const removedCount = notificationsArray.length - validNotifications.length;
+
+      if (removedCount > 0) {
+        console.log(`🧹 [WEBHOOK CLEANUP] Limpiando ${removedCount} notificaciones órfanas`);
+
+        setNotifications(validNotifications);
+
+        const unreadCount = validNotifications.filter((n) => !n.read).length;
+        const totalCount = validNotifications.length;
+
+        setWebhookStats((prev) =>
+          prev
+            ? {
+                ...prev,
+                totalNotifications: totalCount,
+                unreadNotifications: unreadCount,
+              }
+            : null
+        );
+
+        toast({
+          title: "🧹 Notificaciones Limpiadas",
+          description: `Se eliminaron ${removedCount} notificaciones de sesiones eliminadas`,
+        });
+      }
+      // Sin log si no hay nada que limpiar
+    } catch (error) {
+      console.error("🧹 [WEBHOOK CLEANUP] Error en limpieza:", error);
+    }
+  };
+
+  const handleNewNotification = (notification: NotificationItem) => {
+    const now = Date.now();
+    console.log("[WEBHOOK WS] 📬 Procesando nueva notificación:", {
+      id: notification.id,
+      eventType: notification.eventType,
+      timestamp: notification.timestamp,
+      cacheSize: processedNotificationIds.current.size
+    });
+
+    if (!notification.id || !notification.eventType) {
+      console.warn("[WEBHOOK WS] ⚠️ Notificación inválida - faltan campos requeridos:", notification);
+      return;
+    }
+
+    if (processedNotificationIds.current.has(notification.id)) {
+      console.log("[WEBHOOK WS] 🚫 DUPLICADO DETECTADO - Notificación ya procesada:", notification.id);
+      return;
+    }
+
+    if (now - lastProcessedTime.current > 300000) {
+      console.log("[WEBHOOK WS] 🧹 Limpiando cache de notificaciones antigas");
+      processedNotificationIds.current.clear();
+    }
+
+    processedNotificationIds.current.add(notification.id);
+    lastProcessedTime.current = now;
+
+    if (processedNotificationIds.current.size > 100) {
+      const oldestIds = Array.from(processedNotificationIds.current).slice(0, 50);
+      oldestIds.forEach(id => processedNotificationIds.current.delete(id));
+      console.log("[WEBHOOK WS] 🧹 Cache de IDs reducido de 100+ a 50 elementos");
+    }
+
+    setNotifications((prev) => {
+      const prevArray = Array.isArray(prev) ? prev : [];
+
+      const existingIndex = prevArray.findIndex((n) => n.id === notification.id);
+      
+      if (existingIndex >= 0) {
+        console.log("[WEBHOOK WS] 🔄 Actualizando notificación existente:", notification.id);
+        const updatedArray = [...prevArray];
+        updatedArray[existingIndex] = notification;
+        return updatedArray;
+      }
+
+      console.log("[WEBHOOK WS] ➕ Agregando nueva notificación:", notification.id);
+      return [notification, ...prevArray.slice(0, 49)];
+    });
+
+    setWebhookStats((prev) => {
+      const newStats = prev
+        ? {
+            ...prev,
+            totalNotifications: prev.totalNotifications + 1,
+            unreadNotifications: prev.unreadNotifications + (notification.read ? 0 : 1),
+            lastNotification: notification.timestamp,
+          }
+        : {
+            totalNotifications: 1,
+            unreadNotifications: notification.read ? 0 : 1,
+            webhookActive: true,
+            lastNotification: notification.timestamp,
+            connectedClients: 1,
+          };
+
+      console.log("[WEBHOOK WS] 📊 Estadísticas actualizadas:", newStats);
+      return newStats;
+    });
+
+    if (!notification.read && notification.eventType === 'MESSAGES_UPSERT') {
+      toast({
+        title: "📨 Nuevo Mensaje",
+        description: `Mensaje entrante en sesión ${notification.sessionId || "desconocida"}`,
+        duration: 3000,
+      });
+
+      console.log("[WEBHOOK WS] 📨 Toast mostrado para mensaje entrante:", notification.eventType);
+    } else {
+      console.log("[WEBHOOK WS] 🔇 Toast omitido para evento:", notification.eventType, "(solo se muestran MESSAGES_UPSERT)");
+    }
+  };
+
+  // 🆕 CREAR WEBHOOK (con verificación de límites)
+  const createWebhook = async () => {
+
+    // Verificar límites del plan
+    const canCreate = await checkLimits('webhooks');
+    if (!canCreate) {
+      toast({
+        title: "🔒 Límite Alcanzado",
+        description: "Has alcanzado el límite de webhooks de tu plan. Actualiza para crear más.",
+        variant: "destructive",
+        action: (
+          <Button
+            size="sm"
+            onClick={() => router.push("/dashboard/upgrade")}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <CreditCard className="h-3 w-3 mr-1" />
+            Actualizar Plan
+          </Button>
+        ),
+      });
+      return;
+    }
+
+    if (!selectedSessionId) {
+      toast({
+        title: "Error",
+        description: "Debes seleccionar una sesión activa",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user?.nombrebot) {
+      toast({
+        title: "Error",
+        description: "No se pudo obtener el usuario actual",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const sessionUserId = sessions.find(s => s.id === selectedSessionId)?.nombresesion || user.nombrebot;
+      
+      const requestBody = {
+        userId: sessionUserId,
+        sessionId: selectedSessionId,
+        events: selectedEvents,
+        webhookUrl: clientWebhookUrl || null,
+      };
+
+      const response = await fetch("http://100.42.185.2:8015/webhook/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const newWebhook = {
+          userId: result.data.userId,
+          sessionId: result.data.sessionId,
+          webhookId: result.data.id || result.data.webhookId,
+          webhookUrl: result.data.webhookUrl,
+          clientWebhookUrl: result.data.clientWebhookUrl,
+          events: result.data.events,
+          active: result.data.active,
+          createdAt: result.data.createdAt,
+          deliverySettings: result.data.deliverySettings,
+        };
+
+        setWebhookConfigs(prev => [newWebhook, ...prev]);
+
+        toast({
+          title: "✅ Webhook Creado",
+          description: `Webhook configurado para sesión ${result.data.sessionId}`,
+        });
+
+        // Limpiar formulario
+        setSelectedSessionId("");
+        setClientWebhookUrl("");
+        setSelectedEvents(["MESSAGES_UPSERT"]);
+
+        // Recargar datos
+        setTimeout(async () => {
+          await loadAllWebhooks();
+          await loadWebhookStats();
+        }, 1000);
+
+        setActiveTab("list");
+      } else {
+        throw new Error(result.message || "Error desconocido del servidor");
+      }
+    } catch (error: any) {
+      toast({
+        title: "❌ Error",
+        description: error.message || "No se pudo crear el webhook",
+        variant: "destructive",
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // 🆕 EDITAR WEBHOOK 
+  const updateWebhook = async () => {
+    if (!editingWebhook) return;
+
+    setEditing(true);
+    try {
+      console.log("😀 [WEBHOOK EDIT] Iniciando edición de webhook...");
+
+      const requestBody = {
+        webhookId: editingWebhook.webhookId,
+        events: selectedEvents,
+        webhookUrl: clientWebhookUrl || null,
+        active: webhookActive,
+      };
+
+      console.log("😀 [WEBHOOK EDIT] Request body:", JSON.stringify(requestBody, null, 2));
+
+      const url = `http://100.42.185.2:8015/webhook/${editingWebhook.webhookId}/update`;
+      console.log("😀 [WEBHOOK EDIT] Enviando PUT a:", url);
+
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+      console.log("😀 [WEBHOOK EDIT] Response body:", result);
+
+      if (result.success) {
+        // Actualizar en la lista local
+        setWebhookConfigs(prev => 
+          prev.map(webhook => 
+            webhook.webhookId === editingWebhook.webhookId 
+              ? {
+                  ...webhook,
+                  events: selectedEvents,
+                  clientWebhookUrl: clientWebhookUrl,
+                  active: webhookActive,
+                  updatedAt: new Date().toISOString(),
+                }
+              : webhook
+          )
+        );
+
+        toast({
+          title: "✅ Webhook Actualizado",
+          description: "Configuración actualizada exitosamente",
+        });
+
+        // Limpiar estado de edición
+        setEditingWebhook(null);
+        setSelectedSessionId("");
+        setClientWebhookUrl("");
+        setSelectedEvents(["MESSAGES_UPSERT"]);
+        setWebhookActive(true);
+
+        setActiveTab("list");
+      } else {
+        throw new Error(result.message || "Error desconocido del servidor");
+      }
+    } catch (error: any) {
+      console.error("😀 [WEBHOOK EDIT] Error:", error);
+      toast({
+        title: "❌ Error",
+        description: error.message || "No se pudo actualizar el webhook",
+        variant: "destructive",
+      });
+    } finally {
+      setEditing(false);
+    }
+  };
+
+  // 🆕 ELIMINAR WEBHOOK
+  const deleteWebhook = async (webhookId: string) => {
+    setDeleting(true);
+    try {
+      console.log("🗑️ [WEBHOOK DELETE] Iniciando eliminación de webhook:", webhookId);
+
+      const url = `http://100.42.185.2:8015/webhook/${webhookId}/delete`;
+      console.log("🗑️ [WEBHOOK DELETE] Enviando DELETE a:", url);
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+      console.log("🗑️ [WEBHOOK DELETE] Response body:", result);
+
+      if (result.success) {
+        // Remover de la lista local
+        setWebhookConfigs(prev => prev.filter(webhook => webhook.webhookId !== webhookId));
+
+        toast({
+          title: "🗑️ Webhook Eliminado",
+          description: "El webhook ha sido eliminado exitosamente",
+        });
+
+        // Recargar stats
+        await loadWebhookStats();
+      } else {
+        throw new Error(result.message || "Error desconocido del servidor");
+      }
+    } catch (error: any) {
+      console.error("🗑️ [WEBHOOK DELETE] Error:", error);
+      toast({
+        title: "❌ Error",
+        description: error.message || "No se pudo eliminar el webhook",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+      setShowDeleteDialog(false);
+      setWebhookToDelete(null);
+    }
+  };
+
+  // 🆕 FUNCIONES AUXILIARES
+  const openEditWebhook = (webhook: WebhookConfig) => {
+    setEditingWebhook(webhook);
+    setSelectedSessionId(webhook.sessionId);
+    setClientWebhookUrl(webhook.clientWebhookUrl || "");
+    setSelectedEvents(webhook.events);
+    setWebhookActive(webhook.active);
+    setActiveTab("create");
+  };
+
+  const cancelEdit = () => {
+    setEditingWebhook(null);
+    setSelectedSessionId("");
+    setClientWebhookUrl("");
+    setSelectedEvents(["MESSAGES_UPSERT"]);
+    setWebhookActive(true);
+  };
+
+  const testWebhook = async (webhook: WebhookConfig) => {
+    let payload;
+    try {
+      payload = testPayload
+        ? JSON.parse(testPayload)
+        : {
+            type: "test_notification",
+            data: {
+              message: "Webhook de prueba desde el panel de control",
+              timestamp: new Date().toISOString(),
+              source: "dashboard",
+              testId: crypto.randomUUID(),
+            },
+          };
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "JSON inválido en el payload de prueba",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTesting(true);
+    try {
+      console.log("[WEBHOOK TEST] Sending to:", `http://100.42.185.2:8015/webhook/${webhook.webhookId}`);
+      console.log("[WEBHOOK TEST] Payload:", payload);
+
+      const response = await fetch(
+        `http://100.42.185.2:8015/webhook/${webhook.webhookId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await response.json();
+      console.log("[WEBHOOK TEST] Response:", result);
+
+      setTestResult({
+        success: result.success,
+        message: result.message,
+        timestamp: new Date().toISOString(),
+        statusCode: response.status,
+        payload: payload,
+      });
+
+      if (result.success) {
+        toast({
+          title: "✅ Prueba Exitosa",
+          description: "Webhook de prueba enviado correctamente",
+        });
+      } else {
+        toast({
+          title: "⚠️ Prueba Fallida",
+          description: result.message || "Error en la prueba del webhook",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("[WEBHOOK TEST] Error:", error);
+      setTestResult({
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      toast({
+        title: "❌ Error de Prueba",
+        description: error.message || "Error enviando webhook de prueba",
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    if (!user?.nombrebot) return;
+
+    try {
+      const sessionUserId = selectedSessionId ? 
+        sessions.find(s => s.id === selectedSessionId)?.nombresesion || user.nombrebot :
+        user.nombrebot;
+
+      const notificationsArray = Array.isArray(notifications) ? notifications : [];
+      const notification = notificationsArray.find((n) => n.id === notificationId);
+
+      if (!notification) {
+        console.warn("[WEBHOOKS] ⚠️ Notificación no encontrada en estado actual:", notificationId);
+        return;
+      }
+
+      if (notification.sessionId) {
+        const sessionExists = sessions.some((s) => s.id === notification.sessionId);
+        if (!sessionExists) {
+          console.warn("[WEBHOOKS] ⚠️ Sesión de notificación eliminada, limpiando notificación:", {
+            notificationId,
+            sessionId: notification.sessionId,
+            availableSessions: sessions.map((s) => s.id),
+          });
+
+          setNotifications((prev) => {
+            const prevArray = Array.isArray(prev) ? prev : [];
+            return prevArray.filter((n) => n.id !== notificationId);
+          });
+
+          setWebhookStats((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  unreadNotifications: Math.max(0, prev.unreadNotifications - (!notification.read ? 1 : 0)),
+                  totalNotifications: Math.max(0, prev.totalNotifications - 1),
+                }
+              : null
+          );
+
+          console.log("[WEBHOOKS] 🧹 Notificación de sesión eliminada removida del estado");
+          return;
+        }
+      }
+
+      const response = await fetch(
+        `http://100.42.185.2:8015/webhook/notifications/${sessionUserId}/${notificationId}/read`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ read: true }),
+        }
+      );
+
+      if (response.status === 404 || response.status === 410) {
+        console.warn("[WEBHOOKS] ⚠️ Backend confirmó que webhook/sesión no existe, limpiando notificación");
+
+        setNotifications((prev) => {
+          const prevArray = Array.isArray(prev) ? prev : [];
+          return prevArray.filter((n) => n.id !== notificationId);
+        });
+
+        setWebhookStats((prev) =>
+          prev
+            ? {
+                ...prev,
+                unreadNotifications: Math.max(0, prev.unreadNotifications - (!notification.read ? 1 : 0)),
+                totalNotifications: Math.max(0, prev.totalNotifications - 1),
+              }
+            : null
+        );
+
+        console.log("[WEBHOOKS] 🧹 Notificación huerfana eliminada del estado frontend");
+        return;
+      }
+
+      if (response.ok) {
+        setNotifications((prev) => {
+          const prevArray = Array.isArray(prev) ? prev : [];
+          return prevArray.map((n) =>
+            n.id === notificationId ? { ...n, read: true } : n
+          );
+        });
+
+        setWebhookStats((prev) =>
+          prev
+            ? {
+                ...prev,
+                unreadNotifications: Math.max(0, prev.unreadNotifications - 1),
+              }
+            : null
+        );
+
+        console.log("[WEBHOOKS] ✅ Notificación marcada como leída exitosamente");
+      }
+    } catch (error) {
+      console.error("[WEBHOOKS] 🚨 Error marking notification as read:", error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    const notificationsArray = Array.isArray(notifications) ? notifications : [];
+    const unreadNotifications = notificationsArray.filter((n) => !n.read);
+
+    try {
+      for (const notification of unreadNotifications) {
+        await markAsRead(notification.id);
+      }
+
+      toast({
+        title: "✅ Éxito",
+        description: "Todas las notificaciones marcadas como leídas",
+      });
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
+  };
+
+  const refreshData = async () => {
+    setRefreshing(true);
+    try {
+      await loadAllWebhooks();
+      await loadWebhookStats();
+      await loadNotifications();
+
+      toast({
+        title: "🔄 Actualizado",
+        description: "Datos actualizados correctamente",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const copyWebhookUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "📋 Copiado",
+      description: "URL copiada al portapapeles",
+    });
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString("es-ES", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
+  const getEventTypeColor = (eventType: string) => {
+    switch (eventType) {
+      case "MESSAGES_UPSERT":
+        return "bg-blue-500";
+      case "CONNECTION_UPDATE":
+        return "bg-green-500";
+      case "MESSAGES_DELETE":
+        return "bg-red-500";
+      case "EXTERNAL_WEBHOOK":
+      case "test_notification":
+        return "bg-purple-500";
+      case "CHATS_UPSERT":
+        return "bg-yellow-500";
+      case "GROUPS_UPSERT":
+        return "bg-indigo-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const exportNotifications = () => {
+    const notificationsArray = Array.isArray(notifications) ? notifications : [];
+    const csv = [
+      "ID,Tipo de Evento,Timestamp,Leído,Fuente,Sesión",
+      ...notificationsArray.map(
+        (n) =>
+          `"${n.id}","${n.eventType}","${n.timestamp}","${
+            n.read ? "Sí" : "No"
+          }","${n.source}","${n.sessionId}"`
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `webhooks_notifications_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "📁 Exportado",
+      description: "Notificaciones exportadas a CSV",
+    });
+  };
+
+  const cleanupOrphanedWebhooks = async () => {
+    if (!user?.nombrebot) return;
+    
+    try {
+      console.log('🧹 [WEBHOOK CLEANUP] Verificando webhooks órfanos...');
+      
+      const userId = user.nombrebot;
+      const availableSessionIds = sessions.map(s => s.id);
+      
+      // Verificar webhooks órfanos en la lista actual
+      const orphanedWebhooks = webhookConfigs.filter(webhook => 
+        !availableSessionIds.includes(webhook.sessionId)
+      );
+      
+      if (orphanedWebhooks.length > 0) {
+        console.log('🧹 [WEBHOOK CLEANUP] ⚠️ WEBHOOKS ÓRFANOS DETECTADOS:', orphanedWebhooks.map(w => ({
+          webhookId: w.webhookId,
+          sessionId: w.sessionId
+        })));
+        
+        toast({
+          title: "⚠️ Configuración de Webhooks",
+          description: `Se encontraron ${orphanedWebhooks.length} webhook(s) configurados para sesiones que ya no existen.`,
+          variant: "default",
+          duration: 6000
+        });
+      } else {
+        console.log('🧹 [WEBHOOK CLEANUP] ✅ Todos los webhooks son válidos');
+      }
+    } catch (error) {
+      console.warn('🧹 [WEBHOOK CLEANUP] Error en verificación:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Cargando sistema de webhooks completo...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header con estadísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="flex items-center p-4">
+            <Bell className="h-6 w-6 flex-shrink-0 text-blue-600" />
+            <div className="ml-3 min-w-0 flex-1">
+              <p className="text-lg font-bold truncate">
+                {webhookStats?.totalNotifications || 0}
+              </p>
+              <p className="text-xs text-gray-600 truncate">
+                Total Notificaciones
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="flex items-center p-4">
+            <AlertTriangle className="h-6 w-6 flex-shrink-0 text-orange-600" />
+            <div className="ml-3 min-w-0 flex-1">
+              <p className="text-lg font-bold truncate">
+                {webhookStats?.unreadNotifications || 0}
+              </p>
+              <p className="text-xs text-gray-600 truncate">Sin Leer</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="flex items-center p-4">
+            <Activity
+              className={`h-6 w-6 flex-shrink-0 ${
+                wsConnected ? "text-green-600" : "text-red-600"
+              }`}
+            />
+            <div className="ml-3 min-w-0 flex-1">
+              <p className="text-lg font-bold truncate">
+                {wsConnected ? "Conectado" : "Desconectado"}
+              </p>
+              <p className="text-xs text-gray-600 truncate">WebSocket</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="flex items-center p-4">
+            <Webhook className="h-6 w-6 flex-shrink-0 text-green-600" />
+            <div className="ml-3 min-w-0 flex-1">
+              <p className="text-lg font-bold truncate">
+                {webhookConfigs.length}
+              </p>
+              <p className="text-xs text-gray-600 truncate">Webhooks Creados</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="flex items-center p-4">
+            <Users className="h-6 w-6 flex-shrink-0 text-purple-600" />
+            <div className="ml-3 min-w-0 flex-1">
+              <p className="text-lg font-bold truncate">
+                {resourceLimits?.webhooks.remaining || 0}
+              </p>
+              <p className="text-xs text-gray-600 truncate">
+                Disponibles
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Navegación de tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between">
+          <TabsList className="grid w-full max-w-lg grid-cols-4">
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              Lista
+            </TabsTrigger>
+            <TabsTrigger value="create" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              {editingWebhook ? "Editar" : "Crear"}
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Notificaciones
+              {(webhookStats?.unreadNotifications || 0) > 0 && (
+                <Badge variant="destructive" className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center">
+                  {webhookStats.unreadNotifications}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="test" className="flex items-center gap-2">
+              <Play className="h-4 w-4" />
+              Pruebas
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={refreshData} disabled={refreshing}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+              Actualizar
+            </Button>
+            {notifications.length > 0 && (
+              <Button variant="outline" onClick={exportNotifications}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Tab: Lista de Webhooks */}
+        <TabsContent value="list">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Webhooks Configurados ({webhookConfigs.length})</h3>
+              <div className="text-sm text-gray-600">
+                Límite: {resourceLimits?.webhooks.current}/{resourceLimits?.webhooks.limit}
+              </div>
+            </div>
+
+            {webhookConfigs.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Webhook className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    No hay webhooks configurados
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Crea tu primer webhook para recibir notificaciones en tiempo real
+                  </p>
+                  <Button onClick={() => setActiveTab("create")}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crear Webhook
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {webhookConfigs.map((webhook) => (
+                  <Card key={webhook.webhookId} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Webhook className="h-5 w-5 text-blue-600" />
+                            <div>
+                              <h4 className="font-semibold">Webhook - {webhook.sessionId}</h4>
+                              <p className="text-sm text-gray-600">
+                                {sessions.find(s => s.id === webhook.sessionId)?.phoneNumber || 'Número no disponible'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <Label className="text-xs text-gray-500">URL del Webhook</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Input 
+                                  value={webhook.webhookUrl} 
+                                  disabled 
+                                  className="text-xs flex-1" 
+                                />
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => copyWebhookUrl(webhook.webhookUrl)}
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            {webhook.clientWebhookUrl && (
+                              <div>
+                                <Label className="text-xs text-gray-500">URL Cliente</Label>
+                                <Input 
+                                  value={webhook.clientWebhookUrl} 
+                                  disabled 
+                                  className="text-xs mt-1" 
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-4">
+                            <Label className="text-xs text-gray-500">Eventos Configurados</Label>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {webhook.events.map((event) => (
+                                <Badge key={event} variant="default" className="text-xs">
+                                  {event}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between mt-4">
+                            <div className="flex items-center gap-4">
+                              <Badge variant={webhook.active ? 'default' : 'secondary'}>
+                                {webhook.active ? 'Activo' : 'Inactivo'}
+                              </Badge>
+                              <span className="text-xs text-gray-500">
+                                Creado: {formatTimestamp(webhook.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2 ml-4">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openEditWebhook(webhook)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </Button>
+
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => testWebhook(webhook)}
+                            disabled={testing}
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Probar
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setWebhookToDelete(webhook.webhookId);
+                              setShowDeleteDialog(true);
+                            }}
+                            className="text-red-600 hover:text-red-700"
+                            disabled={deleting}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Eliminar
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Tab: Crear/Editar Webhook */}
+        <TabsContent value="create">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="h-5 w-5 mr-2" />
+                {editingWebhook ? "Editar Webhook" : "Crear Nuevo Webhook"}
+              </CardTitle>
+              <CardDescription>
+                {editingWebhook 
+                  ? "Modifica la configuración de tu webhook existente"
+                  : "Configura un webhook para recibir notificaciones en tiempo real"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Mostrar límites del plan */}
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium">Estado del Plan:</span>
+                  <Badge variant="outline">
+                    {resourceLimits?.webhooks.current}/{resourceLimits?.webhooks.limit} webhooks utilizados
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <Label>Sesión de WhatsApp</Label>
+                <Select 
+                  value={selectedSessionId} 
+                  onValueChange={setSelectedSessionId}
+                  disabled={!!editingWebhook}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona una sesión" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sessions.filter(s => s.authenticated).map((session) => (
+                      <SelectItem key={session.id} value={session.id}>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span>{session.id}</span>
+                          {session.phoneNumber && (
+                            <Badge variant="secondary" className="text-xs">
+                              {session.phoneNumber}
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>URL Cliente (Opcional)</Label>
+                <Input
+                  value={clientWebhookUrl}
+                  onChange={(e) => setClientWebhookUrl(e.target.value)}
+                  placeholder="https://tu-servidor.com/webhook"
+                />
+              </div>
+
+              <div>
+                <Label>Eventos a Escuchar</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                  {availableEvents.map((event) => (
+                    <Button
+                      key={event}
+                      variant={selectedEvents.includes(event) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        if (event === "ALL") {
+                          setSelectedEvents(["ALL"]);
+                        } else {
+                          setSelectedEvents((prev) => {
+                            const filtered = prev.filter((e) => e !== "ALL");
+                            if (filtered.includes(event)) {
+                              const newEvents = filtered.filter((e) => e !== event);
+                              return newEvents.length === 0 ? ["ALL"] : newEvents;
+                            } else {
+                              return [...filtered, event];
+                            }
+                          });
+                        }
+                      }}
+                      className="justify-start text-xs"
+                    >
+                      {event}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {editingWebhook && (
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="webhook-active"
+                    checked={webhookActive}
+                    onCheckedChange={setWebhookActive}
+                  />
+                  <Label htmlFor="webhook-active">Webhook Activo</Label>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={editingWebhook ? updateWebhook : createWebhook}
+                  disabled={(creating || editing) || (!editingWebhook && !selectedSessionId)}
+                  className="flex-1"
+                >
+                  {(creating || editing) ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      {editingWebhook ? "Actualizando..." : "Creando..."}
+                    </>
+                  ) : (
+                    <>
+                      <Settings className="w-4 h-4 mr-2" />
+                      {editingWebhook ? "Actualizar Webhook" : "Crear Webhook"}
+                    </>
+                  )}
+                </Button>
+
+                {editingWebhook && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      cancelEdit();
+                      setActiveTab("list");
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Notificaciones (mantener igual) */}
+        <TabsContent value="notifications">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center">
+                  <Bell className="h-5 w-5 mr-2" />
+                  Notificaciones ({notifications.length})
+                </span>
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                    Marcar todas como leídas
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {notifications.length === 0 ? (
+                <div className="text-center py-12">
+                  <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No hay notificaciones</h3>
+                  <p className="text-gray-500">Las notificaciones aparecerán aquí cuando se reciban eventos</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {notifications.map((notification) => (
+                    <div 
+                      key={notification.id} 
+                      className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                        notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'
+                      }`}
+                      onClick={() => !notification.read && markAsRead(notification.id)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={`w-2 h-2 rounded-full ${getEventTypeColor(notification.eventType)}`} />
+                            <span className="font-medium text-sm">{notification.eventType}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {notification.source}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-gray-600">
+                            Sesión: {notification.sessionId || 'Desconocida'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {formatTimestamp(notification.timestamp)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {!notification.read && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(notification.id);
+                            }}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Pruebas */}
+        <TabsContent value="test">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Play className="h-5 w-5 mr-2" />
+                Probar Webhooks
+              </CardTitle>
+              <CardDescription>
+                Envía un webhook de prueba para verificar la configuración
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {webhookConfigs.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No hay webhooks configurados para probar</p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <Label>Payload de Prueba (JSON)</Label>
+                    <Textarea
+                      value={testPayload}
+                      onChange={(e) => setTestPayload(e.target.value)}
+                      placeholder={JSON.stringify({
+                        type: "test_notification",
+                        data: {
+                          message: "Webhook de prueba desde el panel de control",
+                          timestamp: new Date().toISOString(),
+                          source: "dashboard"
+                        }
+                      }, null, 2)}
+                      rows={8}
+                      className="font-mono text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Webhooks Disponibles para Prueba</Label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {webhookConfigs.map((webhook) => (
+                        <Button
+                          key={webhook.webhookId}
+                          variant="outline"
+                          onClick={() => testWebhook(webhook)}
+                          disabled={testing}
+                          className="justify-start"
+                        >
+                          {testing ? (
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4 mr-2" />
+                          )}
+                          Probar - {webhook.sessionId}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {testResult && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium mb-2">Resultado de la Prueba</h4>
+                      <pre className="text-sm bg-white p-2 rounded border overflow-auto">
+                        {JSON.stringify(testResult, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialog de confirmación para eliminar */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
+              Confirmar Eliminación
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar este webhook? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setWebhookToDelete(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => webhookToDelete && deleteWebhook(webhookToDelete)}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Eliminar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

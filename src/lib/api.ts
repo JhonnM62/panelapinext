@@ -1947,6 +1947,185 @@ export class BaileysAPI {
   static getJid = BaileysAPI.formatPhoneNumber;
 }
 
+// 🤖 API de Bots (Sistema de Creación de Bots)
+export const botsAPI = {
+  // Listar todos los bots del usuario
+  listUserBots: async () => {
+    try {
+      const response = await api.get('/api/v2/bots/user');
+      return response.data;
+    } catch (error) {
+      console.error('[BOTS API] Error listing bots:', error);
+      throw error;
+    }
+  },
+
+  // Obtener sesiones disponibles
+  getAvailableSessions: async () => {
+    try {
+      const response = await api.get('/api/v2/bots/sessions-available');
+      return response.data;
+    } catch (error) {
+      console.error('[BOTS API] Error getting available sessions:', error);
+      throw error;
+    }
+  },
+
+  // Crear nuevo bot
+  create: async (data: {
+    nombreBot: string;
+    descripcion?: string;
+    tipoBot?: string;
+    sesionId: string;
+    configIA?: any;
+  }) => {
+    try {
+      const response = await api.post('/api/v2/bots/create', data);
+      return response.data;
+    } catch (error) {
+      console.error('[BOTS API] Error creating bot:', error);
+      throw error;
+    }
+  },
+
+  // Actualizar bot
+  update: async (botId: string, data: any) => {
+    try {
+      const response = await api.put(`/api/v2/bots/update/${botId}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('[BOTS API] Error updating bot:', error);
+      throw error;
+    }
+  },
+
+  // Eliminar bot
+  delete: async (botId: string) => {
+    try {
+      const response = await api.delete(`/api/v2/bots/delete/${botId}`);
+      return response.data;
+    } catch (error) {
+      console.error('[BOTS API] Error deleting bot:', error);
+      throw error;
+    }
+  },
+
+  // Obtener estadísticas
+  getStats: async () => {
+    try {
+      const response = await api.get('/api/v2/bots/stats/user');
+      return response.data;
+    } catch (error) {
+      console.error('[BOTS API] Error getting stats:', error);
+      throw error;
+    }
+  },
+
+  // Operaciones masivas
+  bulkDelete: async (botIds: string[]) => {
+    try {
+      const response = await api.delete('/api/v2/bots/bulk-delete', { data: { botIds } });
+      return response.data;
+    } catch (error) {
+      console.error('[BOTS API] Error bulk deleting:', error);
+      throw error;
+    }
+  },
+
+  bulkActivate: async (botIds: string[], accion: 'activar' | 'desactivar' | 'toggle') => {
+    try {
+      const response = await api.put('/api/v2/bots/bulk-activate', { botIds, accion });
+      return response.data;
+    } catch (error) {
+      console.error('[BOTS API] Error bulk activating:', error);
+      throw error;
+    }
+  },
+
+  duplicate: async (botIdOrigen: string, nombreNuevoBot: string, sesionId: string) => {
+    try {
+      const response = await api.post('/api/v2/bots/duplicate', {
+        botIdOrigen,
+        nombreNuevoBot,
+        sesionId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('[BOTS API] Error duplicating bot:', error);
+      throw error;
+    }
+  }
+};
+
+// 🧠 API de Gemini (Configuración de IA)
+export const geminiAPI = {
+  // Guardar configuración
+  saveConfig: async (config: any) => {
+    try {
+      const response = await api.post('/api/v2/gemini/config/save', config);
+      return response.data;
+    } catch (error) {
+      console.error('[GEMINI API] Error saving config:', error);
+      throw error;
+    }
+  },
+
+  // Obtener configuración
+  getConfig: async () => {
+    try {
+      const response = await api.get('/api/v2/gemini/config');
+      return response.data;
+    } catch (error) {
+      console.error('[GEMINI API] Error getting config:', error);
+      throw error;
+    }
+  },
+
+  // Actualizar configuración
+  updateConfig: async (config: any) => {
+    try {
+      const response = await api.put('/api/v2/gemini/config/update', config);
+      return response.data;
+    } catch (error) {
+      console.error('[GEMINI API] Error updating config:', error);
+      throw error;
+    }
+  },
+
+  // Eliminar configuración
+  deleteConfig: async () => {
+    try {
+      const response = await api.delete('/api/v2/gemini/config/delete');
+      return response.data;
+    } catch (error) {
+      console.error('[GEMINI API] Error deleting config:', error);
+      throw error;
+    }
+  },
+
+  // Procesar mensaje con IA
+  process: async (data: any) => {
+    try {
+      const response = await api.post('/api/v2/gemini/process', data);
+      return response.data;
+    } catch (error) {
+      console.error('[GEMINI API] Error processing message:', error);
+      throw error;
+    }
+  },
+
+  // Procesar mensaje directo (sin guardar config)
+  processDirect: async (data: any) => {
+    try {
+      const response = await api.post('/api/v2/gemini/process-direct', data);
+      return response.data;
+    } catch (error) {
+      console.error('[GEMINI API] Error processing direct:', error);
+      throw error;
+    }
+  }
+};
+
 // Exportar instancia de Baileys API para uso directo
 export { baileysAPI };
 

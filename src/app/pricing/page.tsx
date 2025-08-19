@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,140 +18,44 @@ import {
   MessageSquare,
   Users,
   BarChart3,
-  Shield
+  Shield,
+  Clock,
+  RefreshCw
 } from 'lucide-react'
-import { PricingPlan } from '@/types'
+import { planesApi, Plan } from '@/lib/plans'
+import { toast } from '@/components/ui/use-toast'
 
 export default function PricingPage() {
   const router = useRouter()
+  const [planes, setPlanes] = useState<Plan[]>([])
+  const [loading, setLoading] = useState(true)
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
 
-  const plans: PricingPlan[] = [
-    {
-      id: 'basic',
-      name: 'Prueba Gratuita',
-      price: 0,
-      duration: 14,
-      maxSessions: 1,
-      features: [
-        '14 días de acceso completo',
-        '1 sesión de WhatsApp',
-        'Envío de mensajes básicos',
-        'Soporte por email',
-        'Panel de control básico'
-      ],
-      isActive: true,
-      highlight: 'Ideal para probar',
-      icon: Smartphone
-    },
-    {
-      id: 'monthly',
-      name: 'Plan Mensual',
-      price: 7,
-      duration: 30,
-      maxSessions: 1,
-      features: [
-        '1 sesión de WhatsApp activa',
-        'Mensajes ilimitados',
-        'Automatización básica',
-        'Soporte 24/7 por chat',
-        'Analytics básicos',
-        'Respuestas automáticas',
-        'Gestión de contactos'
-      ],
-      popular: false,
-      isActive: true,
-      highlight: 'Para emprendedores',
-      icon: Zap
-    },
-    {
-      id: 'semiannual',
-      name: 'Plan 6 Meses',
-      price: 37.8,
-      originalPrice: 42,
-      discount: 10,
-      duration: 180,
-      maxSessions: 1,
-      features: [
-        '1 sesión de WhatsApp premium',
-        'Mensajes ilimitados',
-        'Automatización avanzada',
-        'Soporte prioritario 24/7',
-        'Analytics completos',
-        'Plantillas personalizadas',
-        'Webhooks integrados',
-        'API completa',
-        '10% de descuento'
-      ],
-      popular: true,
-      isActive: true,
-      highlight: 'Más popular',
-      icon: Star
-    },
-    {
-      id: 'annual',
-      name: 'Plan Anual',
-      price: 67.2,
-      originalPrice: 84,
-      discount: 20,
-      duration: 365,
-      maxSessions: 1,
-      features: [
-        '1 sesión de WhatsApp premium',
-        'Mensajes completamente ilimitados',
-        'Automatización completa',
-        'Soporte VIP 24/7',
-        'Analytics avanzados',
-        'Plantillas premium ilimitadas',
-        'API personalizada',
-        'Webhooks en tiempo real',
-        'Integraciones CRM',
-        '20% de descuento'
-      ],
-      popular: false,
-      isActive: true,
-      highlight: 'Ahorro máximo',
-      icon: Crown
-    },
-    {
-      id: 'lifetime',
-      name: 'Plan Vitalicio',
-      price: 100,
-      duration: 36500,
-      maxSessions: 15,
-      features: [
-        'Hasta 15 sesiones simultáneas',
-        'Mensajes verdaderamente ilimitados',
-        'Todas las funciones premium',
-        'Soporte VIP de por vida',
-        'Analytics profesionales',
-        'API completa sin restricciones',
-        'Webhooks avanzados',
-        'Actualizaciones gratuitas de por vida',
-        'Garantía de 1 año',
-        'Acceso vitalicio garantizado',
-        'Prioridad en nuevas funciones'
-      ],
-      popular: false,
-      isActive: true,
-      highlight: 'Mejor valor',
-      icon: Infinity
+  useEffect(() => {
+    const cargarPlanes = async () => {
+      try {
+        setLoading(true)
+        const planesData = await planesApi.obtenerPlanes()
+        setPlanes(planesData)
+      } catch (error) {
+        console.error('Error cargando planes:', error)
+        toast({
+          title: 'Error',
+          description: 'Error al cargar los planes de suscripción',
+          variant: 'destructive'
+        })
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
 
-  const features = [
-    { icon: MessageSquare, title: 'Mensajería masiva', description: 'Envía miles de mensajes personalizados' },
-    { icon: Zap, title: 'Respuestas automáticas', description: 'Automatiza tus conversaciones' },
-    { icon: Phone, title: 'Programación de mensajes', description: 'Programa mensajes para envío futuro' },
-    { icon: Users, title: 'Gestión de contactos', description: 'Organiza y segmenta tus contactos' },
-    { icon: BarChart3, title: 'Analytics en tiempo real', description: 'Métricas detalladas de rendimiento' },
-    { icon: Shield, title: 'Integración con CRM', description: 'Conecta con tus sistemas existentes' },
-    { icon: Star, title: 'Plantillas personalizadas', description: 'Crea plantillas reutilizables' },
-    { icon: Crown, title: 'Soporte multiidioma', description: 'Soporte en múltiples idiomas' }
-  ]
+    cargarPlanes()
+  }, [])
 
-  const handleSelectPlan = (planId: string) => {
-    if (planId === 'basic') {
+  const handleSelectPlan = async (planId: string) => {
+    const plan = planes.find(p => p.id === planId)
+    
+    if (plan?.esGratuito) {
       router.push('/auth/register')
     } else {
       router.push(`/dashboard/upgrade?plan=${planId}`)
@@ -165,10 +69,64 @@ export default function PricingPage() {
     }).format(price)
   }
 
-  const getPlanIcon = (planId: string) => {
-    const plan = plans.find(p => p.id === planId)
-    const IconComponent = plan?.icon || Smartphone
-    return <IconComponent className="h-6 w-6" />
+  const getPlanIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'prueba_gratuita':
+        return <Smartphone className="h-6 w-6" />
+      case 'mensual':
+        return <Zap className="h-6 w-6" />
+      case 'semestral':
+        return <Star className="h-6 w-6" />
+      case 'anual':
+        return <Crown className="h-6 w-6" />
+      case 'vitalicio':
+        return <Infinity className="h-6 w-6" />
+      default:
+        return <Smartphone className="h-6 w-6" />
+    }
+  }
+
+  const getPlanColor = (tipo: string, isPopular: boolean = false) => {
+    if (isPopular) {
+      return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+    }
+    
+    switch (tipo) {
+      case 'vitalicio':
+        return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+      case 'anual':
+        return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
+      default:
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+    }
+  }
+
+  const isPlanPopular = (plan: Plan) => {
+    return plan.tipo === 'semestral' || plan.categoria === 'estandar'
+  }
+
+  const features = [
+    { icon: MessageSquare, title: 'Mensajería masiva', description: 'Envía miles de mensajes personalizados' },
+    { icon: Zap, title: 'Respuestas automáticas', description: 'Automatiza tus conversaciones' },
+    { icon: Phone, title: 'Programación de mensajes', description: 'Programa mensajes para envío futuro' },
+    { icon: Users, title: 'Gestión de contactos', description: 'Organiza y segmenta tus contactos' },
+    { icon: BarChart3, title: 'Analytics en tiempo real', description: 'Métricas detalladas de rendimiento' },
+    { icon: Shield, title: 'Integración con CRM', description: 'Conecta con tus sistemas existentes' },
+    { icon: Star, title: 'Plantillas personalizadas', description: 'Crea plantillas reutilizables' },
+    { icon: Crown, title: 'Soporte multiidioma', description: 'Soporte en múltiples idiomas' }
+  ]
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
+            <p className="text-lg text-gray-600 dark:text-gray-400">Cargando planes...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -212,7 +170,7 @@ export default function PricingPage() {
               Planes que Crecen con tu Negocio
             </h1>
             <p className="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed max-w-3xl mx-auto">
-              Elige el plan perfecto para automatizar WhatsApp y hacer crecer tu negocio. 
+              Elige el plan perfecto para automatizar WhatsApp y hacer crecer tu negocio.
               <span className="text-blue-600 dark:text-blue-400 font-semibold"> Todos los planes incluyen garantía de satisfacción.</span>
             </p>
 
@@ -235,32 +193,6 @@ export default function PricingPage() {
                 <div className="text-sm text-gray-600 dark:text-gray-400">Soporte técnico</div>
               </div>
             </div>
-
-            {/* Billing Toggle */}
-            <div className="flex items-center justify-center mb-12">
-              <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl shadow-inner">
-                <button
-                  className={`px-8 py-3 rounded-lg transition-all font-medium ${
-                    billingCycle === 'monthly'
-                      ? 'bg-white dark:bg-gray-700 shadow-lg text-gray-900 dark:text-white'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                  onClick={() => setBillingCycle('monthly')}
-                >
-                  Mensual
-                </button>
-                <button
-                  className={`px-8 py-3 rounded-lg transition-all font-medium ${
-                    billingCycle === 'annual'
-                      ? 'bg-white dark:bg-gray-700 shadow-lg text-gray-900 dark:text-white'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                  onClick={() => setBillingCycle('annual')}
-                >
-                  Anual <span className="text-green-600 dark:text-green-400 text-sm ml-1">(Ahorra 20%)</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -269,130 +201,151 @@ export default function PricingPage() {
       <section className="pb-16 relative">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto auto-rows-fr">
-            {plans.map((plan) => (
-              <Card 
-                key={plan.id} 
-                className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl group flex flex-col h-full ${
-                  plan.popular 
-                    ? 'ring-2 ring-blue-500 shadow-xl scale-105 bg-gradient-to-b from-blue-50/50 to-purple-50/50 dark:from-blue-900/20 dark:to-purple-900/20' 
-                    : 'hover:scale-105 hover:shadow-xl'
-                } ${
-                  plan.id === 'lifetime'
-                    ? 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 dark:from-purple-900/30 dark:via-pink-900/20 dark:to-purple-900/30 border-purple-200 dark:border-purple-700'
-                    : 'bg-white dark:bg-gray-800'
-                }`}
-              >
-                {/* Popular Badge */}
-                {plan.popular && (
-                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
-                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1.5 text-xs font-semibold shadow-lg rounded-full whitespace-nowrap">
-                      {plan.highlight}
+            {planes.map((plan) => {
+              const isPopular = isPlanPopular(plan)
+              
+              return (
+                <Card 
+                  key={plan.id} 
+                  className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl group flex flex-col h-full ${
+                    isPopular 
+                      ? 'ring-2 ring-blue-500 shadow-xl scale-105 bg-gradient-to-b from-blue-50/50 to-purple-50/50 dark:from-blue-900/20 dark:to-purple-900/20' 
+                      : 'hover:scale-105 hover:shadow-xl'
+                  } ${
+                    plan.tipo === 'vitalicio'
+                      ? 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 dark:from-purple-900/30 dark:via-pink-900/20 dark:to-purple-900/30 border-purple-200 dark:border-purple-700'
+                      : 'bg-white dark:bg-gray-800'
+                  }`}
+                >
+                  {/* Popular Badge */}
+                  {isPopular && (
+                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
+                      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1.5 text-xs font-semibold shadow-lg rounded-full whitespace-nowrap">
+                        Más Popular
+                      </div>
                     </div>
-                  </div>
-                )}
-                
-                {/* Lifetime Badge */}
-                {plan.id === 'lifetime' && (
-                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
-                    <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 text-xs font-semibold shadow-lg rounded-full whitespace-nowrap">
-                      {plan.highlight}
+                  )}
+                  
+                  {/* Lifetime Badge */}
+                  {plan.tipo === 'vitalicio' && (
+                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
+                      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 text-xs font-semibold shadow-lg rounded-full whitespace-nowrap">
+                        Mejor Valor
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Background decoration */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-100/20 to-transparent dark:from-blue-900/10" />
+                  {/* Background decoration */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-100/20 to-transparent dark:from-blue-900/10" />
 
-                <CardHeader className="text-center pb-4 pt-6">
-                  {/* Icon */}
-                  <div className={`mx-auto p-4 rounded-2xl mb-6 mt-8 transition-all group-hover:scale-110 ${
-                    plan.id === 'lifetime' 
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
-                      : plan.popular
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                  } w-fit`}>
-                    {getPlanIcon(plan.id)}
-                  </div>
-                  
-                  <CardTitle className="text-xl font-bold mb-2">{plan.name}</CardTitle>
-                  
-                  {/* Price Section */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-center space-x-2">
-                      {plan.originalPrice && (
-                        <span className="text-base text-gray-500 line-through">
-                          {formatPrice(plan.originalPrice)}
+                  <CardHeader className="text-center pb-4 pt-6">
+                    {/* Icon */}
+                    <div className={`mx-auto p-4 rounded-2xl mb-6 mt-8 transition-all group-hover:scale-110 ${
+                      getPlanColor(plan.tipo, isPopular)
+                    } w-fit`}>
+                      {getPlanIcon(plan.tipo)}
+                    </div>
+                    
+                    <CardTitle className="text-xl font-bold mb-2">{plan.nombre}</CardTitle>
+                    
+                    {/* Price Section */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-center space-x-2">
+                        {plan.descuento.porcentaje > 0 && (
+                          <span className="text-base text-gray-500 line-through">
+                            {formatPrice(plan.precio.valor)}
+                          </span>
+                        )}
+                        <span className={`text-4xl font-bold ${
+                          plan.tipo === 'vitalicio' 
+                            ? 'text-purple-600 dark:text-purple-400'
+                            : isPopular
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-gray-900 dark:text-white'
+                        }`}>
+                          {formatPrice(plan.precioConDescuento)}
                         </span>
+                      </div>
+                      
+                      {plan.descuento.porcentaje > 0 && (
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          {plan.descuento.porcentaje}% OFF
+                        </Badge>
                       )}
-                      <span className={`text-4xl font-bold ${
-                        plan.id === 'lifetime' 
-                          ? 'text-purple-600 dark:text-purple-400'
-                          : plan.popular
-                          ? 'text-blue-600 dark:text-blue-400'
-                          : 'text-gray-900 dark:text-white'
-                      }`}>
-                        {formatPrice(plan.price)}
-                      </span>
+                      
+                      <CardDescription className="text-sm font-medium">
+                        {plan.esGratuito 
+                          ? `${plan.duracion.cantidad} días de prueba completa`
+                          : plan.esVitalicio
+                          ? 'Pago único - Acceso vitalicio'
+                          : `${plan.duracion.cantidad} ${plan.duracion.unidad} de acceso completo`
+                        }
+                      </CardDescription>
                     </div>
-                    
-                    {plan.discount && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                        {plan.discount}% OFF
-                      </Badge>
-                    )}
-                    
-                    <CardDescription className="text-sm font-medium">
-                      {plan.id === 'basic' 
-                        ? '14 días de prueba completa'
-                        : plan.id === 'lifetime'
-                        ? 'Pago único - Acceso vitalicio'
-                        : `${plan.duration} días de acceso completo`
-                      }
-                    </CardDescription>
-                  </div>
-                </CardHeader>
+                  </CardHeader>
 
-                <CardContent className="space-y-4 px-6 pb-6 flex flex-col h-full">
-                  {/* Sessions info */}
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                    <div className={`text-2xl font-bold ${
-                      plan.id === 'lifetime' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {plan.maxSessions === 1 ? '1 Sesión' : `${plan.maxSessions} Sesiones`}
+                  <CardContent className="space-y-4 px-6 pb-6 flex flex-col h-full">
+                    {/* Resource limits info */}
+                    <div className="grid grid-cols-3 gap-2 text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                      <div>
+                        <div className={`text-lg font-bold ${
+                          plan.tipo === 'vitalicio' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-900 dark:text-white'
+                        }`}>
+                          {plan.limites.sesiones}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Sesiones</div>
+                      </div>
+                      <div>
+                        <div className={`text-lg font-bold ${
+                          plan.tipo === 'vitalicio' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-900 dark:text-white'
+                        }`}>
+                          {plan.limites.botsIA}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Bots IA</div>
+                      </div>
+                      <div>
+                        <div className={`text-lg font-bold ${
+                          plan.tipo === 'vitalicio' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-900 dark:text-white'
+                        }`}>
+                          {plan.limites.webhooks}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Webhooks</div>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      WhatsApp Simultáneas
-                    </div>
-                  </div>
 
-                  {/* Features */}
-                  <ul className="space-y-2 text-sm flex-grow">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start space-x-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                    {/* Features */}
+                    <ul className="space-y-2 text-sm flex-grow">
+                      {plan.caracteristicas.slice(0, 6).map((feature, index) => (
+                        <li key={index} className="flex items-start space-x-2">
+                          <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm">{feature.nombre}</span>
+                        </li>
+                      ))}
+                      {plan.caracteristicas.length > 6 && (
+                        <li className="text-xs text-gray-500 dark:text-gray-400 text-center pt-2">
+                          +{plan.caracteristicas.length - 6} características más
+                        </li>
+                      )}
+                    </ul>
 
-                  {/* CTA Button */}
-                  <Button 
-                    className={`w-full h-11 text-sm font-semibold transition-all duration-300 mt-auto ${
-                      plan.id === 'lifetime'
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl'
-                        : plan.popular
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
-                        : 'hover:shadow-lg'
-                    }`}
-                    variant={plan.popular || plan.id === 'lifetime' ? 'default' : 'outline'}
-                    onClick={() => handleSelectPlan(plan.id)}
-                  >
-                    {plan.id === 'basic' ? 'Comenzar Gratis' : 'Seleccionar Plan'}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                    {/* CTA Button */}
+                    <Button 
+                      className={`w-full h-11 text-sm font-semibold transition-all duration-300 mt-auto ${
+                        plan.tipo === 'vitalicio'
+                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl'
+                          : isPopular
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
+                          : 'hover:shadow-lg'
+                      }`}
+                      variant={isPopular || plan.tipo === 'vitalicio' ? 'default' : 'outline'}
+                      onClick={() => handleSelectPlan(plan.id)}
+                    >
+                      {plan.esGratuito ? 'Comenzar Gratis' : 'Seleccionar Plan'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </div>
       </section>
@@ -423,62 +376,6 @@ export default function PricingPage() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-16 bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">
-                Preguntas Frecuentes
-              </h2>
-              <p className="text-xl text-gray-600 dark:text-gray-300">
-                Respuestas a las dudas más comunes sobre nuestros planes
-              </p>
-            </div>
-            
-            <div className="space-y-6">
-              {[
-                {
-                  question: "¿Puedo cambiar de plan en cualquier momento?",
-                  answer: "Sí, puedes actualizar o cambiar tu plan en cualquier momento desde tu panel de control. Los cambios se aplican inmediatamente y solo pagas la diferencia proporcional."
-                },
-                {
-                  question: "¿Qué incluye la garantía del plan vitalicio?",
-                  answer: "El plan vitalicio incluye una garantía de funcionamiento por 1 año completo. Si no estás completamente satisfecho durante este período, te devolvemos tu dinero sin preguntas."
-                },
-                {
-                  question: "¿Los pagos son seguros y qué métodos aceptan?",
-                  answer: "Sí, todos los pagos se procesan de forma segura a través de PayPal con encriptación SSL de nivel bancario. Aceptamos tarjetas de crédito, débito y PayPal."
-                },
-                {
-                  question: "¿Hay límites en el envío de mensajes?",
-                  answer: "Los planes de pago ofrecen mensajería ilimitada. Solo el plan gratuito tiene limitaciones básicas para pruebas. No hay restricciones ocultas en los planes premium."
-                },
-                {
-                  question: "¿Puedo usar múltiples números de WhatsApp?",
-                  answer: "Sí, cada sesión corresponde a un número de WhatsApp diferente. El plan vitalicio permite hasta 15 sesiones simultáneas, mientras que otros planes incluyen 1 sesión."
-                },
-                {
-                  question: "¿Qué soporte técnico está incluido?",
-                  answer: "Todos los planes incluyen soporte técnico. Los planes premium tienen soporte prioritario 24/7, mientras que el plan básico incluye soporte por email con respuesta en 24 horas."
-                }
-              ].map((faq, index) => (
-                <Card key={index} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-left">{faq.question}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                      {faq.answer}
-                    </p>
-                  </CardContent>
-                </Card>
               ))}
             </div>
           </div>
