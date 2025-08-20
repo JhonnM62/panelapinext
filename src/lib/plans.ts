@@ -296,6 +296,42 @@ export const planesApi = {
       console.error('Error obteniendo historial:', error)
       return []
     }
+  },
+
+  // 🔄 CAMBIAR PLAN EXISTENTE (nuevo endpoint)
+  async cambiarPlan(nuevoPlanId: string, metodoPago: string = 'paypal', transaccionId?: string, montoTotal?: number, comisionPayPal?: any): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('No autenticado')
+
+      const response = await fetch(`${API_BASE_URL}/planes/cambiar-plan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nuevoPlanId,
+          metodoPago,
+          transaccionId,
+          montoTotal,
+          comisionPayPal
+        })
+      })
+
+      const data = await response.json()
+      return {
+        success: data.success,
+        data: data.data,
+        error: data.success ? undefined : data.message
+      }
+    } catch (error) {
+      console.error('Error cambiando plan:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      }
+    }
   }
 }
 
@@ -548,4 +584,140 @@ export const hasAccess = (user: User, feature: string): boolean => {
     default:
       return true
   }
+}
+
+// 🏦 **FUNCIONES DE PAYPAL Y COMISIONES**
+
+/**
+ * Constantes de comisión de PayPal según los requisitos:
+ * - Comisión porcentual: 5.4%
+ * - Tarifa fija: $0.30 USD
+ */
+export const PAYPAL_COMMISSION = {
+  PERCENTAGE: 5.4, // 5.4%
+  FIXED_FEE: 0.30  // $0.30 USD
+} as const
+
+/**
+ * Interface para detalles de precio con comisión de PayPal
+ */
+export interface PriceWithPayPalFees {
+  basePrice: number
+  commission: {
+    percentage: number
+    percentageAmount: number
+    fixedFee: number
+    totalCommission: number
+  }
+  finalPrice: number
+  savings?: number
+}
+
+/**
+ * Calcula la comisión de PayPal para un monto dado
+ * @param amount - Monto base en USD
+ * @returns Objeto con detalles de la comisión
+ */
+export const calculatePayPalCommission = (amount: number): PriceWithPayPalFees['commission'] => {
+  const percentageAmount = amount * (PAYPAL_COMMISSION.PERCENTAGE / 100)
+  const totalCommission = percentageAmount + PAYPAL_COMMISSION.FIXED_FEE
+  
+  return {
+    percentage: PAYPAL_COMMISSION.PERCENTAGE,
+    percentageAmount: Number(percentageAmount.toFixed(2)),
+    fixedFee: PAYPAL_COMMISSION.FIXED_FEE,
+    totalCommission: Number(totalCommission.toFixed(2))
+  }
+}
+
+/**
+ * Calcula el precio final incluyendo la comisión de PayPal
+ * @param basePrice - Precio base del plan (ya con descuentos aplicados)
+ * @param isFreePlan - Si es un plan gratuito (no se aplica comisión)
+ * @returns Objeto completo con todos los detalles del precio
+ */
+export const calculatePriceWithPayPalFees = (basePrice: number, isFreePlan: boolean = false): PriceWithPayPalFees => {
+  // Para planes gratuitos, no hay comisión
+  if (isFreePlan || basePrice <= 0) {
+    return {
+      basePrice: 0,
+      commission: {
+        percentage: 0,
+        percentageAmount: 0,
+        fixedFee: 0,
+        totalCommission: 0
+      },
+      finalPrice: 0
+    }
+  }
+  
+  const commission = calculatePayPalCommission(basePrice)
+  const finalPrice = Number((basePrice + commission.totalCommission).toFixed(2))
+  
+  return {
+    basePrice: Number(basePrice.toFixed(2)),
+    commission,
+    finalPrice
+  }
+}
+
+/**
+ * Calcula el precio que necesitamos cobrar para que después de la comisión
+ * de PayPal obtengamos el monto deseado
+ * @param targetAmount - Monto que queremos recibir después de comisiones
+ * @returns Precio que debemos cobrar
+ */
+export const calculateReversePayPalPrice = (targetAmount: number): number => {
+  // Fórmula: precio_a_cobrar = (monto_deseado + tarifa_fija) / (1 - porcentaje/100)
+  const priceToCharge = (targetAmount + PAYPAL_COMMISSION.FIXED_FEE) / (1 - PAYPAL_COMMISSION.PERCENTAGE / 100)
+  return Number(priceToCharge.toFixed(2))
+}
+
+/**
+ * Formatea el precio mostrando el desglose de comisiones
+ * @param priceDetails - Detalles del precio con comisiones
+ * @returns String formateado para mostrar al usuario
+ */
+export const formatPriceBreakdown = (priceDetails: PriceWithPayPalFees): string => {
+  if (priceDetails.basePrice <= 0) {
+    return 'Gratis'
+  }
+  
+  const { basePrice, commission, finalPrice } = priceDetails
+  
+  return `${finalPrice} USD (incluye ${basePrice} del plan + ${commission.totalCommission} de comisión PayPal)`
+}
+
+/**
+ * Obtiene los detalles de precio para mostrar en la UI
+ * @param plan - Plan seleccionado
+ * @returns Objeto con toda la información de precios para la UI
+ */
+export const getPlanPriceDetails = (plan: Plan) => {
+  const isFreePlan = plan.esGratuito
+  const basePrice = plan.precioConDescuento
+  
+  const priceDetails = calculatePriceWithPayPalFees(basePrice, isFreePlan)
+  
+  return {
+    ...priceDetails,
+    formattedBasePrice: formatCurrency(basePrice),
+    formattedFinalPrice: formatCurrency(priceDetails.finalPrice),
+    formattedCommission: formatCurrency(priceDetails.commission.totalCommission),
+    breakdown: formatPriceBreakdown(priceDetails),
+    hasDiscount: plan.descuento.porcentaje > 0,
+    originalPrice: plan.precio.valor,
+    formattedOriginalPrice: formatCurrency(plan.precio.valor),
+    discountAmount: plan.precio.valor - basePrice,
+    formattedDiscountAmount: formatCurrency(plan.precio.valor - basePrice)
+  }
+}
+
+/**
+ * Verifica si un plan califica para mostrar información de comisión
+ * @param plan - Plan a verificar
+ * @returns true si debe mostrar información de comisión
+ */
+export const shouldShowPayPalFees = (plan: Plan): boolean => {
+  return !plan.esGratuito && plan.precioConDescuento > 0
 }

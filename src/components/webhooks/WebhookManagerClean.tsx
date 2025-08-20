@@ -94,10 +94,13 @@ interface WebhookManagerProps {
   sessions: SessionOption[];
 }
 
-export default function WebhookManager({ sessions }: WebhookManagerProps) {
+export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
   const router = useRouter();
   const { user, token } = useAuthStore();
   const { suscripcion, resourceLimits, checkLimits } = usePlanLimits();
+  
+  // 🛡️ Asegurar que sessions siempre sea un array válido
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
   
   // Estados principales
   const [activeTab, setActiveTab] = useState("list");
@@ -215,7 +218,7 @@ export default function WebhookManager({ sessions }: WebhookManagerProps) {
       
       // Limpieza de webhooks órfanos después de cargar
       setTimeout(() => {
-        if (sessions.length > 0) {
+        if (safeSessions && safeSessions.length > 0) {
           cleanupOrphanedWebhooks();
         }
       }, 2000);
@@ -226,16 +229,16 @@ export default function WebhookManager({ sessions }: WebhookManagerProps) {
 
   // Limpiar notificaciones cuando cambien las sesiones
   useEffect(() => {
-    if (sessions.length > 0 && notifications.length > 0) {
-      cleanupOrphanedNotifications(sessions);
+    if (safeSessions && safeSessions.length > 0 && notifications && notifications.length > 0) {
+      cleanupOrphanedNotifications(safeSessions);
     }
-  }, [sessions]);
+  }, [safeSessions]);
 
   // Limpieza automática periódica (cada 2 minutos)
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
-      if (sessions.length >= 0 && notifications.length > 0) {
-        cleanupOrphanedNotifications(sessions);
+      if (safeSessions && safeSessions.length >= 0 && notifications && notifications.length > 0) {
+        cleanupOrphanedNotifications(safeSessions);
       }
       
       // Limpiar cache de IDs procesados
@@ -247,7 +250,7 @@ export default function WebhookManager({ sessions }: WebhookManagerProps) {
     }, 120000); // 2 minutos
 
     return () => clearInterval(cleanupInterval);
-  }, [sessions, notifications]);
+  }, [safeSessions, notifications]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -814,8 +817,8 @@ export default function WebhookManager({ sessions }: WebhookManagerProps) {
       if (!notification) return;
 
       // Verificar si la sesión aún existe
-      if (notification.sessionId) {
-        const sessionExists = sessions.some((s) => s.id === notification.sessionId);
+      if (notification.sessionId && safeSessions && safeSessions.length > 0) {
+        const sessionExists = safeSessions.some((s) => s.id === notification.sessionId);
         if (!sessionExists) {
           // Limpiar notificación huérfana
           setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
@@ -935,10 +938,10 @@ export default function WebhookManager({ sessions }: WebhookManagerProps) {
   };
 
   const cleanupOrphanedWebhooks = async () => {
-    if (!user?.nombrebot) return;
+    if (!user?.nombrebot || !safeSessions || safeSessions.length === 0) return;
     
     try {
-      const availableSessionIds = sessions.map(s => s.id);
+      const availableSessionIds = safeSessions.map(s => s.id);
       const orphanedWebhooks = webhookConfigs.filter(webhook => 
         !availableSessionIds.includes(webhook.sessionId)
       );
@@ -960,6 +963,18 @@ export default function WebhookManager({ sessions }: WebhookManagerProps) {
 
   const cleanupOrphanedNotifications = (currentSessions: SessionOption[]) => {
     try {
+      // Verificar que currentSessions no sea undefined o null
+      if (!currentSessions || !Array.isArray(currentSessions)) {
+        console.warn('🧹 [WEBHOOK CLEANUP] currentSessions no es válido:', currentSessions);
+        return;
+      }
+
+      // Verificar que notifications exista y sea un array
+      if (!notifications || !Array.isArray(notifications)) {
+        console.warn('🧹 [WEBHOOK CLEANUP] notifications no es válido:', notifications);
+        return;
+      }
+
       const currentSessionIds = currentSessions.map((s) => s.id);
       const validNotifications = notifications.filter((notification) => {
         if (!notification.sessionId) return true;
@@ -1171,7 +1186,7 @@ export default function WebhookManager({ sessions }: WebhookManagerProps) {
         <TabsContent value="list">
           <WebhookList
             webhookConfigs={webhookConfigs}
-            sessions={sessions}
+            sessions={safeSessions}
             loading={loading}
             deleting={deleting}
             testing={testing}
@@ -1186,7 +1201,7 @@ export default function WebhookManager({ sessions }: WebhookManagerProps) {
         <TabsContent value="create">
           <WebhookForm
             editingWebhook={editingWebhook}
-            sessions={sessions}
+            sessions={safeSessions}
             resourceLimits={resourceLimits}
             creating={creating}
             editing={editing}
