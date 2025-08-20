@@ -35,7 +35,7 @@ function SidebarComponent({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     { name: 'Sesiones WhatsApp', href: '/dashboard/sessions', icon: MessageSquare },
     { name: 'WhatsApp', href: '/dashboard/whatsapp', icon: Smartphone },
     { name: 'Mensajes', href: '/dashboard/chats', icon: MessageSquare },
-    { name: 'Plantillas', href: '/dashboard/templates', icon: Layers },
+    { name: 'Chatbots', href: '/dashboard/templates', icon: Layers },
     { name: 'Webhooks', href: '/dashboard/webhooks', icon: Webhook },
     { name: 'Analíticas', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Performance', href: '/dashboard/performance', icon: TrendingUp },

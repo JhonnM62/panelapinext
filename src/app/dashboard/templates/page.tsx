@@ -52,9 +52,7 @@ import {
   Tag,
   PlayCircle,
   BarChart3,
-  Brain,
   Sparkles,
-  ArrowLeft,
   Bot,
   Smartphone,
   Globe,
@@ -67,7 +65,6 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { useAuthStore } from "@/store/auth";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
-import { GeminiConfigRefactored } from "@/components/gemini";
 import { ChatBotsList, ChatBotForm } from "@/components/chatbots";
 
 // 📝 INTERFACES PARA TEMPLATES
@@ -475,23 +472,6 @@ export default function TemplatesPage() {
   const [previewData, setPreviewData] = useState<{ [key: string]: string }>({});
   const [activeTab, setActiveTab] = useState("templates");
 
-  // 🆕 Funciones para manejar navegación entre tabs
-  const handleOpenGeminiConfig = () => {
-    setActiveTab("gemini");
-  };
-
-  const handleBackToTemplates = () => {
-    setActiveTab("templates");
-  };
-
-  const handleConfigSaved = () => {
-    toast({
-      title: "Configuración guardada",
-      description: "¡ChatBot IA configurado exitosamente!",
-    });
-    handleBackToTemplates();
-  };
-
   // 📝 EFECTOS PARA TEMPLATES
   useEffect(() => {
     let filtered = templates;
@@ -631,21 +611,13 @@ export default function TemplatesPage() {
             <Plus className="h-4 w-4 mr-2" />
             Nueva Plantilla
           </Button>
-          <Button
-            onClick={handleOpenGeminiConfig}
-            variant="outline"
-            className="h-11"
-          >
-            <Brain className="h-4 w-4 mr-2" />
-            ChatBot IA
-          </Button>
         </div>
       </div>
 
       {/* 🎨 TABS - Mobile optimized */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex items-center justify-between mb-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3 h-auto p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+          <TabsList className="grid w-full max-w-md grid-cols-2 h-auto p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
             <TabsTrigger
               value="templates"
               className="flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg"
@@ -659,13 +631,6 @@ export default function TemplatesPage() {
             >
               <Bot className="h-4 w-4" />
               <span className="hidden sm:inline">ChatBots</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="gemini"
-              className="flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg"
-            >
-              <Brain className="h-4 w-4" />
-              <span className="hidden sm:inline">IA Config</span>
             </TabsTrigger>
           </TabsList>
 
@@ -816,30 +781,7 @@ export default function TemplatesPage() {
           </div>
         </TabsContent>
 
-        {/* 🧠 GEMINI IA TAB */}
-        <TabsContent value="gemini" className="space-y-6">
-          <div className="flex items-center gap-3 mb-6">
-            <Button
-              variant="ghost"
-              onClick={handleBackToTemplates}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Volver a Plantillas
-            </Button>
-            <div className="h-6 border-l border-gray-300 dark:border-gray-600"></div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Configuración de IA Gemini
-            </h2>
-          </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <GeminiConfigRefactored
-              onConfigSaved={handleConfigSaved}
-              onCancel={handleBackToTemplates}
-            />
-          </div>
-        </TabsContent>
       </Tabs>
 
       {/* 👁️ PREVIEW DIALOG */}
