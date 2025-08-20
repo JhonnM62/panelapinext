@@ -1,14 +1,34 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { toast } from '@/components/ui/use-toast'
-import { 
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
+import {
   Bot,
   Search,
   RefreshCw,
@@ -21,153 +41,125 @@ import {
   Zap,
   Brain,
   Settings,
-  Eye
-} from 'lucide-react'
+  Eye,
+} from "lucide-react";
 
-interface Chatbot {
-  _id: string
-  nombreBot: string
-  descripcion: string
-  tipoBot: string
-  userId: string
-  userEmail: string
-  sesionId: string
-  sesionName: string
-  activo: boolean
-  fechaCreacion: string
-  configuracion: any
-  estadisticas: {
-    mensajesProcesados: number
-    respuestasEnviadas: number
-    errores: number
-  }
-}
+// Importar las nuevas interfaces y funciones helper
+import { Chatbot, formatStatValue, getStatValue } from "@/types/admin.types";
+import { adminAPI } from "@/lib/api-config";
 
 interface ChatbotsManagementProps {
-  token: string
-  baseUrl: string
+  token: string;
+  baseUrl: string;
 }
 
-export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagementProps) {
-  const [chatbots, setChatbots] = useState<Chatbot[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedBot, setSelectedBot] = useState<Chatbot | null>(null)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+export default function ChatbotsManagement({
+  token,
+  baseUrl,
+}: ChatbotsManagementProps) {
+  const [chatbots, setChatbots] = useState<Chatbot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBot, setSelectedBot] = useState<Chatbot | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
-    loadChatbots()
-  }, [])
+    loadChatbots();
+  }, []);
 
   const loadChatbots = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const response = await fetch(`${baseUrl}/api/v2/admin/chatbots`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          setChatbots(data.data)
-        }
+      // Usando la nueva función de API
+      const response = await adminAPI.getChatbots(token);
+      if (response.success) {
+        setChatbots(response.data);
       }
     } catch (error) {
-      console.error('Error:', error)
+      console.error("Error loading chatbots:", error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los chatbots",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const toggleChatbot = async (botId: string, currentStatus: boolean) => {
     try {
-      const response = await fetch(`${baseUrl}/api/v2/admin/chatbots/${botId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ activo: !currentStatus })
-      })
-      
-      if (response.ok) {
-        toast({
-          title: "Éxito",
-          description: `Chatbot ${!currentStatus ? 'activado' : 'pausado'} exitosamente`
-        })
-        loadChatbots()
-      }
+      await adminAPI.updateChatbot(botId, { activo: !currentStatus }, token);
+      toast({
+        title: "Éxito",
+        description: `Chatbot ${
+          !currentStatus ? "activado" : "pausado"
+        } exitosamente`,
+      });
+      loadChatbots();
     } catch (error) {
       toast({
         title: "Error",
         description: "No se pudo cambiar el estado del chatbot",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const deleteChatbot = async () => {
-    if (!selectedBot) return
-    
+    if (!selectedBot) return;
+
     try {
-      const response = await fetch(`${baseUrl}/api/v2/admin/chatbots/${selectedBot._id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      if (response.ok) {
-        toast({
-          title: "Éxito",
-          description: "Chatbot eliminado exitosamente"
-        })
-        setIsDeleteDialogOpen(false)
-        loadChatbots()
-      }
+      await adminAPI.deleteChatbot(selectedBot._id, token);
+      toast({
+        title: "Éxito",
+        description: "Chatbot eliminado exitosamente",
+      });
+      setIsDeleteDialogOpen(false);
+      loadChatbots();
     } catch (error) {
       toast({
         title: "Error",
         description: "No se pudo eliminar el chatbot",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const getBotTypeIcon = (tipo: string) => {
     switch (tipo) {
-      case 'ia': return <Brain className="h-4 w-4" />
-      case 'automatico': return <Zap className="h-4 w-4" />
-      case 'respuesta': return <MessageSquare className="h-4 w-4" />
-      default: return <Bot className="h-4 w-4" />
+      case "ia":
+        return <Brain className="h-4 w-4" />;
+      case "automatico":
+        return <Zap className="h-4 w-4" />;
+      case "respuesta":
+        return <MessageSquare className="h-4 w-4" />;
+      default:
+        return <Bot className="h-4 w-4" />;
     }
-  }
+  };
 
   const getBotTypeColor = (tipo: string) => {
     switch (tipo) {
-      case 'ia': return 'bg-purple-100 text-purple-800'
-      case 'automatico': return 'bg-blue-100 text-blue-800'
-      case 'respuesta': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case "ia":
+        return "bg-purple-100 text-purple-800";
+      case "automatico":
+        return "bg-blue-100 text-blue-800";
+      case "respuesta":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
-  const filteredChatbots = chatbots.filter(bot => 
-    bot.nombreBot?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    bot.userEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    bot.descripcion?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredChatbots = chatbots.filter(
+    (bot) =>
+      bot.nombreBot?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bot.userEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bot.descripcion?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -175,11 +167,13 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
         <CardContent className="flex items-center justify-center h-64">
           <div className="text-center">
             <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-            <p className="text-gray-600 dark:text-gray-400">Cargando chatbots...</p>
+            <p className="text-gray-600 dark:text-gray-400">
+              Cargando chatbots...
+            </p>
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -198,7 +192,7 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
                 </CardDescription>
               </div>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -223,45 +217,68 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Chatbots</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Total Chatbots
+                    </p>
                     <p className="text-2xl font-bold">{chatbots.length}</p>
                   </div>
                   <Bot className="h-8 w-8 text-blue-600" />
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="border">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Activos</p>
-                    <p className="text-2xl font-bold">{chatbots.filter(b => b.activo).length}</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Activos
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {chatbots.filter((b) => b.activo).length}
+                    </p>
                   </div>
                   <Activity className="h-8 w-8 text-green-600" />
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="border">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Con IA</p>
-                    <p className="text-2xl font-bold">{chatbots.filter(b => b.tipoBot === 'ia').length}</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Con IA
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {chatbots.filter((b) => b.tipoBot === "ia").length}
+                    </p>
                   </div>
                   <Brain className="h-8 w-8 text-purple-600" />
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="border">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Mensajes Total</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Mensajes Total
+                    </p>
                     <p className="text-2xl font-bold">
-                      {chatbots.reduce((sum, bot) => sum + bot.estadisticas.mensajesProcesados, 0).toLocaleString()}
+                      {chatbots
+                        .reduce(
+                          (sum, bot) =>
+                            sum +
+                            getStatValue(
+                              bot.estadisticas,
+                              "mensajesProcesados",
+                              0
+                            ),
+                          0
+                        )
+                        .toLocaleString()}
                     </p>
                   </div>
                   <MessageSquare className="h-8 w-8 text-orange-600" />
@@ -298,15 +315,19 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
                         </div>
                       </TableCell>
                       <TableCell>
-                        <p className="text-sm">{bot.userEmail || 'Sin usuario'}</p>
+                        <p className="text-sm">
+                          {bot.userEmail || "Sin usuario"}
+                        </p>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">
-                          {bot.sesionName || 'No asignada'}
+                          {bot.sesionName || "No asignada"}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={`text-xs ${getBotTypeColor(bot.tipoBot)}`}>
+                        <Badge
+                          className={`text-xs ${getBotTypeColor(bot.tipoBot)}`}
+                        >
                           <span className="flex items-center gap-1">
                             {getBotTypeIcon(bot.tipoBot)}
                             {bot.tipoBot}
@@ -314,19 +335,28 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge 
+                        <Badge
                           variant={bot.activo ? "default" : "secondary"}
-                          className={`text-xs ${bot.activo ? "bg-green-100 text-green-800" : ""}`}
+                          className={`text-xs ${
+                            bot.activo ? "bg-green-100 text-green-800" : ""
+                          }`}
                         >
-                          {bot.activo ? 'Activo' : 'Pausado'}
+                          {bot.activo ? "Activo" : "Pausado"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <p>{bot.estadisticas.mensajesProcesados.toLocaleString()}</p>
-                          {bot.estadisticas.errores > 0 && (
+                          <p>
+                            {formatStatValue(
+                              bot.estadisticas,
+                              "mensajesProcesados",
+                              0
+                            )}
+                          </p>
+                          {getStatValue(bot.estadisticas, "errores", 0) > 0 && (
                             <p className="text-xs text-red-600">
-                              {bot.estadisticas.errores} errores
+                              {getStatValue(bot.estadisticas, "errores", 0)}{" "}
+                              errores
                             </p>
                           )}
                         </div>
@@ -341,8 +371,8 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
                             variant="outline"
                             className="h-8 w-8 p-0"
                             onClick={() => {
-                              setSelectedBot(bot)
-                              setIsViewDialogOpen(true)
+                              setSelectedBot(bot);
+                              setIsViewDialogOpen(true);
                             }}
                           >
                             <Eye className="h-3 w-3" />
@@ -364,8 +394,8 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
                             variant="destructive"
                             className="h-8 w-8 p-0"
                             onClick={() => {
-                              setSelectedBot(bot)
-                              setIsDeleteDialogOpen(true)
+                              setSelectedBot(bot);
+                              setIsDeleteDialogOpen(true);
                             }}
                           >
                             <Trash2 className="h-3 w-3" />
@@ -388,9 +418,11 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
                   Acerca de los Chatbots con IA
                 </h4>
                 <p className="text-sm text-purple-700 dark:text-purple-300">
-                  Los chatbots permiten automatizar respuestas en WhatsApp usando inteligencia artificial.
-                  Pueden configurarse con diferentes personalidades y responder automáticamente a los mensajes.
-                  Los bots con IA utilizan modelos de lenguaje avanzados para generar respuestas contextuales.
+                  Los chatbots permiten automatizar respuestas en WhatsApp
+                  usando inteligencia artificial. Pueden configurarse con
+                  diferentes personalidades y responder automáticamente a los
+                  mensajes. Los bots con IA utilizan modelos de lenguaje
+                  avanzados para generar respuestas contextuales.
                 </p>
               </div>
             </div>
@@ -411,12 +443,20 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Nombre</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Nombre
+                  </p>
                   <p className="text-sm">{selectedBot.nombreBot}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Tipo</p>
-                  <Badge className={`text-xs ${getBotTypeColor(selectedBot.tipoBot)}`}>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Tipo
+                  </p>
+                  <Badge
+                    className={`text-xs ${getBotTypeColor(
+                      selectedBot.tipoBot
+                    )}`}
+                  >
                     <span className="flex items-center gap-1">
                       {getBotTypeIcon(selectedBot.tipoBot)}
                       {selectedBot.tipoBot}
@@ -424,41 +464,63 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Estado</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Estado
+                  </p>
                   <Badge variant={selectedBot.activo ? "default" : "secondary"}>
-                    {selectedBot.activo ? 'Activo' : 'Pausado'}
+                    {selectedBot.activo ? "Activo" : "Pausado"}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Usuario</p>
-                  <p className="text-sm">{selectedBot.userEmail || 'Sin usuario'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Usuario
+                  </p>
+                  <p className="text-sm">
+                    {selectedBot.userEmail || "Sin usuario"}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Sesión</p>
-                  <p className="text-sm">{selectedBot.sesionName || 'No asignada'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Sesión
+                  </p>
+                  <p className="text-sm">
+                    {selectedBot.sesionName || "No asignada"}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Creado</p>
-                  <p className="text-sm">{new Date(selectedBot.fechaCreacion).toLocaleString()}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Creado
+                  </p>
+                  <p className="text-sm">
+                    {new Date(selectedBot.fechaCreacion).toLocaleString()}
+                  </p>
                 </div>
               </div>
 
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Descripción</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Descripción
+                </p>
                 <p className="text-sm">{selectedBot.descripcion}</p>
               </div>
 
               <div className="pt-4 border-t">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Estadísticas</p>
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  Estadísticas
+                </p>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Mensajes Procesados</p>
+                    <p className="text-xs text-muted-foreground">
+                      Mensajes Procesados
+                    </p>
                     <p className="text-xl font-semibold text-blue-600">
                       {selectedBot.estadisticas.mensajesProcesados.toLocaleString()}
                     </p>
                   </div>
                   <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Respuestas Enviadas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Respuestas Enviadas
+                    </p>
                     <p className="text-xl font-semibold text-green-600">
                       {selectedBot.estadisticas.respuestasEnviadas.toLocaleString()}
                     </p>
@@ -474,7 +536,9 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
 
               {selectedBot.configuracion && (
                 <div className="pt-4 border-t">
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Configuración</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">
+                    Configuración
+                  </p>
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <pre className="text-xs overflow-x-auto">
                       {JSON.stringify(selectedBot.configuracion, null, 2)}
@@ -485,9 +549,7 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => setIsViewDialogOpen(false)}>
-              Cerrar
-            </Button>
+            <Button onClick={() => setIsViewDialogOpen(false)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -498,12 +560,16 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
           <DialogHeader>
             <DialogTitle>Confirmar Eliminación</DialogTitle>
             <DialogDescription>
-              ¿Está seguro que desea eliminar el chatbot {selectedBot?.nombreBot}?
-              Esta acción no se puede deshacer y se perderán todas las configuraciones.
+              ¿Está seguro que desea eliminar el chatbot{" "}
+              {selectedBot?.nombreBot}? Esta acción no se puede deshacer y se
+              perderán todas las configuraciones.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
               Cancelar
             </Button>
             <Button variant="destructive" onClick={deleteChatbot}>
@@ -513,5 +579,5 @@ export default function ChatbotsManagement({ token, baseUrl }: ChatbotsManagemen
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

@@ -12,6 +12,9 @@ import { toast } from '@/components/ui/use-toast'
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'next/navigation'
 
+// Importar Skeleton
+import { SessionsSkeleton } from '@/components/skeletons'
+
 // Importar APIs después de las otras importaciones
 import { sessionsAPI, webhooksAPI, utilsAPI, authAPI } from '@/lib/api'
 
@@ -538,9 +541,7 @@ export default function EnhancedSessionsComponent() {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
-          </div>
+          <SessionsSkeleton />
         ) : sessions.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Smartphone className="h-12 w-12 mx-auto mb-4 text-gray-400" />

@@ -1,25 +1,30 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useAuthStore } from '@/store/auth'
-import { usePlanLimits } from '@/hooks/usePlanLimits'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { getDaysRemaining, formatDate } from '@/lib/utils'
-import { 
-  Smartphone, 
-  MessageSquare, 
-  Users, 
+import { useState, useEffect, useCallback } from "react";
+import { useAuthStore } from "@/store/auth";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { formatCurrency } from "@/lib/utils";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Settings,
+  Smartphone,
+  Users,
   Calendar,
-  Plus,
-  RefreshCw,
-  AlertCircle,
+  MessageSquare,
+  Activity,
   CheckCircle,
   XCircle,
   TrendingUp,
-  Activity,
+  Plus,
   Bell,
   Zap,
   Globe,
@@ -33,43 +38,356 @@ import {
   CreditCard,
   Crown,
   Bot,
-  Webhook
-} from 'lucide-react'
-import Link from 'next/link'
-import { sessionsAPI, webhooksAPI, utilsAPI, chatsAPI, authAPI, analyticsAPI } from '@/lib/api'
-import { SessionData, WebhookStats } from '@/lib/api'
-import { toast } from '@/components/ui/use-toast'
-import { ResourceLimitBanner, LoadingState } from '@/components/common'
+  Webhook,
+  ArrowUp,
+  ArrowDown,
+  Sparkles,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
+import Link from "next/link";
+import { sessionsAPI, webhooksAPI, utilsAPI, analyticsAPI } from "@/lib/api";
+import { toast } from "@/components/ui/use-toast";
+import { ResourceLimitBanner, LoadingState } from "@/components/common";
 
 interface DashboardStats {
-  totalSessions: number
-  activeSessions: number
-  connectedSessions: number
-  totalChats: number
-  totalMessages: number
-  totalMessagesYesterday: number
-  totalMessagesWeek: number
-  totalMessagesMonth: number
-  unreadNotifications: number
-  webhooksActive: number
-  daysRemaining: number
-  recentActivity: ActivityItem[]
-  sessionStatus: Record<string, number>
+  totalSessions: number;
+  activeSessions: number;
+  connectedSessions: number;
+  totalChats: number;
+  totalMessages: number;
+  totalMessagesYesterday: number;
+  totalMessagesWeek: number;
+  totalMessagesMonth: number;
+  unreadNotifications: number;
+  webhooksActive: number;
+  daysRemaining: number;
+  recentActivity: ActivityItem[];
+  sessionStatus: Record<string, number>;
 }
 
 interface ActivityItem {
-  id: string
-  type: 'session' | 'message' | 'webhook' | 'connection'
-  title: string
-  description: string
-  timestamp: string
-  status: 'success' | 'warning' | 'error' | 'info'
+  id: string;
+  type: "session" | "message" | "webhook" | "connection";
+  title: string;
+  description: string;
+  timestamp: string;
+  status: "success" | "warning" | "error" | "info";
+}
+
+// 🎨 DASHBOARD SKELETON COMPONENTS
+const DashboardSkeleton = () => (
+  <div className="space-y-6 lg:space-y-8">
+    {/* Header Skeleton - matches real header */}
+    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-64 sm:h-10 sm:w-80 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200" />
+          <Skeleton className="h-6 w-6 lg:h-8 lg:w-8 rounded bg-yellow-200" />
+        </div>
+        <Skeleton className="h-4 w-96 bg-gray-200" />
+      </div>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <Skeleton className="h-11 w-28 bg-gray-200 rounded" />
+        <Skeleton className="h-11 w-36 bg-gradient-to-r from-blue-200 to-purple-200 rounded" />
+      </div>
+    </div>
+
+    {/* Resource Limit Banners Skeleton */}
+    <div className="space-y-4">
+      {[...Array(3)].map((_, i) => (
+        <Card key={i} className="border-l-4 border-l-blue-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-48 bg-gray-300" />
+                <Skeleton className="h-3 w-64 bg-gray-200" />
+              </div>
+              <Skeleton className="h-8 w-20 bg-blue-200 rounded-full" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+
+    {/* Stats Cards Skeleton - matches real cards */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      {[
+        { gradient: "from-blue-200 to-cyan-200", icon: "phone" },
+        { gradient: "from-purple-200 to-pink-200", icon: "bot" },
+        { gradient: "from-green-200 to-emerald-200", icon: "webhook" },
+        { gradient: "from-orange-200 to-amber-200", icon: "clock" }
+      ].map((item, i) => (
+        <Card key={i} className="relative overflow-hidden group">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className={`p-3 rounded-xl bg-gradient-to-br ${item.gradient}`}>
+                <Skeleton className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <Skeleton className="h-3 w-24 bg-gray-200 mb-2" />
+                <div className="flex items-baseline flex-wrap gap-2">
+                  <Skeleton className="h-7 w-12 bg-gray-300" />
+                  <Skeleton className="h-5 w-16 bg-gray-200 rounded-full" />
+                </div>
+                <Skeleton className="h-3 w-32 bg-gray-200 mt-1" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+
+    {/* Quick Actions Skeleton */}
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-5 w-5 rounded bg-blue-200" />
+        <Skeleton className="h-6 w-36 bg-gray-300" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i} className="hover:shadow-lg transition-all">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <Skeleton className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-200 to-purple-200" />
+                <div className="flex-1 min-w-0">
+                  <Skeleton className="h-4 w-28 bg-gray-300 mb-1" />
+                  <Skeleton className="h-3 w-20 bg-gray-200" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+
+    {/* Recent Activity Skeleton */}
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-5 w-5 rounded bg-green-200" />
+        <Skeleton className="h-6 w-36 bg-gray-300" />
+      </div>
+      <div className="space-y-3">
+        {[...Array(2)].map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <Skeleton className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-200 to-blue-200" />
+                <div className="flex-1 min-w-0">
+                  <Skeleton className="h-4 w-48 bg-gray-300 mb-1" />
+                  <Skeleton className="h-3 w-32 bg-gray-200" />
+                </div>
+                <Skeleton className="h-3 w-16 bg-gray-200" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+const StatsCardSkeleton = () => (
+  <Card className="relative overflow-hidden">
+    <CardContent className="p-6">
+      <div className="flex items-center space-x-4">
+        <Skeleton className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-200 to-purple-200 animate-pulse" />
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-4 w-20 bg-gray-200 animate-pulse" />
+          <Skeleton className="h-8 w-16 bg-gradient-to-r from-gray-300 to-gray-400 animate-pulse" />
+          <Skeleton className="h-3 w-24 bg-gray-200 animate-pulse" />
+        </div>
+      </div>
+    </CardContent>
+    {/* Shimmer effect */}
+    <div
+      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"
+      style={{
+        transform: "translateX(-100%)",
+        animation: "shimmer 1.5s ease-in-out infinite",
+      }}
+    />
+  </Card>
+);
+
+// Componente StatsCard mejorado
+interface StatsCardProps {
+  title: string;
+  value: string | number;
+  change?: string;
+  trend?:
+    | "up"
+    | "down"
+    | "neutral"
+    | { value: number; label: string; direction: "up" | "down" };
+  icon?: any;
+  description?: string;
+  loading?: boolean;
+  gradient?: string;
+  color?: string;
+  badge?: {
+    current: number;
+    limit: number;
+  };
+}
+
+const StatsCard = ({
+  title,
+  value,
+  change,
+  trend = "neutral",
+  icon: Icon,
+  description = "",
+  loading = false,
+  gradient = "from-blue-500 to-purple-600",
+  color,
+  badge,
+}: StatsCardProps) => {
+  if (loading) return <StatsCardSkeleton />;
+
+  const trendData =
+    typeof trend === "object"
+      ? trend
+      : { direction: trend as "up" | "down" | "neutral", value: 0, label: "" };
+  const TrendIcon =
+    trendData.direction === "up"
+      ? ArrowUp
+      : trendData.direction === "down"
+      ? ArrowDown
+      : null;
+  const trendColor =
+    trendData.direction === "up"
+      ? "text-green-600 dark:text-green-400"
+      : trendData.direction === "down"
+      ? "text-red-600 dark:text-red-400"
+      : "text-gray-600 dark:text-gray-400";
+
+  return (
+    <Card className="relative overflow-hidden group hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <CardContent className="p-6">
+        <div className="flex items-center space-x-4">
+          {Icon && (
+            <div
+              className={`p-3 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg self-start`}
+            >
+              <Icon className="h-6 w-6" />
+            </div>
+          )}
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+              {title}
+            </p>
+            <div className="flex items-baseline flex-wrap gap-2">
+              <h3 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                {value}
+              </h3>
+              {/* Render trend if it exists and has value */}
+              {TrendIcon &&
+                ((typeof trend === "object" &&
+                  trend.value !== undefined &&
+                  trend.value !== 0) ||
+                  change) && (
+                  <div className={`flex items-center space-x-1 ${trendColor}`}>
+                    <TrendIcon className="h-3 w-3" />
+                    <span className="text-xs font-medium">
+                      {change ||
+                        (typeof trend === "object"
+                          ? `${trend.value} ${trend.label}`
+                          : "")}
+                    </span>
+                  </div>
+                )}
+              {/* Render badge if provided */}
+              {badge && (
+                <Badge
+                  variant="secondary"
+                  className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-0"
+                >
+                  {badge.current}/{badge.limit}
+                </Badge>
+              )}
+            </div>
+            {description && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {description}
+              </p>
+            )}
+          </div>
+        </div>
+      </CardContent>
+      {/* Hover effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-blue-50/5 dark:to-blue-900/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+    </Card>
+  );
+};
+
+// 🚀 QUICK ACTION CARD
+function QuickActionCard({
+  title,
+  description,
+  icon: Icon,
+  href,
+  color,
+  external = false,
+}: {
+  title: string;
+  description: string;
+  icon: any;
+  href: string;
+  color: string;
+  external?: boolean;
+}) {
+  const Component = external ? "a" : Link;
+
+  const bgColorClass =
+    color === "blue"
+      ? "bg-blue-100 dark:bg-blue-900/20"
+      : color === "green"
+      ? "bg-green-100 dark:bg-green-900/20"
+      : color === "purple"
+      ? "bg-purple-100 dark:bg-purple-900/20"
+      : color === "orange"
+      ? "bg-orange-100 dark:bg-orange-900/20"
+      : "";
+
+  const textColorClass =
+    color === "blue"
+      ? "text-blue-600 dark:text-blue-400"
+      : color === "green"
+      ? "text-green-600 dark:text-green-400"
+      : color === "purple"
+      ? "text-purple-600 dark:text-purple-400"
+      : color === "orange"
+      ? "text-orange-600 dark:text-orange-400"
+      : "";
+
+  return (
+    <Component href={href} className="block group">
+      <Card className="h-full hover:shadow-lg transition-all duration-200 transform group-hover:scale-[1.02] cursor-pointer border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-4">
+            <div className={`p-3 rounded-xl ${bgColorClass}`}>
+              <Icon className={`h-6 w-6 ${textColorClass}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                {title}
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                {description}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Component>
+  );
 }
 
 export default function DashboardPage() {
-  const { user } = useAuthStore()
-  const { suscripcion, resourceLimits, loading: limitsLoading } = usePlanLimits()
-  
+  const { user } = useAuthStore();
+  const { suscripcion, resourceLimits, loading: planLoading } = usePlanLimits();
+
   const [stats, setStats] = useState<DashboardStats>({
     totalSessions: 0,
     activeSessions: 0,
@@ -83,123 +401,111 @@ export default function DashboardPage() {
     webhooksActive: 0,
     daysRemaining: 0,
     recentActivity: [],
-    sessionStatus: {}
-  })
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [sessions, setSessions] = useState<SessionData[]>([])
-  const [healthStatus, setHealthStatus] = useState<any>(null)
+    sessionStatus: {},
+  });
 
-  useEffect(() => {
-    loadDashboardData()
-    // Actualizar datos cada 30 segundos
-    const interval = setInterval(loadDashboardData, 30000)
-    return () => clearInterval(interval)
-  }, [])
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
+  const getDaysRemaining = (fechaFin: string): number => {
+    if (!fechaFin) return 0;
+    const endDate = new Date(fechaFin);
+    const now = new Date();
+    const diffTime = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  };
 
   const loadDashboardData = async () => {
-    if (!user) return
-    
-    const token = localStorage.getItem('token')
-    if (!token) {
-      console.error('🔧 [Dashboard] No hay token disponible')
-      return
-    }
-    
-    console.log(`🔧 [Dashboard] Cargando datos para usuario: ${user.email} (ID: ${user.id})`)
-    
-    setLoading(true)
+    if (!user) return;
+
+    setLoading(true);
     try {
-      // Cargar datos en paralelo con manejo robusto de errores
-      const [
-        sessionsResponse,
-        healthResponse,
-        webhookStatsResponse
-      ] = await Promise.allSettled([
-        sessionsAPI.listForUser(token).catch(err => {
-          console.warn('Error en sessionsAPI.listForUser:', err)
-          return { success: false, data: [], message: 'No se pudieron cargar las sesiones' }
-        }),
-        utilsAPI.getHealth(),
-        webhooksAPI.getStats(user.id || user._id || user.email)
-      ])
+      // Cargar datos básicos
+      const [sessionsResponse, healthResponse] = await Promise.all([
+        sessionsAPI.list().catch(() => ({ success: false, data: [] })),
+        utilsAPI.getHealth().catch(() => ({ success: false, data: null })),
+      ]);
 
-      // Procesar sesiones con validación robusta
-      let sessionsData: SessionData[] = []
-      if (sessionsResponse.status === 'fulfilled' && sessionsResponse.value.success) {
-        // CORREGIDO: La respuesta viene como {sesiones: Array, total, activas, limites}
-        const rawData = sessionsResponse.value.data?.sesiones || []
-        sessionsData = Array.isArray(rawData) ? rawData : []
-        setSessions(sessionsData)
-        console.log(`🔧 [Dashboard] Sesiones cargadas para ${user.nombrebot}: ${sessionsData.length}`, sessionsData.map(s => s.id))
-      } else {
-        console.log(`🔧 [Dashboard] No se pudieron cargar sesiones para ${user.nombrebot}`)
-        setSessions([]) // Asegurar que siempre sea un array vacío
-      }
+      const sessionsData: string[] = sessionsResponse.success
+        ? sessionsResponse.data
+        : [];
+      const health = healthResponse.success ? healthResponse.data : null;
 
-      // Procesar health
-      let health: any = null
-      if (healthResponse.status === 'fulfilled' && healthResponse.value.success) {
-        health = healthResponse.value.data
-        setHealthStatus(health)
-      }
+      let activeSessions = 0;
+      let connectedSessions = 0;
 
-      // Procesar webhook stats con manejo robusto de errores
-      let webhookStats: WebhookStats | null = null
-      if (webhookStatsResponse.status === 'fulfilled' && webhookStatsResponse.value?.success) {
-        webhookStats = webhookStatsResponse.value.data
-      } else if (webhookStatsResponse.status === 'rejected') {
-        console.log('⚠️ [Dashboard] Webhook stats no disponibles:', webhookStatsResponse.reason?.message || 'endpoint no encontrado')
-        // No es un error crítico, continuamos sin stats de webhook
-      }
+      // Procesar estados de sesión
+      const sessionStatus: Record<string, number> = {};
+      const sessionPromises = sessionsData.map(async (sessionId: string) => {
+        try {
+          const statusResponse = await sessionsAPI.status(sessionId);
+          if (statusResponse.success) {
+            const status = statusResponse.data.status;
+            sessionStatus[status] = (sessionStatus[status] || 0) + 1;
 
-      // Calcular estadísticas
-      const daysRemaining = getDaysRemaining(user.fechaFin)
-      const activeSessions = sessionsData.filter(s => s.status === 'authenticated').length
-      const connectedSessions = sessionsData.filter(s => 
-        s.status === 'authenticated' || s.status === 'connected'
-      ).length
-
-      // Contar status de sesiones
-      const sessionStatus = sessionsData.reduce((acc, session) => {
-        acc[session.status] = (acc[session.status] || 0) + 1
-        return acc
-      }, {} as Record<string, number>)
-
-      // Generar actividad reciente (simulada por ahora)
-      const recentActivity: ActivityItem[] = [
-        ...sessionsData.slice(0, 3).map(session => ({
-          id: session.id,
-          type: 'session' as const,
-          title: `Sesión ${session.id}`,
-          description: `Estado: ${session.status}`,
-          timestamp: session.createdAt || new Date().toISOString(),
-          status: session.status === 'authenticated' ? 'success' as const : 'warning' as const
-        })),
-        {
-          id: 'health-check',
-          type: 'connection' as const,
-          title: 'Estado del Sistema',
-          description: health ? `Tiempo activo: ${Math.floor(health.uptime / 3600)}h` : 'Verificando...',
-          timestamp: new Date().toISOString(),
-          status: health?.status === 'healthy' ? 'success' as const : 'warning' as const
+            if (statusResponse.data.authenticated) activeSessions++;
+            if (status === "authenticated" || status === "connected")
+              connectedSessions++;
+          }
+          return statusResponse;
+        } catch {
+          return null;
         }
-      ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      });
 
-      // 🔧 OBTENER ANALYTICS REALES DEL BACKEND
-      let analyticsData = { messages: { today: 0, yesterday: 0, week: 0, month: 0 } }
+      await Promise.all(sessionPromises);
+
+      // Calcular días restantes
+      const daysRemaining = user?.fechaFin
+        ? getDaysRemaining(user.fechaFin)
+        : 0;
+
+      // Crear actividad reciente simulada
+      const recentActivity: ActivityItem[] = [
+        {
+          id: "1",
+          type: "session",
+          title: "Nueva sesión conectada",
+          description: `${connectedSessions} sesiones activas`,
+          timestamp: new Date().toISOString(),
+          status: "success",
+        },
+        {
+          id: "2",
+          type: "message",
+          title: "Mensajes procesados",
+          description: "Sistema funcionando correctamente",
+          timestamp: new Date(Date.now() - 1800000).toISOString(),
+          status: "info",
+        },
+      ];
+
+      // Obtener estadísticas de webhooks - CORREGIDO
+      let webhookStats: any = { unreadNotifications: 0, webhookActive: false };
       try {
-        console.log('🔧 [Dashboard] Obteniendo analytics desde backend...')
-        const analyticsResponse = await analyticsAPI.getDashboard()
-        
-        if (analyticsResponse.success && analyticsResponse.data) {
-          analyticsData = analyticsResponse.data
-          console.log('🔧 [Dashboard] Analytics obtenido:', analyticsData)
-        } else {
-          console.warn('🔧 [Dashboard] Analytics no disponible:', analyticsResponse.message)
+        if (user.id) {
+          const webhookResponse = await webhooksAPI.getStats(user.id);
+          if (webhookResponse.success) {
+            webhookStats = webhookResponse.data;
+          }
         }
       } catch (error) {
-        console.warn('🔧 [Dashboard] Error obteniendo analytics:', error)
+        console.warn("Error obteniendo webhook stats:", error);
+      }
+
+      // Obtener analytics - CORREGIDO
+      let analyticsData: any = {
+        messages: { today: 0, yesterday: 0, week: 0, month: 0 },
+      };
+      try {
+        const analyticsResponse = await analyticsAPI.getDashboard();
+        if (analyticsResponse.success) {
+          analyticsData = analyticsResponse.data;
+        }
+      } catch (error) {
+        console.warn("Error obteniendo analytics:", error);
       }
 
       setStats({
@@ -215,192 +521,172 @@ export default function DashboardPage() {
         webhooksActive: webhookStats?.webhookActive ? 1 : 0,
         daysRemaining,
         recentActivity,
-        sessionStatus
-      })
-
+        sessionStatus,
+      });
     } catch (error) {
-      console.error('Error loading dashboard data:', error)
+      console.error("Error loading dashboard data:", error);
       toast({
         title: "Error",
         description: "No se pudieron cargar algunos datos del dashboard",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
-      setRefreshing(false)
+      setLoading(false);
+      setRefreshing(false);
+      setLastUpdated(new Date());
     }
-  }
+  };
 
-  const refreshData = async () => {
-    setRefreshing(true)
-    await loadDashboardData()
-    toast({
-      title: "Actualizado",
-      description: "Dashboard actualizado correctamente",
-    })
-  }
+  useEffect(() => {
+    // Solo cargar datos si el usuario existe y no se están cargando los límites del plan
+    if (user && !planLoading) {
+      loadDashboardData();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'authenticated':
-        return 'default'
-      case 'connecting':
-      case 'connected':
-        return 'secondary'
-      case 'disconnected':
-      case 'disconnecting':
-        return 'destructive'
-      default:
-        return 'outline'
+      // Auto-refresh cada 60 segundos (aumentado para reducir carga)
+      const interval = setInterval(() => {
+        // Solo refrescar si no hay otra carga en progreso
+        if (!loading && !refreshing) {
+          setRefreshing(true);
+          loadDashboardData();
+        }
+      }, 60000);
+
+      return () => clearInterval(interval);
     }
+  }, [user, planLoading]); // Agregar planLoading como dependencia
+
+  const refreshData = () => {
+    setRefreshing(true);
+    loadDashboardData();
+  };
+
+  // 🎨 MOSTRAR SKELETON MIENTRAS CARGA
+  if (loading) {
+    return <DashboardSkeleton />;
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'authenticated':
-        return <CheckCircle className="h-4 w-4" />
-      case 'connecting':
-      case 'connected':
-        return <Activity className="h-4 w-4" />
-      case 'disconnected':
-      case 'disconnecting':
-        return <XCircle className="h-4 w-4" />
-      default:
-        return <AlertCircle className="h-4 w-4" />
-    }
-  }
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'session':
-        return <Smartphone className="h-4 w-4" />
-      case 'message':
-        return <MessageSquare className="h-4 w-4" />
-      case 'webhook':
-        return <Bell className="h-4 w-4" />
-      case 'connection':
-        return <Activity className="h-4 w-4" />
-      default:
-        return <Activity className="h-4 w-4" />
-    }
-  }
-
-  const getActivityColor = (status: string) => {
-    switch (status) {
-      case 'success':
-        return 'text-green-600'
-      case 'warning':
-        return 'text-yellow-600'
-      case 'error':
-        return 'text-red-600'
-      default:
-        return 'text-blue-600'
-    }
-  }
-
-  if (!user) return null
-
-  // 🚀 Mostrar loading state mejorado
-  if (limitsLoading) {
+  if (!user) {
     return (
-      <LoadingState 
-        isLoading={true}
-        title="Cargando dashboard"
-        className="max-w-4xl mx-auto mt-8"
-      />
-    )
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-gray-900">
+            No autenticado
+          </h2>
+          <p className="text-gray-600">
+            Por favor, inicia sesión para continuar.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
-      {/* 📊 Banner de límites críticos */}
+    <div className="space-y-6 lg:space-y-8">
+      {/* 📊 Resource Limit Banners */}
       {suscripcion && resourceLimits && (
-        <>
-          <ResourceLimitBanner 
+        <div className="space-y-4">
+          <ResourceLimitBanner
             suscripcion={suscripcion}
             resourceLimits={resourceLimits}
             resourceType="sesiones"
             resourceDisplayName="Sesiones WhatsApp"
           />
-          <ResourceLimitBanner 
+          <ResourceLimitBanner
             suscripcion={suscripcion}
             resourceLimits={resourceLimits}
             resourceType="botsIA"
             resourceDisplayName="ChatBots con IA"
           />
-          <ResourceLimitBanner 
+          <ResourceLimitBanner
             suscripcion={suscripcion}
             resourceLimits={resourceLimits}
             resourceType="webhooks"
             resourceDisplayName="Webhooks"
           />
-        </>
+        </div>
       )}
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+
+      {/* 🎯 HEADER - Super Responsive */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
             ¡Hola, {user.nombrebot}!
+            <Sparkles className="inline h-6 w-6 lg:h-8 lg:w-8 text-yellow-500 ml-2" />
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mt-2">
-            Aquí tienes un resumen de tu actividad en WhatsApp
+          <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
+            Aquí tienes un resumen completo de tu actividad en WhatsApp y el
+            estado de tus servicios
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button 
-            variant="outline" 
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <Button
+            variant="outline"
             onClick={refreshData}
             disabled={refreshing}
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-2 h-11"
           >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+            />
             Actualizar
           </Button>
           <Link href="/dashboard/sessions?create=true">
-          <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Sesión
-          </Button>
+            <Button className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 h-11 px-6">
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Sesión
+            </Button>
           </Link>
         </div>
       </div>
 
-      {/* Membership Alert */}
+      {/* 🚨 MEMBERSHIP ALERT - Mobile Optimized */}
       {!loading && user && stats.daysRemaining <= 7 && (
-        <Card className={`${
-          stats.daysRemaining === 0 
-            ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' 
-            : 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20'
-        }`}>
+        <Card
+          className={`border-l-4 shadow-lg ${
+            stats.daysRemaining === 0
+              ? "border-l-red-500 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800"
+              : "border-l-amber-500 bg-gradient-to-r from-amber-50 to-yellow-100 dark:from-amber-900/20 dark:to-yellow-800/20 border-amber-200 dark:border-amber-800"
+          }`}
+        >
           <CardHeader>
-            <CardTitle className={`flex items-center ${
-              stats.daysRemaining === 0 
-                ? 'text-red-800 dark:text-red-200' 
-                : 'text-yellow-800 dark:text-yellow-200'
-            }`}>
-              <AlertCircle className="h-5 w-5 mr-2" />
-              {stats.daysRemaining === 0 ? 'Membresía Expirada' : 'Membresía por Expirar'}
+            <CardTitle
+              className={`flex items-center text-lg font-bold ${
+                stats.daysRemaining === 0
+                  ? "text-red-800 dark:text-red-200"
+                  : "text-amber-800 dark:text-amber-200"
+              }`}
+            >
+              <AlertCircle className="h-6 w-6 mr-3" />
+              {stats.daysRemaining === 0
+                ? "Membresía Expirada"
+                : "Membresía por Expirar"}
             </CardTitle>
-            <CardDescription className={
-              stats.daysRemaining === 0 
-                ? 'text-red-700 dark:text-red-300' 
-                : 'text-yellow-700 dark:text-yellow-300'
-            }>
-              {stats.daysRemaining === 0 
-                ? 'Tu membresía ha expirado. Renueva ahora para continuar usando todas las funciones.'
-                : `Tu membresía expira en ${stats.daysRemaining} ${stats.daysRemaining === 1 ? 'día' : 'días'}. Renueva ahora para evitar interrupciones.`
-              }
+            <CardDescription
+              className={`text-base ${
+                stats.daysRemaining === 0
+                  ? "text-red-700 dark:text-red-300"
+                  : "text-amber-700 dark:text-amber-300"
+              }`}
+            >
+              {stats.daysRemaining === 0
+                ? "Tu membresía ha expirado. Renueva ahora para continuar usando todas las funciones."
+                : `Tu membresía expira en ${stats.daysRemaining} ${
+                    stats.daysRemaining === 1 ? "día" : "días"
+                  }. Renueva ahora para evitar interrupciones.`}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-3">
-              <Link href="/pricing">
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link href="/pricing" className="flex-1">
+                <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 h-11">
+                  <CreditCard className="h-4 w-4 mr-2" />
                   Ver Planes
                 </Button>
               </Link>
-              <Link href="/dashboard/upgrade">
-                <Button variant="outline">
+              <Link href="/dashboard/upgrade" className="flex-1">
+                <Button variant="outline" className="w-full h-11">
+                  <Crown className="h-4 w-4 mr-2" />
                   Renovar Membresía
                 </Button>
               </Link>
@@ -409,378 +695,201 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card key="stats-card-total-sessions" className="hover:shadow-lg transition-shadow border-blue-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Smartphone className="h-4 w-4 text-blue-600" />
-              Sesiones WhatsApp
-            </CardTitle>
-            {resourceLimits && (
-              <Badge variant="outline" className="text-xs">
-                {resourceLimits.sesiones.current}/{resourceLimits.sesiones.limit}
-              </Badge>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">
-              {resourceLimits?.sesiones.current || stats.totalSessions}
-            </div>
-            <div className="flex items-center mt-2 space-x-2">
-              <div className="flex items-center text-green-600">
-                <Wifi className="h-4 w-4 mr-1" />
-                <span className="text-sm font-medium">{stats.connectedSessions}</span>
-              </div>
-              <span className="text-sm text-gray-500">conectadas</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {resourceLimits 
-                ? `${resourceLimits.sesiones.remaining} disponibles en tu plan`
-                : `${stats.activeSessions} autenticadas y activas`
-              }
-            </p>
-          </CardContent>
-        </Card>
+      {/* 📊 STATS CARDS - Perfect Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <StatsCard
+          title="Sesiones WhatsApp"
+          value={resourceLimits?.sesiones.current || stats.totalSessions}
+          description={
+            resourceLimits
+              ? `${resourceLimits.sesiones.remaining} disponibles en tu plan`
+              : `${stats.activeSessions} autenticadas y activas`
+          }
+          icon={Smartphone}
+          gradient="from-blue-500 to-cyan-600"
+          badge={
+            resourceLimits
+              ? {
+                  current: resourceLimits.sesiones.current,
+                  limit: resourceLimits.sesiones.limit,
+                }
+              : undefined
+          }
+          trend={
+            stats.connectedSessions > 0
+              ? {
+                  value: stats.connectedSessions,
+                  label: "conectadas",
+                  direction: "up",
+                }
+              : undefined
+          }
+        />
 
-        <Card key="stats-card-bots-ia" className="hover:shadow-lg transition-shadow border-purple-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Bot className="h-4 w-4 text-purple-600" />
-              ChatBots con IA
-            </CardTitle>
-            {resourceLimits && (
-              <Badge variant="outline" className="text-xs">
-                {resourceLimits.botsIA.current}/{resourceLimits.botsIA.limit}
-              </Badge>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600">
-              {resourceLimits?.botsIA.current || 0}
-            </div>
-            <div className="flex items-center mt-2">
-              <Zap className="h-4 w-4 text-yellow-500 mr-1" />
-              <span className="text-sm text-purple-600 font-medium">
-                {resourceLimits?.botsIA.percentage || 0}%
-              </span>
-              <span className="text-sm text-gray-500 ml-1">en uso</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {resourceLimits 
-                ? `${resourceLimits.botsIA.remaining} disponibles en tu plan`
-                : 'Crea bots inteligentes para automatizar'
-              }
-            </p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="ChatBots con IA"
+          value={resourceLimits?.botsIA.current || 0}
+          description={
+            resourceLimits
+              ? `${resourceLimits.botsIA.remaining} disponibles en tu plan`
+              : "Crea bots inteligentes para automatizar"
+          }
+          icon={Bot}
+          gradient="from-purple-500 to-pink-600"
+          badge={
+            resourceLimits
+              ? {
+                  current: resourceLimits.botsIA.current,
+                  limit: resourceLimits.botsIA.limit,
+                }
+              : undefined
+          }
+          trend={
+            resourceLimits?.botsIA.percentage &&
+            resourceLimits.botsIA.percentage > 0
+              ? {
+                  value: resourceLimits.botsIA.percentage,
+                  label: "% en uso",
+                  direction: "up",
+                }
+              : undefined
+          }
+        />
 
-        <Card key="stats-card-webhooks" className="hover:shadow-lg transition-shadow border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Webhook className="h-4 w-4 text-green-600" />
-              Webhooks
-            </CardTitle>
-            {resourceLimits && (
-              <Badge variant="outline" className="text-xs">
-                {resourceLimits.webhooks.current}/{resourceLimits.webhooks.limit}
-              </Badge>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              {resourceLimits?.webhooks.current || stats.webhooksActive}
-            </div>
-            <div className="flex items-center mt-2">
-              <Globe className="h-4 w-4 text-green-600 mr-1" />
-              <span className="text-sm text-green-600 font-medium">
-                {resourceLimits?.webhooks.percentage || 0}%
-              </span>
-              <span className="text-sm text-gray-500 ml-1">configurados</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {resourceLimits 
-                ? `${resourceLimits.webhooks.remaining} disponibles en tu plan`
-                : 'Recibe notificaciones en tiempo real'
-              }
-            </p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Webhooks"
+          value={resourceLimits?.webhooks.current || stats.webhooksActive}
+          description={
+            resourceLimits
+              ? `${resourceLimits.webhooks.remaining} disponibles en tu plan`
+              : "Integra con sistemas externos"
+          }
+          icon={Webhook}
+          gradient="from-green-500 to-emerald-600"
+          badge={
+            resourceLimits
+              ? {
+                  current: resourceLimits.webhooks.current,
+                  limit: resourceLimits.webhooks.limit,
+                }
+              : undefined
+          }
+          trend={
+            resourceLimits?.webhooks.percentage &&
+            resourceLimits.webhooks.percentage > 0
+              ? {
+                  value: resourceLimits.webhooks.percentage,
+                  label: "% configurados",
+                  direction: "up",
+                }
+              : undefined
+          }
+        />
 
-        <Card key="stats-card-plan-status" className="hover:shadow-lg transition-shadow border-orange-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Crown className="h-4 w-4 text-orange-600" />
-              Estado del Plan
-            </CardTitle>
-            {suscripcion && (
-              <Badge variant={suscripcion.estaActiva ? 'default' : 'destructive'}>
-                {suscripcion.estado}
-              </Badge>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${
-              (suscripcion?.diasRestantes || stats.daysRemaining) <= 3 ? 'text-red-600' : 
-              (suscripcion?.diasRestantes || stats.daysRemaining) <= 7 ? 'text-yellow-600' : 
-              'text-green-600'
-            }`}>
-              {suscripcion?.diasRestantes || stats.daysRemaining}
-            </div>
-            <div className="flex items-center mt-2">
-              <Clock className="h-4 w-4 text-orange-600 mr-1" />
-              <span className="text-sm text-orange-600 font-medium">
-                {suscripcion ? suscripcion.plan.nombre : (user.tipoplan || 'Básico')}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {suscripcion 
-                ? `Hasta ${new Date(suscripcion.fechas.fin).toLocaleDateString()}`
-                : `Hasta ${formatDate(user.fechaFin).split(',')[0]}`
-              }
-            </p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Días Restantes"
+          value={stats.daysRemaining}
+          description="de tu membresía"
+          icon={Clock}
+          gradient="from-orange-500 to-amber-600"
+        />
       </div>
 
-      {/* System Status & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* System Status */}
-        <Card key="system-status-card">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Activity className="h-5 w-5 mr-2" />
-              Estado del Sistema
-            </CardTitle>
-            <CardDescription>
-              Salud y rendimiento de la plataforma
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <LoadingSpinner />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* API Health */}
-                <div key="status-api-health" className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${
-                      healthStatus?.status === 'healthy' ? 'bg-green-500' : 'bg-red-500'
-                    }`} />
-                    <span className="font-medium">API de WhatsApp</span>
-                  </div>
-                  <Badge variant={healthStatus?.status === 'healthy' ? 'default' : 'destructive'}>
-                    {healthStatus?.status || 'Desconocido'}
-                  </Badge>
-                </div>
+      {/* 🚀 QUICK ACTIONS - Mobile First */}
+      <div className="space-y-4">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <Zap className="h-5 w-5 text-blue-600" />
+          Acciones Rápidas
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <QuickActionCard
+            title="Nueva Sesión WhatsApp"
+            description="Conectar nuevo número"
+            icon={Plus}
+            href="/dashboard/sessions?create=true"
+            color="blue"
+          />
+          <QuickActionCard
+            title="Ver Chatbots"
+            description="Gestionar chatbots y mensajes"
+            icon={Bot}
+            href="/dashboard/templates"
+            color="green"
+          />
+          <QuickActionCard
+            title="Configurar Webhook"
+            description="Integrar con tu sistema"
+            icon={Webhook}
+            href="/dashboard/webhooks"
+            color="purple"
+          />
+          <QuickActionCard
+            title="Crear ChatBot IA"
+            description="Automatizar respuestas"
+            icon={Bot}
+            href="/dashboard/templates?tab=bots"
+            color="orange"
+          />
+        </div>
+      </div>
 
-                {/* Webhook Status */}
-                <div key="status-webhook" className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${
-                      stats.webhooksActive > 0 ? 'bg-green-500' : 'bg-gray-400'
-                    }`} />
-                    <span className="font-medium">Webhooks</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={stats.webhooksActive > 0 ? 'default' : 'secondary'}>
-                      {stats.webhooksActive} activos
-                    </Badge>
-                    {stats.unreadNotifications > 0 && (
-                      <Badge variant="outline" className="bg-blue-50 text-blue-600">
-                        {stats.unreadNotifications} nuevas
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                {/* Uptime */}
-                {healthStatus?.uptime && (
-                  <div key="status-uptime" className="text-center py-2">
-                    <p className="text-sm text-gray-600">
-                      Tiempo activo: <span className="font-medium">{Math.floor(healthStatus.uptime / 3600)}h {Math.floor((healthStatus.uptime % 3600) / 60)}m</span>
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card key="recent-activity-card">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2" />
-              Actividad Reciente
-            </CardTitle>
-            <CardDescription>
-              Últimos eventos y cambios en tus sesiones
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <LoadingSpinner />
-              </div>
-            ) : stats.recentActivity.length === 0 ? (
-              <div className="text-center py-8">
-                <Activity className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No hay actividad reciente</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {stats.recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                    <div className={`mt-0.5 ${getActivityColor(activity.status)}`}>
-                      {getActivityIcon(activity.type)}
+      {/* 📈 RECENT ACTIVITY - Responsive */}
+      {stats.recentActivity.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Activity className="h-5 w-5 text-green-600" />
+            Actividad Reciente
+          </h2>
+          <div className="space-y-3">
+            {stats.recentActivity.map((activity) => (
+              <Card
+                key={activity.id}
+                className="hover:shadow-md transition-shadow"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className={`p-2 rounded-lg ${
+                        activity.status === "success"
+                          ? "bg-green-100 dark:bg-green-900/30"
+                          : activity.status === "warning"
+                          ? "bg-yellow-100 dark:bg-yellow-900/30"
+                          : activity.status === "error"
+                          ? "bg-red-100 dark:bg-red-900/30"
+                          : "bg-blue-100 dark:bg-blue-900/30"
+                      }`}
+                    >
+                      {activity.type === "session" && (
+                        <Smartphone className="h-4 w-4" />
+                      )}
+                      {activity.type === "message" && (
+                        <MessageSquare className="h-4 w-4" />
+                      )}
+                      {activity.type === "webhook" && (
+                        <Webhook className="h-4 w-4" />
+                      )}
+                      {activity.type === "connection" && (
+                        <Activity className="h-4 w-4" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {activity.title}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {activity.description}
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {formatDate(activity.timestamp)}
-                      </p>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(activity.timestamp).toLocaleTimeString()}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Sessions Overview */}
-      <Card key="sessions-overview-card">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Resumen de Sesiones</CardTitle>
-            <CardDescription>Estado actual de todas tus sesiones de WhatsApp</CardDescription>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          <Link href="/dashboard/sessions">
-            <Button variant="outline" size="sm">
-              <Eye className="h-4 w-4 mr-2" />
-              Ver Todas
-            </Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <LoadingSpinner />
-            </div>
-          ) : !Array.isArray(sessions) || sessions.length === 0 ? (
-            <div key="no-sessions-message" className="text-center py-12">
-              <Smartphone className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">
-                No hay sesiones configuradas
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
-                Crea tu primera sesión de WhatsApp para comenzar a enviar mensajes y automatizar tus conversaciones.
-              </p>
-              <Link href="/dashboard/sessions?create=true">
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Crear Primera Sesión
-              </Button>
-              </Link>
-            </div>
-          ) : (
-            <div key="sessions-list" className="space-y-4">
-              {sessions.slice(0, 5).map((session) => (
-                <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <Smartphone className="h-8 w-8 text-blue-600" />
-                        <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${
-                          session.status === 'authenticated' ? 'bg-green-500' :
-                          session.status === 'connecting' ? 'bg-yellow-500' :
-                          'bg-red-500'
-                        }`} />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">{session.id}</p>
-                        <p className="text-sm text-gray-500">
-                          {session.phoneNumber ? `+${session.phoneNumber}` : 'Sin número asignado'}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant={getStatusColor(session.status)} className="flex items-center gap-1">
-                      {getStatusIcon(session.status)}
-                      {session.status}
-                    </Badge>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-500">
-                      {session.createdAt ? formatDate(session.createdAt) : 'Fecha desconocida'}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              
-              {sessions.length > 5 && (
-                <div key="more-sessions-button" className="text-center pt-4">
-                  <Link href="/dashboard/sessions">
-                    <Button variant="outline">
-                      Ver {sessions.length - 5} sesiones más
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card key="quick-actions-card">
-        <CardHeader>
-          <CardTitle>Acciones Rápidas</CardTitle>
-          <CardDescription>Accede rápidamente a las funciones más utilizadas</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link key="quick-action-sessions" href="/dashboard/sessions">
-              <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center space-y-2 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20">
-                <Smartphone className="h-6 w-6 text-blue-600" />
-                <span className="font-medium">Sesiones</span>
-                <span className="text-xs text-gray-500">{stats.totalSessions} configuradas</span>
-              </Button>
-            </Link>
-            
-            <Link key="quick-action-chats" href="/dashboard/chats">
-              <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center space-y-2 hover:bg-purple-50 hover:border-purple-200 dark:hover:bg-purple-900/20">
-                <MessageSquare className="h-6 w-6 text-purple-600" />
-                <span className="font-medium">Mensajes</span>
-                <span className="text-xs text-gray-500">{stats.totalChats} chats activos</span>
-              </Button>
-            </Link>
-            
-            <Link key="quick-action-webhooks" href="/dashboard/webhooks">
-              <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center space-y-2 hover:bg-green-50 hover:border-green-200 dark:hover:bg-green-900/20">
-                <Bell className="h-6 w-6 text-green-600" />
-                <span className="font-medium">Webhooks</span>
-                <span className="text-xs text-gray-500">{stats.unreadNotifications} nuevas</span>
-              </Button>
-            </Link>
-            
-            <Link key="quick-action-settings" href="/dashboard/settings">
-              <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center space-y-2 hover:bg-orange-50 hover:border-orange-200 dark:hover:bg-orange-900/20">
-                <Users className="h-6 w-6 text-orange-600" />
-                <span className="font-medium">Configuración</span>
-                <span className="text-xs text-gray-500">Personalizar</span>
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
-  )
+  );
 }

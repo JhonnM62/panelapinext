@@ -63,6 +63,7 @@ import { toast } from "@/components/ui/use-toast";
 import { sessionsAPI, authAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { useRouter } from "next/navigation";
+import { WebhooksSkeleton } from '@/components/skeletons';
 
 interface NotificationItem {
   id: string;
@@ -2663,12 +2664,7 @@ export default function WebhooksComponent() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Cargando sistema de webhooks...</span>
-      </div>
-    );
+    return <WebhooksSkeleton />;
   }
 
   return (

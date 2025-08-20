@@ -444,16 +444,12 @@ class SimpleBaileysAPI {
     isGroup: boolean = false
   ) {
     try {
+      // Corregido: El endpoint correcto es /chats/:jid no /chats/messages
       const response = await fetch(
-        `${this.baseURL}/chats/messages?id=${sessionId}`,
+        `${this.baseURL}/chats/${encodeURIComponent(remoteJid)}?id=${sessionId}&limit=${limit}&isGroup=${isGroup}`,
         {
-          method: "POST",
+          method: "GET",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            remoteJid,
-            limit,
-            isGroup,
-          }),
         }
       );
 

@@ -3,27 +3,295 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  AdvancedChart, 
-  MetricCard, 
-  PerformanceMetrics, 
-  RealtimeStats 
-} from '@/components/dashboard/analytics-charts'
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Activity, 
-  Zap, 
-  RefreshCw,
+import {
+  TrendingUp,
+  Users,
+  MessageSquare,
+  Activity,
   Download,
-  Settings,
-  Filter
+  RefreshCw,
+  Calendar,
+  BarChart3,
+  PieChart,
+  LineChart,
+  DollarSign,
+  UserCheck,
+  Clock,
+  Globe
 } from 'lucide-react'
-import { sessionsAPI, utilsAPI, webhooksAPI } from '@/lib/api'
-import { toast } from '@/components/ui/use-toast'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useAuthStore } from '@/store/auth'
+import { analyticsAPI } from '@/lib/api'
+
+// 🎨 ADVANCED ANALYTICS SKELETON COMPONENT
+function AdvancedAnalyticsSkeleton() {
+  return (
+    <div className="space-y-8 p-6">
+      {/* Header Skeleton */}
+      <div className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-9 w-80 bg-gradient-to-r from-purple-200 to-pink-200 mb-2" />
+          <Skeleton className="h-5 w-96 bg-gray-200" />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-9 w-32 bg-gray-200" />
+          <Skeleton className="h-9 w-40 bg-gradient-to-r from-blue-200 to-purple-200" />
+          <Skeleton className="h-9 w-36 bg-green-200" />
+        </div>
+      </div>
+
+      {/* Main Stats Grid Skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[...Array(8)].map((_, i) => (
+          <Card key={i} className="relative overflow-hidden">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-20 bg-gray-300" />
+                <Skeleton className="h-5 w-5 rounded bg-gradient-to-br from-blue-200 to-purple-200" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16 bg-gradient-to-r from-gray-300 to-gray-400 mb-2" />
+              <div className="flex items-center space-x-2">
+                <Skeleton className="h-3 w-3 bg-green-200" />
+                <Skeleton className="h-3 w-12 bg-gray-200" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Charts Section Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Large Chart */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-48 bg-gray-300" />
+                <Skeleton className="h-4 w-64 bg-gray-200" />
+              </div>
+              <div className="flex space-x-2">
+                <Skeleton className="h-8 w-16 bg-gray-200" />
+                <Skeleton className="h-8 w-16 bg-gray-200" />
+                <Skeleton className="h-8 w-16 bg-gray-200" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
+              <div className="space-y-3 text-center">
+                <Skeleton className="h-6 w-6 rounded-full bg-gray-300 mx-auto animate-pulse" />
+                <Skeleton className="h-4 w-32 bg-gray-300" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Secondary Charts Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-5 w-32 bg-gray-300" />
+                <Skeleton className="h-4 w-4 bg-gray-200" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
+                <Skeleton className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-200 to-purple-200 animate-pulse" />
+              </div>
+              <div className="mt-4 space-y-2">
+                {[...Array(3)].map((_, j) => (
+                  <div key={j} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Skeleton className="h-3 w-3 rounded-full bg-gray-300" />
+                      <Skeleton className="h-3 w-16 bg-gray-200" />
+                    </div>
+                    <Skeleton className="h-3 w-8 bg-gray-200" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Data Tables Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[...Array(2)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-6 w-40 bg-gray-300" />
+                <Skeleton className="h-8 w-24 bg-gray-200" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[...Array(5)].map((_, j) => (
+                  <div key={j} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Skeleton className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-200 to-purple-200" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-4 w-24 bg-gray-300" />
+                        <Skeleton className="h-3 w-16 bg-gray-200" />
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-right">
+                      <Skeleton className="h-4 w-12 bg-gray-300" />
+                      <Skeleton className="h-3 w-8 bg-gray-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export default function AdvancedAnalyticsPage() {
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [activeTab, setActiveTab] = useState('overview')
+
+  // Mock data - en producción esto vendría de tu API
+  const [analyticsData, setAnalyticsData] = useState({
+    performance: {
+      responseTime: [
+        { time: '00:00', value: 145 },
+        { time: '04:00', value: 122 },
+        { time: '08:00', value: 167 },
+        { time: '12:00', value: 189 },
+        { time: '16:00', value: 156 },
+        { time: '20:00', value: 134 }
+      ],
+      throughput: [
+        { time: '00:00', messages: 45, webhooks: 12 },
+        { time: '04:00', messages: 23, webhooks: 8 },
+        { time: '08:00', messages: 89, webhooks: 24 },
+        { time: '12:00', messages: 156, webhooks: 43 },
+        { time: '16:00', messages: 134, webhooks: 38 },
+        { time: '20:00', messages: 78, webhooks: 19 }
+      ],
+      errors: [
+        { time: '00:00', count: 2, type: 'connection' },
+        { time: '04:00', count: 1, type: 'timeout' },
+        { time: '08:00', count: 0, type: 'none' },
+        { time: '12:00', count: 3, type: 'auth' },
+        { time: '16:00', count: 1, type: 'rate_limit' },
+        { time: '20:00', count: 0, type: 'none' }
+      ],
+      sessionHealth: [
+        { status: 'Autenticada', count: 8 },
+        { status: 'Conectada', count: 3 },
+        { status: 'Conectando', count: 1 },
+        { status: 'Desconectada', count: 2 }
+      ]
+    },
+    realtime: {
+      activeConnections: 12,
+      messagesPerSecond: 24,
+      webhooksPerSecond: 8,
+      cpuUsage: 45,
+      memoryUsage: 67,
+      diskUsage: 34
+    },
+    trends: {
+      weeklyMessages: [
+        { name: 'Lun', messages: 234, webhooks: 45 },
+        { name: 'Mar', messages: 156, webhooks: 32 },
+        { name: 'Mié', messages: 298, webhooks: 67 },
+        { name: 'Jue', messages: 445, webhooks: 89 },
+        { name: 'Vie', messages: 567, webhooks: 123 },
+        { name: 'Sáb', messages: 234, webhooks: 56 },
+        { name: 'Dom', messages: 123, webhooks: 23 }
+      ],
+      hourlyDistribution: [
+        { name: '0-3', count: 12 },
+        { name: '4-7', count: 8 },
+        { name: '8-11', count: 45 },
+        { name: '12-15', count: 67 },
+        { name: '16-19', count: 89 },
+        { name: '20-23', count: 34 }
+      ],
+      sessionTypes: [
+        { name: 'QR Code', count: 8 },
+        { name: 'Pairing Code', count: 4 },
+        { name: 'Manual', count: 2 }
+      ]
+    }
+  })
+
+  useEffect(() => {
+    loadAdvancedAnalytics()
+  }, [])
+
+  const loadAdvancedAnalytics = async () => {
+    setLoading(true)
+    try {
+      // Aquí cargarías datos reales de tu API
+      // const [sessions, health, webhooks] = await Promise.all([
+      //   sessionsAPI.list(),
+      //   utilsAPI.getHealth(),
+      //   webhooksAPI.getStats(userId)
+      // ])
+
+      // Simular carga de datos
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      toast({
+        title: "Datos cargados",
+        description: "Analytics avanzados actualizados",
+      })
+    } catch (error) {
+      console.error('Error loading advanced analytics:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los analytics avanzados",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const refreshData = async () => {
+    setRefreshing(true)
+    await loadAdvancedAnalytics()
+    setRefreshing(false)
+  }
+
+  const exportAdvancedData = () => {
+    const data = {
+      exported_at: new Date().toISOString(),
+      type: 'advanced_analytics',
+      performance: analyticsData.performance,
+      realtime: analyticsData.realtime,
+      trends: analyticsData.trends
+    }
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `advanced_analytics_${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  if (loading) {
+    return <AdvancedAnalyticsSkeleton />
+  }
 
 export default function AdvancedAnalyticsPage() {
   const [loading, setLoading] = useState(true)
@@ -156,12 +424,7 @@ export default function AdvancedAnalyticsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner />
-        <span className="ml-2">Cargando analytics avanzados...</span>
-      </div>
-    )
+    return <AdvancedAnalyticsSkeleton />
   }
 
   return (

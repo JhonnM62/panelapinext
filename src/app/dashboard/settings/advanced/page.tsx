@@ -15,10 +15,15 @@ import {
   Webhook,
   Bot,
   Crown,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  Menu
 } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import { useAuthStore } from '@/store/auth'
+import { cn } from '@/lib/utils'
+
+// Importar componentes de administración
 import UsersManagement from '@/components/admin/UsersManagement'
 import SessionsManagement from '@/components/admin/SessionsManagement'
 import PlansManagement from '@/components/admin/PlansManagement'
@@ -29,11 +34,149 @@ import SystemSettings from '@/components/admin/SystemSettings'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://100.42.185.2:8015'
 
+// 🎨 TABS CONFIGURATION - Organizado y responsive
+const adminTabs = [
+  {
+    id: 'users',
+    label: 'Usuarios',
+    icon: Users,
+    color: 'blue',
+    description: 'Gestionar usuarios del sistema'
+  },
+  {
+    id: 'sessions',
+    label: 'Sesiones',
+    icon: Smartphone,
+    color: 'green',
+    description: 'Administrar sesiones WhatsApp'
+  },
+  {
+    id: 'plans',
+    label: 'Planes',
+    icon: CreditCard,
+    color: 'purple',
+    description: 'Configurar planes y precios'
+  },
+  {
+    id: 'webhooks',
+    label: 'Webhooks',
+    icon: Webhook,
+    color: 'orange',
+    description: 'Gestionar webhooks del sistema'
+  },
+  {
+    id: 'chatbots',
+    label: 'Chatbots',
+    icon: Bot,
+    color: 'indigo',
+    description: 'Administrar bots con IA'
+  },
+  {
+    id: 'gemini',
+    label: 'Gemini IA',
+    icon: MessageSquare,
+    color: 'pink',
+    description: 'Configuración de IA Gemini'
+  },
+  {
+    id: 'system',
+    label: 'Sistema',
+    icon: Settings,
+    color: 'gray',
+    description: 'Configuraciones del sistema'
+  }
+]
+
+// 🎨 MOBILE TAB SELECTOR COMPONENT
+function MobileTabSelector({ 
+  activeTab, 
+  onTabChange, 
+  isOpen, 
+  onToggle 
+}: { 
+  activeTab: string
+  onTabChange: (tab: string) => void
+  isOpen: boolean
+  onToggle: () => void
+}) {
+  const currentTab = adminTabs.find(tab => tab.id === activeTab)
+  
+  return (
+    <div className="md:hidden mb-6">
+      {/* 📱 Current Tab Display */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
+      >
+        <div className="flex items-center space-x-3">
+          {currentTab && (
+            <>
+              <div className={`p-2 rounded-lg bg-${currentTab.color}-100 dark:bg-${currentTab.color}-900/30`}>
+                <currentTab.icon className={`h-5 w-5 text-${currentTab.color}-600 dark:text-${currentTab.color}-400`} />
+              </div>
+              <div className="text-left">
+                <div className="font-semibold text-gray-900 dark:text-gray-100">{currentTab.label}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{currentTab.description}</div>
+              </div>
+            </>
+          )}
+        </div>
+        <Menu className="h-5 w-5 text-gray-400" />
+      </button>
+      
+      {/* 📱 Dropdown Menu */}
+      {isOpen && (
+        <div className="mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          {adminTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                onTabChange(tab.id)
+                onToggle()
+              }}
+              className={cn(
+                "w-full flex items-center space-x-3 p-4 text-left transition-colors",
+                "hover:bg-gray-50 dark:hover:bg-gray-700",
+                activeTab === tab.id 
+                  ? `bg-${tab.color}-50 dark:bg-${tab.color}-900/20 border-l-4 border-${tab.color}-500`
+                  : ""
+              )}
+            >
+              <div className={cn(
+                "p-2 rounded-lg",
+                activeTab === tab.id
+                  ? `bg-${tab.color}-500 text-white`
+                  : `bg-${tab.color}-100 dark:bg-${tab.color}-900/30 text-${tab.color}-600 dark:text-${tab.color}-400`
+              )}>
+                <tab.icon className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className={cn(
+                  "font-medium",
+                  activeTab === tab.id 
+                    ? `text-${tab.color}-900 dark:text-${tab.color}-100`
+                    : "text-gray-900 dark:text-gray-100"
+                )}>
+                  {tab.label}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                  {tab.description}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AdvancedSettingsPage() {
   const { user } = useAuthStore()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('users')
   const [loading, setLoading] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   
   useEffect(() => {
     // Verificar si es admin
@@ -62,6 +205,8 @@ export default function AdvancedSettingsPage() {
   // Actualizar URL cuando cambia el tab
   const handleTabChange = (value: string) => {
     setActiveTab(value)
+    setMobileMenuOpen(false) // Close mobile menu when tab changes
+    
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href)
       url.searchParams.set('tab', value)
@@ -71,115 +216,144 @@ export default function AdvancedSettingsPage() {
 
   if (!user || user.rol !== 'admin') {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600 dark:text-gray-400">Verificando permisos...</p>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4">
+          <RefreshCw className="h-12 w-12 animate-spin mx-auto text-blue-600" />
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Verificando permisos...</h3>
+            <p className="text-gray-600 dark:text-gray-400">Cargando panel de administración</p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6 py-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
-              <Crown className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
-              Panel de Administración
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm sm:text-base">
-              Gestiona usuarios, sesiones, planes y configuraciones del sistema
-            </p>
+    <div className="space-y-6">
+      {/* 🎯 HEADER - Responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-3">
+            <Crown className="h-8 w-8 lg:h-10 lg:w-10 text-yellow-500" />
+            Panel de Administración
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base lg:text-lg max-w-2xl">
+            Gestiona usuarios, sesiones, planes y configuraciones del sistema. 
+            <span className="hidden sm:inline"> Ten cuidado, los cambios afectan a todos los usuarios.</span>
+          </p>
+        </div>
+        
+        {/* 📊 Quick Stats - Mobile responsive */}
+        <div className="flex gap-2 sm:gap-3">
+          <div className="text-center px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+            <div className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">Admin</div>
+            <div className="text-xs text-blue-600/80 dark:text-blue-400/80">Nivel</div>
+          </div>
+          <div className="text-center px-3 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl">
+            <div className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">Activo</div>
+            <div className="text-xs text-green-600/80 dark:text-green-400/80">Estado</div>
           </div>
         </div>
+      </div>
 
-        {/* Admin Warning */}
-        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-2">
-              <Shield className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-sm text-red-800 dark:text-red-200">
-                <strong>Panel Administrativo:</strong> Los cambios realizados aquí afectan a todos los usuarios del sistema.
-                Proceda con precaución.
+      {/* 🚨 ADMIN WARNING - Enhanced */}
+      <Card className="border-red-200 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 dark:border-red-800">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+            <div className="flex-shrink-0">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                <Shield className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-red-900 dark:text-red-100 text-lg">Panel Administrativo</h3>
+              <p className="text-sm sm:text-base text-red-800 dark:text-red-200 mt-1">
+                Los cambios realizados aquí afectan a todos los usuarios del sistema. 
+                Proceda con precaución y asegúrese de entender el impacto de cada acción.
               </p>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <div className="overflow-x-auto pb-2">
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-1">
-              <TabsTrigger value="users" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Usuarios</span>
-              </TabsTrigger>
-              <TabsTrigger value="sessions" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <Smartphone className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Sesiones</span>
-              </TabsTrigger>
-              <TabsTrigger value="plans" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Planes</span>
-              </TabsTrigger>
-              <TabsTrigger value="webhooks" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <Webhook className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Webhooks</span>
-              </TabsTrigger>
-              <TabsTrigger value="chatbots" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <Bot className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Chatbots</span>
-              </TabsTrigger>
-              <TabsTrigger value="gemini" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Gemini IA</span>
-              </TabsTrigger>
-              <TabsTrigger value="system" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Sistema</span>
-              </TabsTrigger>
-            </TabsList>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Users Tab */}
-          <TabsContent value="users" className="space-y-6 mt-6">
-            <UsersManagement token={user.token || ''} baseUrl={BASE_URL} />
+      {/* 📱 MOBILE TAB SELECTOR */}
+      <MobileTabSelector
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        isOpen={mobileMenuOpen}
+        onToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
+      />
+
+      {/* 🎨 MAIN CONTENT TABS - Desktop + Mobile Responsive */}
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        
+        {/* 💻 DESKTOP TABS LIST */}
+        <div className="hidden md:block overflow-x-auto pb-2">
+          <TabsList className="inline-flex h-auto p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+            {adminTabs.map((tab) => (
+              <TabsTrigger 
+                key={tab.id}
+                value={tab.id} 
+                className={cn(
+                  "flex-1 flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200",
+                  "data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-700",
+                  "hover:bg-white/50 dark:hover:bg-gray-700/50",
+                  "min-w-max whitespace-nowrap"
+                )}
+              >
+                <tab.icon className="h-4 w-4" />
+                <span className="hidden lg:inline">{tab.label}</span>
+                <span className="lg:hidden">{tab.label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        {/* 📄 TAB CONTENT - All responsive */}
+        <div className="mt-6">
+          <TabsContent value="users" className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <UsersManagement token={user.token || ''} baseUrl={BASE_URL} />
+            </div>
           </TabsContent>
 
-          {/* Sessions Tab */}
-          <TabsContent value="sessions" className="space-y-6 mt-6">
-            <SessionsManagement token={user.token || ''} baseUrl={BASE_URL} />
+          <TabsContent value="sessions" className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <SessionsManagement token={user.token || ''} baseUrl={BASE_URL} />
+            </div>
           </TabsContent>
 
-          {/* Plans Tab */}
-          <TabsContent value="plans" className="space-y-6 mt-6">
-            <PlansManagement token={user.token || ''} baseUrl={BASE_URL} />
+          <TabsContent value="plans" className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <PlansManagement token={user.token || ''} baseUrl={BASE_URL} />
+            </div>
           </TabsContent>
 
-          {/* Webhooks Tab */}
-          <TabsContent value="webhooks" className="space-y-6 mt-6">
-            <WebhooksManagement token={user.token || ''} baseUrl={BASE_URL} />
+          <TabsContent value="webhooks" className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <WebhooksManagement token={user.token || ''} baseUrl={BASE_URL} />
+            </div>
           </TabsContent>
 
-          {/* Chatbots Tab */}
-          <TabsContent value="chatbots" className="space-y-6 mt-6">
-            <ChatbotsManagement token={user.token || ''} baseUrl={BASE_URL} />
+          <TabsContent value="chatbots" className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <ChatbotsManagement token={user.token || ''} baseUrl={BASE_URL} />
+            </div>
           </TabsContent>
 
-          {/* Gemini IA Tab */}
-          <TabsContent value="gemini" className="space-y-6 mt-6">
-            <GeminiManagement token={user.token || ''} baseUrl={BASE_URL} />
+          <TabsContent value="gemini" className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <GeminiManagement token={user.token || ''} baseUrl={BASE_URL} />
+            </div>
           </TabsContent>
 
-          {/* System Settings Tab */}
-          <TabsContent value="system" className="space-y-6 mt-6">
-            <SystemSettings token={user.token || ''} baseUrl={BASE_URL} />
+          <TabsContent value="system" className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <SystemSettings token={user.token || ''} baseUrl={BASE_URL} />
+            </div>
           </TabsContent>
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
     </div>
   )
 }

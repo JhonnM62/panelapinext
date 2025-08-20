@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 
+// 🎨 SIDEBAR COMPONENT MEJORADO - 100% RESPONSIVE
 function SidebarComponent({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { user, logout } = useAuthStore()
   const router = useRouter()
@@ -57,166 +59,155 @@ function SidebarComponent({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
   return (
     <>
+      {/* 📱 Mobile Overlay - Mejorado */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-20 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-300"
           onClick={onClose}
+          aria-label="Close sidebar"
         />
       )}
-      <div className={`
-        fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 
-        transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col
-        ${isOpen ? "translate-x-0" : "-translate-x-full"}
-      `}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <MessageSquare className="h-4 w-4 text-white" />
+      
+      {/* 🎨 SIDEBAR CONTAINER - RESPONSIVE PERFECTO */}
+      <div className={cn(
+        "fixed inset-y-0 left-0 z-40 w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700",
+        "transform transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col",
+        "shadow-xl lg:shadow-none",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        
+        {/* 🏷️ HEADER - Responsive */}
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <MessageSquare className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Baileys API</span>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-gray-900 dark:text-gray-100">Baileys API</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">v2.3</span>
+            </div>
           </div>
-          <button onClick={onClose} className="lg:hidden p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400" type="button">
-            ✕
+          {/* 📱 Close button - Mobile only */}
+          <button 
+            onClick={onClose} 
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
+            aria-label="Cerrar menú"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-hide">
+        
+        {/* 🧭 NAVIGATION - Totalmente responsive */}
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto scrollbar-hide">
           {filteredNavigation.map((item) => {
             const Icon = item.icon
             const active = isActive(item.href)
             return (
               <Link key={item.name} href={item.href} onClick={onClose}>
-                <div className={`flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                <div className={cn(
+                  "group flex items-center space-x-3 px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200",
+                  "hover:scale-[1.02] transform",
                   active 
-                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-l-4 border-blue-500' 
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
-                }`}>
-                  <Icon className={`h-5 w-5 ${active ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-                  <span className="font-medium">{item.name}</span>
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 dark:hover:from-gray-800 dark:hover:to-gray-700/50 hover:text-gray-900 dark:hover:text-gray-100'
+                )}>
+                  <Icon className={cn(
+                    "h-5 w-5 transition-colors",
+                    active ? 'text-white' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                  )} />
+                  <span className="font-medium flex-1">{item.name}</span>
                   {active && (
-                    <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full" />
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                   )}
                 </div>
               </Link>
             )
           })}
           
-          {/* Separador para acción adicional */}
+          {/* 🚨 Separador para membresía expirada */}
           {user?.membershipExpired && (
             <>
-              <div className="border-t border-gray-200 dark:border-gray-700 my-4" />
+              <div className="border-t border-gray-200 dark:border-gray-700 my-6" />
               <Link href="/dashboard/plans" onClick={onClose}>
-                <div className="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-md bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
-                  <CreditCard className="h-4 w-4" />
-                  <span>Actualizar Plan</span>
+                <div className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition-all duration-200 transform hover:scale-[1.02] shadow-lg shadow-amber-500/25">
+                  <CreditCard className="h-5 w-5" />
+                  <span className="font-semibold">Actualizar Plan</span>
                 </div>
               </Link>
             </>
           )}
         </nav>
+        
+        {/* 📊 PLAN INFO - Responsive */}
         <div className="border-t border-gray-200 dark:border-gray-700">
-          {/* Informacion del Plan - Arriba del contenedor de usuario */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-3 border border-blue-200/50 dark:border-blue-700/50">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Plan Actual</span>
-                <div className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                  user?.tipoplan === 'vitalicio' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
-                  user?.tipoplan === '1año' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                  user?.tipoplan === '6meses' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
-                  'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                }`}>
+          <div className="p-4">
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-700/50">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Plan Actual</span>
+                <div className={cn(
+                  "px-3 py-1 rounded-full text-xs font-bold",
+                  user?.tipoplan === 'vitalicio' ? 'bg-purple-500 text-white' :
+                  user?.tipoplan === '1año' ? 'bg-green-500 text-white' :
+                  user?.tipoplan === '6meses' ? 'bg-blue-500 text-white' :
+                  'bg-gray-400 text-white'
+                )}>
                   {user?.tipoplan === '14dias' ? 'Gratuito' : 
-                   user?.tipoplan === '6meses' ? 'Basico' : 
-                   user?.tipoplan === '1año' ? 'Estandar' : 
+                   user?.tipoplan === '6meses' ? 'Básico' : 
+                   user?.tipoplan === '1año' ? 'Estándar' : 
                    user?.tipoplan === 'vitalicio' ? 'Premium' : 
-                   'Basico'}
+                   'Básico'}
                 </div>
               </div>
               
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-600 dark:text-gray-400">Expira:</span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400 font-medium">Expira:</span>
                 <div className="text-right">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  <div className="font-bold text-gray-900 dark:text-gray-100">
                     {formatDate(user?.fechaFin || '').split(',')[0]}
                   </div>
-                  <div className={`text-xs font-medium ${
+                  <div className={cn(
+                    "text-xs font-semibold",
                     user?.membershipExpired 
-                      ? 'text-red-600 dark:text-red-400' 
+                      ? 'text-red-500' 
                       : (() => {
                           const daysLeft = Math.ceil((new Date(user?.fechaFin || '').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-                          return daysLeft <= 7 
-                            ? 'text-amber-600 dark:text-amber-400' 
-                            : 'text-green-600 dark:text-green-400'
+                          return daysLeft <= 7 ? 'text-amber-500' : 'text-green-500'
                         })()
-                  }`}>
+                  )}>
                     {user?.membershipExpired 
-                      ? 'Expirado' 
-                      : (() => {
-                          const daysLeft = Math.ceil((new Date(user?.fechaFin || '').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-                          return daysLeft <= 0 
-                            ? 'Expirado'
-                            : daysLeft <= 7 
-                              ? `${daysLeft} dias restantes`
-                              : daysLeft <= 30
-                                ? `${daysLeft} dias restantes`
-                                : `${daysLeft} dias restantes`
-                        })()
-                    }
+                      ? 'EXPIRADO' 
+                      : `${Math.ceil((new Date(user?.fechaFin || '').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} días`}
                   </div>
                 </div>
               </div>
-              
-              {user?.membershipExpired && (
-                <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
-                    <span className="text-xs font-medium text-red-700 dark:text-red-300">Membresia expirada</span>
-                  </div>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">Actualiza tu plan para continuar</p>
-                </div>
-              )}
             </div>
           </div>
           
-          {/* Contenedor de usuario */}
-          <div className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 min-w-0 flex-1">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {user ? getInitials(user.email) : 'U'}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                    {user?.nombrebot || 'Usuario'}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {user?.email || 'email@example.com'}
-                  </p>
-                </div>
+          {/* 👤 USER INFO - Responsive */}
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+                {getInitials(user?.email || '')}
               </div>
-              
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    router.push('/dashboard/settings')
-                  }}
-                  className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  title="Configuracion"
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  title="Cerrar sesion"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  {user?.email?.split('@')[0] || 'Usuario'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {user?.rol || 'user'}
+                </p>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                aria-label="Cerrar sesión"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -225,23 +216,28 @@ function SidebarComponent({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   )
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+// 🚀 DASHBOARD LAYOUT COMPONENT - SUPER RESPONSIVE
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const { user } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
-  const { user, isLoading, checkAuth, logout } = useAuthStore()
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Verificar autenticación al cargar
   useEffect(() => {
-    checkAuth()
-  }, [checkAuth])
-
-  // Redirigir a login si no hay usuario autenticado
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/auth/login')
+    const checkAuth = async () => {
+      if (!user) {
+        router.push('/auth/login')
+      } else {
+        setIsLoading(false)
+      }
     }
-  }, [user, isLoading, router])
+    checkAuth()
+  }, [user, router])
 
   // Función para obtener las iniciales del email
   const getInitials = (email: string) => {
@@ -253,8 +249,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Mostrar loading mientras se verifica autenticación
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-        <LoadingSpinner />
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center">
+          <LoadingSpinner className="w-12 h-12 text-blue-600 mb-4" />
+          <p className="text-lg font-medium text-gray-600 dark:text-gray-400">Cargando dashboard...</p>
+        </div>
       </div>
     )
   }
@@ -264,35 +263,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null
   }
 
-  // Si la membresía expiró y estamos en una página que no es plans/upgrade/dashboard, mostrar interfaz limitada
+  // Si la membresía expiró y estamos en una página restringida
   if (user.membershipExpired && 
       !pathname.includes('/plans') && 
       !pathname.includes('/upgrade') &&
       !pathname.includes('/dashboard') &&
       !pathname.includes('/settings')) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center space-y-4">
-            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto">
-              <AlertTriangle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <Card className="max-w-lg w-full shadow-2xl border-0">
+          <CardContent className="pt-8 pb-6 text-center space-y-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
+              <AlertTriangle className="h-10 w-10 text-white" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Membresía Expirada</h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Tu período de prueba ha terminado. Actualiza tu plan para continuar usando todas las funciones.
-            </p>
-            <div className="flex flex-col gap-2">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Membresía Expirada</h2>
+              <p className="text-gray-600 dark:text-gray-400 text-lg">
+                Tu período de prueba ha terminado. Actualiza tu plan para continuar usando todas las funciones.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button 
                 onClick={() => router.push('/dashboard/plans')}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 h-12 text-lg font-semibold shadow-lg"
               >
-                <CreditCard className="h-4 w-4 mr-2" />
+                <CreditCard className="h-5 w-5 mr-2" />
                 Actualizar Plan
               </Button>
               <Button 
                 variant="outline"
                 onClick={() => router.push('/dashboard')}
-                className="w-full"
+                className="flex-1 h-12 text-lg font-medium"
               >
                 Ver Dashboard
               </Button>
@@ -304,37 +305,66 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
+    <div className="h-screen flex bg-gray-50 dark:bg-gray-900 overflow-hidden">
       <SidebarComponent isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-      <div className="flex-1 flex flex-col">
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      
+      {/* 📱 MAIN CONTENT AREA - SUPER RESPONSIVE */}
+      <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* 🎯 TOP BAR - Mobile Optimized */}
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-3 shadow-sm">
           <div className="flex items-center justify-between">
-            <button onClick={() => setMenuOpen(true)} className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-200" type="button">
+            {/* Mobile menu button */}
+            <button 
+              onClick={() => setMenuOpen(true)} 
+              className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Abrir menú"
+            >
               <Menu className="h-6 w-6" />
             </button>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Dashboard Baileys</h1>
-            <div className="flex items-center gap-3">
+            
+            {/* Page title - responsive */}
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">
+              Dashboard Baileys
+            </h1>
+            
+            {/* Right section */}
+            <div className="flex items-center gap-2 lg:gap-4">
+              {/* Membership warning - responsive */}
               {user?.membershipExpired && (
-                <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-full">
                   <Bell className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Membresia expirada</span>
+                  <span className="text-xs lg:text-sm font-medium text-amber-700 dark:text-amber-300">
+                    Membresía expirada
+                  </span>
                 </div>
               )}
+              
+              {/* Theme toggle */}
               <ThemeToggle />
+              
+              {/* Mobile user menu */}
+              <div className="lg:hidden flex items-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                  {getInitials(user?.email || '')}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </header>
         
-        {/* Banner de membresía expirada */}
+        {/* 🚨 MEMBERSHIP BANNER - Mobile optimized */}
         {user.membershipExpired && (
-          <div className="bg-gradient-to-r from-amber-500 to-orange-500 dark:from-amber-600 dark:to-orange-600 text-white px-4 py-3 text-center text-sm shadow-sm">
-            <div className="flex items-center justify-center gap-3">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-              <span className="font-medium">Tu membresía ha expirado. Funcionalidad limitada activa.</span>
+          <div className="bg-gradient-to-r from-amber-500 to-orange-500 dark:from-amber-600 dark:to-orange-600 text-white px-4 py-3 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                <span className="font-medium text-sm lg:text-base">Tu membresía ha expirado. Funcionalidad limitada activa.</span>
+              </div>
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="ml-2 h-7 text-xs border-white/40 bg-white/10 text-white hover:bg-white/25 hover:border-white/60 hover:text-white transition-all duration-200 font-medium backdrop-blur-sm"
+                className="h-8 text-xs border-white/40 bg-white/10 text-white hover:bg-white/25 hover:border-white/60 hover:text-white transition-all duration-200 font-medium backdrop-blur-sm"
                 onClick={() => router.push('/dashboard/plans')}
               >
                 <CreditCard className="h-3 w-3 mr-1" />
@@ -344,15 +374,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         )}
         
+        {/* 🎨 MAIN CONTENT - Perfect responsive */}
         <main 
-          className="flex-1 overflow-y-auto p-6 mobile-scroll scrollbar-hide" 
+          className={cn(
+            "flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900",
+            "scrollbar-hide webkit-overflow-scrolling-touch",
+            "p-4 sm:p-6 lg:p-8"
+          )}
           style={{ 
-            height: user.membershipExpired ? 'calc(100vh - 8rem)' : 'calc(100vh - 4rem)', 
-            WebkitOverflowScrolling: 'touch',
+            height: user.membershipExpired ? 'calc(100vh - 10rem)' : 'calc(100vh - 6rem)',
             overscrollBehavior: 'contain'
           }}
         >
-          {children}
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>

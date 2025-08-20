@@ -70,36 +70,58 @@ export function ChatList({ sessionId }: ChatListProps) {
       
       console.log('[CHATLIST] Response:', response)
       
-      if (response.success) {
-        // 🔧 SOLUCION: Validar que response.data sea un array
-        const chatData = Array.isArray(response.data) ? response.data : []
+      if (response.success && response.data) {
+        // 🔧 SOLUCION: Manejar tanto arrays como el formato de chats del store de Baileys
+        let chatData = response.data
+        
+        // Si la respuesta es un objeto con chats, convertir a array
+        if (!Array.isArray(chatData) && typeof chatData === 'object') {
+          // Si es un objeto de chats del store de Baileys
+          chatData = Object.values(chatData)
+        }
+        
+        // Asegurar que sea un array
+        chatData = Array.isArray(chatData) ? chatData : []
         
         if (chatData.length === 0) {
-          console.log('[CHATLIST] No chats found or data is not an array')
+          console.log('[CHATLIST] No chats found')
           setChats([])
+          toast({
+            title: 'Sin chats',
+            description: 'No hay chats disponibles en esta sesión',
+          })
           return
         }
         
         const formattedChats = chatData.map((chat: any) => ({
-          id: chat.id,
-          name: extractNameFromJid(chat.id),
+          id: chat.id || chat.jid,
+          name: chat.name || extractNameFromJid(chat.id || chat.jid),
           unreadCount: chat.unreadCount || 0,
-          conversationTimestamp: chat.conversationTimestamp,
-          isGroup: chat.id.includes('@g.us')
+          conversationTimestamp: chat.conversationTimestamp || chat.t || '0',
+          isGroup: (chat.id || chat.jid || '').includes('@g.us'),
+          lastMessage: chat.lastMessage || ''
         }))
         
         console.log('[CHATLIST] Formatted chats:', formattedChats.length)
         setChats(formattedChats)
+        toast({
+          title: 'Chats cargados',
+          description: `Se cargaron ${formattedChats.length} chats`,
+        })
       } else {
-        console.log('[CHATLIST] Response not successful:', response)
+        console.log('[CHATLIST] Response not successful or no data:', response)
         setChats([])
+        toast({
+          title: 'Sin chats',
+          description: 'No se encontraron chats en esta sesión',
+        })
       }
     } catch (error) {
       console.error('Error loading chats:', error)
       setChats([]) // Asegurar array vacío en caso de error
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar los chats',
+        description: 'No se pudieron cargar los chats. Verifica que la sesión esté activa.',
         variant: 'destructive'
       })
     } finally {
@@ -112,6 +134,8 @@ export function ChatList({ sessionId }: ChatListProps) {
 
     try {
       setLoadingMessages(true)
+      setSelectedChat(chat) // Establecer el chat seleccionado inmediatamente
+      
       const response = await baileysAPI.getConversation(
         sessionId,
         chat.id,
@@ -121,23 +145,41 @@ export function ChatList({ sessionId }: ChatListProps) {
       
       console.log('[CHATLIST] Messages response:', response)
       
-      if (response.success) {
-        // 🔧 SOLUCION: Validar que response.data sea un array
-        const messageData = Array.isArray(response.data) ? response.data : []
+      if (response.success && response.data) {
+        // 🔧 SOLUCION: Validar y procesar mensajes
+        let messageData = response.data
+        
+        // Si la respuesta es un objeto, convertir a array
+        if (!Array.isArray(messageData) && typeof messageData === 'object') {
+          messageData = Object.values(messageData)
+        }
+        
+        messageData = Array.isArray(messageData) ? messageData : []
+        
         console.log('[CHATLIST] Messages loaded:', messageData.length)
         
+        if (messageData.length === 0) {
+          toast({
+            title: 'Sin mensajes',
+            description: 'No hay mensajes en esta conversación',
+          })
+        }
+        
         setMessages(messageData)
-        setSelectedChat(chat)
       } else {
         console.log('[CHATLIST] Messages response not successful:', response)
         setMessages([])
+        toast({
+          title: 'Sin mensajes',
+          description: 'No se pudieron cargar los mensajes de este chat',
+        })
       }
     } catch (error) {
       console.error('Error loading messages:', error)
       setMessages([]) // Asegurar array vacío en caso de error
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar los mensajes',
+        description: 'No se pudieron cargar los mensajes. Intenta de nuevo.',
         variant: 'destructive'
       })
     } finally {
