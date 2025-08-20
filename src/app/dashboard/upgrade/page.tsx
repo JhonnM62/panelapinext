@@ -56,6 +56,9 @@ function UpgradePageContent() {
   // 🔧 Estados para prevenir múltiples inicializaciones
   const [paypalInitialized, setPaypalInitialized] = useState(false)
   const [currentInitializingPlan, setCurrentInitializingPlan] = useState<string | null>(null)
+  const [paypalInstance, setPaypalInstance] = useState<any>(null)
+  const [paypalScriptLoaded, setPaypalScriptLoaded] = useState(false)
+  const [orderCreationInProgress, setOrderCreationInProgress] = useState(false)
 
   // 🔄 Función helper para resetear PayPal
   const resetPayPal = (reason: string) => {
@@ -63,8 +66,23 @@ function UpgradePageContent() {
       paypalInitialized,
       currentInitializingPlan,
       selectedPlan,
-      isProcessingPayment
+      isProcessingPayment,
+      hasPaypalInstance: !!paypalInstance
     })
+    
+    // Limpiar instancia de PayPal si existe
+    if (paypalInstance) {
+      try {
+        // Intentar cerrar/limpiar la instancia
+        if (typeof paypalInstance.close === 'function') {
+          paypalInstance.close()
+        }
+        console.log('🧨 [PAYPAL-RESET] Instancia de PayPal limpiada')
+      } catch (error) {
+        console.warn('⚠️ [PAYPAL-RESET] Error limpiando instancia PayPal:', error)
+      }
+      setPaypalInstance(null)
+    }
     
     const container = document.getElementById('paypal-button-container')
     if (container) {
@@ -78,6 +96,7 @@ function UpgradePageContent() {
     setPaypalInitialized(false)
     setCurrentInitializingPlan(null)
     setIsProcessingPayment(false)
+    setOrderCreationInProgress(false)
     
     console.log('✅ [PAYPAL-RESET] Estados reseteados exitosamente')
   }
@@ -135,20 +154,44 @@ function UpgradePageContent() {
   }, [searchParams])
 
   useEffect(() => {
-    if (!window.paypal) {
+    // Verificar si el script ya existe
+    const existingScript = document.querySelector(`script[src*="paypal.com/sdk"]`)
+    
+    if (existingScript) {
+      console.log('📦 [PAYPAL] Script ya existe, reutilizando...')
+      setPaypalLoaded(true)
+      setPaypalScriptLoaded(true)
+      return
+    }
+    
+    if (!window.paypal && !paypalScriptLoaded) {
+      console.log('📦 [PAYPAL] Cargando SDK de PayPal...')
       const script = document.createElement('script')
       script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&currency=USD`
-      script.onload = () => setPaypalLoaded(true)
+      script.async = true
+      script.dataset.paypalScript = 'true'
+      
+      script.onload = () => {
+        console.log('✅ [PAYPAL] SDK cargado exitosamente')
+        setPaypalLoaded(true)
+        setPaypalScriptLoaded(true)
+      }
+      
       script.onerror = () => {
+        console.error('❌ [PAYPAL] Error cargando SDK')
         toast({
           title: 'Error',
-          description: 'No se pudo cargar PayPal',
+          description: 'No se pudo cargar PayPal. Por favor, recarga la página.',
           variant: 'destructive'
         })
+        setPaypalScriptLoaded(false)
       }
+      
       document.body.appendChild(script)
-    } else {
+    } else if (window.paypal) {
+      console.log('✅ [PAYPAL] SDK ya disponible en window')
       setPaypalLoaded(true)
+      setPaypalScriptLoaded(true)
     }
   }, [])
 
@@ -184,14 +227,20 @@ function UpgradePageContent() {
     }
   }, [paypalLoaded, selectedPlan])
 
-  const initializePayPal = () => {
-    if (!window.paypal || !selectedPlan) return
+  const initializePayPal = async () => {
+    if (!window.paypal || !selectedPlan) {
+      console.log('⏳ [PAYPAL] Esperando SDK o plan...', { hasPayPal: !!window.paypal, selectedPlan })
+      return
+    }
 
     const plan = planes.find(p => p.id === selectedPlan)
-    if (!plan) return
+    if (!plan) {
+      console.error('❌ [PAYPAL] Plan no encontrado:', selectedPlan)
+      return
+    }
 
     // 🛡️ Prevenir múltiples inicializaciones del mismo plan
-    if (paypalInitialized && currentInitializingPlan === selectedPlan) {
+    if (paypalInitialized && currentInitializingPlan === selectedPlan && paypalInstance) {
       console.log('🛡️ [PAYPAL] Ya inicializado para este plan, saltando...')
       return
     }
@@ -202,11 +251,25 @@ function UpgradePageContent() {
       return
     }
 
+    // 🧹 Limpiar cualquier instancia previa
+    if (paypalInstance) {
+      console.log('🧹 [PAYPAL] Limpiando instancia previa...')
+      try {
+        if (typeof paypalInstance.close === 'function') {
+          await paypalInstance.close()
+        }
+      } catch (e) {
+        console.warn('⚠️ [PAYPAL] Error cerrando instancia:', e)
+      }
+      setPaypalInstance(null)
+    }
+    
     // 🧹 Limpiar completamente el container
     container.innerHTML = ''
     
     // 🔄 Marcar como inicializando
     setCurrentInitializingPlan(selectedPlan)
+    setPaypalInitialized(false)
 
     // 🏦 Calcular precio con comisión de PayPal
     const priceDetails = getPlanPriceDetails(plan)
@@ -222,49 +285,119 @@ function UpgradePageContent() {
     })
 
     try {
-      window.paypal.Buttons({
-        createOrder: (data: any, actions: any) => {
+      const buttons = window.paypal.Buttons({
+        createOrder: async (data: any, actions: any) => {
+          // Prevenir múltiples creaciones de órdenes
+          if (orderCreationInProgress) {
+            console.log('⚠️ [PAYPAL] Creación de orden ya en progreso, ignorando...')
+            return Promise.reject(new Error('Order creation already in progress'))
+          }
+          
+          setOrderCreationInProgress(true)
           console.log('📋 [PAYPAL] Creando orden...', {
             planId: selectedPlan,
+            planNombre: plan.nombre,
             amount: finalPrice
           })
           
-          return actions.order.create({
+          try {
+            const order = await actions.order.create({
+            intent: 'CAPTURE',
             purchase_units: [{
               amount: {
-                value: finalPrice.toString()
+                currency_code: 'USD',
+                value: finalPrice.toString(),
+                breakdown: {
+                  item_total: {
+                    currency_code: 'USD',
+                    value: plan.precioConDescuento.toFixed(2)
+                  },
+                  handling: {
+                    currency_code: 'USD',
+                    value: priceDetails.commission.totalCommission.toFixed(2)
+                  }
+                }
               },
-              description: `${plan.nombre} - WhatsApp Pro API (inc. PayPal fees)`
-            }]
-          })
+              description: `${plan.nombre} - WhatsApp Pro API`,
+              custom_id: selectedPlan,
+              soft_descriptor: 'WHATSAPP_API'
+            }],
+            application_context: {
+              brand_name: 'WhatsApp Pro API',
+              landing_page: 'NO_PREFERENCE',
+              shipping_preference: 'NO_SHIPPING',
+              user_action: 'PAY_NOW',
+              return_url: window.location.href,
+              cancel_url: window.location.href
+            })
+            
+            console.log('✅ [PAYPAL] Orden creada exitosamente:', order)
+            return order
+          } catch (error) {
+            console.error('❌ [PAYPAL] Error creando orden:', error)
+            throw error
+          } finally {
+            setOrderCreationInProgress(false)
+          }
         },
         onApprove: async (data: any, actions: any) => {
           try {
+            // Prevenir múltiples procesamientos
+            if (isProcessingPayment) {
+              console.log('⚠️ [PAYPAL] Pago ya siendo procesado, ignorando...')
+              return
+            }
+            
             setIsProcessingPayment(true)
             console.log('✅ [PAYPAL] Pago aprobado, capturando orden...', {
               orderId: data.orderID
             })
             
+            // Capturar la orden
             const details = await actions.order.capture()
+            
             console.log('🎉 [PAYPAL] Orden capturada exitosamente:', {
               transactionId: details.id,
-              amount: finalPrice
+              status: details.status,
+              amount: details.purchase_units[0].amount.value,
+              payer: details.payer?.email_address
             })
             
+            // Verificar que el pago fue completado
+            if (details.status !== 'COMPLETED') {
+              throw new Error(`Estado de pago inesperado: ${details.status}`)
+            }
+            
+            // Procesar el pago exitoso
             await handlePaymentSuccess({
               paymentId: details.id,
               planId: selectedPlan,
               amount: finalPrice,
-              transactionId: details.id
+              transactionId: details.id,
+              payerEmail: details.payer?.email_address || user?.email || ''
             })
             
           } catch (error) {
             console.error('❌ [PAYPAL] Error procesando pago:', error)
+            
+            // Mensaje de error más específico
+            let errorMessage = 'Hubo un problema procesando tu pago.'
+            if (error instanceof Error) {
+              if (error.message.includes('INSTRUMENT_DECLINED')) {
+                errorMessage = 'Tu método de pago fue rechazado. Por favor, intenta con otro método.'
+              } else if (error.message.includes('PAYER_CANNOT_PAY')) {
+                errorMessage = 'No se pudo procesar el pago. Verifica tu cuenta de PayPal.'
+              }
+            }
+            
             toast({
-              title: 'Error',
-              description: 'Hubo un problema procesando tu pago. Inténtalo de nuevo.',
+              title: 'Error en el pago',
+              description: errorMessage,
               variant: 'destructive'
             })
+            
+            // Resetear PayPal para permitir reintentos
+            resetPayPal('Error procesando pago')
           } finally {
             setIsProcessingPayment(false)
           }
@@ -305,24 +438,17 @@ function UpgradePageContent() {
           })
           setIsProcessingPayment(false)
         }
-      }).render('#paypal-button-container')
-      .then(() => {
-        // ✅ Marcar como inicializado exitosamente
-        setPaypalInitialized(true)
-        console.log('✅ [PAYPAL] Botones renderizados correctamente para plan:', selectedPlan)
       })
-      .catch((error: any) => {
-        console.error('❌ [PAYPAL] Error renderizando botones:', error)
-        
-        // 🔄 Resetear estados en caso de error
-        resetPayPal('Error renderizando botones')
-        
-        toast({
-          title: 'Error',
-          description: 'No se pudieron cargar los botones de pago. Recarga la página e inténtalo de nuevo.',
-          variant: 'destructive'
-        })
-      })
+      
+      // Guardar referencia a la instancia
+      setPaypalInstance(buttons)
+      
+      // Renderizar los botones
+      await buttons.render('#paypal-button-container')
+      
+      // ✅ Marcar como inicializado exitosamente
+      setPaypalInitialized(true)
+      console.log('✅ [PAYPAL] Botones renderizados correctamente para plan:', selectedPlan)
       
     } catch (error) {
       console.error('❌ [PAYPAL] Error general inicializando PayPal:', error)
@@ -343,6 +469,7 @@ function UpgradePageContent() {
     planId: string
     amount: number
     transactionId: string
+    payerEmail: string
   }) => {
     try {
       const plan = planes.find(p => p.id === paymentData.planId)
@@ -360,11 +487,27 @@ function UpgradePageContent() {
         planActual: suscripcionActual?.plan?.nombre
       })
 
+      // Preparar datos de pago completos
+      const paymentInfo = {
+        planId: paymentData.planId,
+        metodoPago: 'paypal',
+        transaccionId: paymentData.transactionId,
+        montoTotal: paymentData.amount,
+        comisionPayPal: priceDetails.commission
+      }
+      
+      console.log('📤 [PAYMENT] Enviando información al backend:', {
+        ...paymentInfo,
+        esUpgrade: isUpgrade,
+        usuario: user?.email
+      })
+      
       let resultado
       
       // 🔄 Decidir qué endpoint usar según si es upgrade o nueva suscripción
       if (isUpgrade && suscripcionActual) {
         // Usar endpoint de cambio de plan
+        console.log('🔄 [PAYMENT] Ejecutando cambio de plan...')
         resultado = await planesApi.cambiarPlan(
           paymentData.planId,
           'paypal',
@@ -373,7 +516,8 @@ function UpgradePageContent() {
           priceDetails.commission
         )
       } else {
-        // Usar endpoint de nueva suscripción (llamada directa por compatibilidad)
+        // Usar endpoint de nueva suscripción
+        console.log('🆕 [PAYMENT] Creando nueva suscripción...')
         const token = localStorage.getItem('token')
         if (!token) throw new Error('No autenticado')
 
@@ -383,27 +527,34 @@ function UpgradePageContent() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({
-            planId: paymentData.planId,
-            metodoPago: 'paypal',
-            transaccionId: paymentData.transactionId,
-            montoTotal: paymentData.amount,
-            comisionPayPal: priceDetails.commission
-          })
+          body: JSON.stringify(paymentInfo)
         })
 
-        resultado = await response.json()
+        const data = await response.json()
+        resultado = {
+          success: data.success,
+          data: data.data,
+          error: data.message || data.error
+        }
       }
+      
+      console.log('📥 [PAYMENT] Respuesta del backend:', resultado)
       
       if (resultado.success) {
         const mensajeExito = isUpgrade 
           ? `Tu plan ha sido actualizado a ${plan.nombre} exitosamente`
           : `Tu plan ${plan.nombre} ha sido activado correctamente`
           
+        console.log('✅ [PAYMENT] Suscripción actualizada exitosamente')
+        
         toast({
           title: isUpgrade ? '¡Plan actualizado!' : '¡Pago exitoso!',
-          description: mensajeExito
+          description: mensajeExito,
+          duration: 5000
         })
+        
+        // Limpiar estados antes de redireccionar
+        resetPayPal('Pago exitoso - limpiando')
         
         setTimeout(() => {
           router.push('/dashboard/plans')
@@ -413,12 +564,27 @@ function UpgradePageContent() {
       }
       
     } catch (error) {
-      console.error('Error updating membership:', error)
+      console.error('❌ [PAYMENT] Error actualizando suscripción:', error)
+      
+      // Mensaje más detallado según el error
+      let errorMessage = 'El pago fue exitoso pero hubo un problema activando tu plan.'
+      if (error instanceof Error) {
+        if (error.message.includes('autenticado')) {
+          errorMessage = 'Sesión expirada. Por favor, vuelve a iniciar sesión.'
+        } else if (error.message.includes('suscripción activa')) {
+          errorMessage = 'Ya tienes una suscripción activa. Contacta soporte si necesitas ayuda.'
+        }
+      }
+      
       toast({
-        title: 'Error',
-        description: 'El pago fue exitoso pero hubo un problema activando tu plan. Contacta soporte.',
-        variant: 'destructive'
+        title: 'Error activando plan',
+        description: `${errorMessage} Tu pago ID: ${paymentData.transactionId}. Guarda este número y contacta soporte.`,
+        variant: 'destructive',
+        duration: 10000
       })
+      
+      // Resetear PayPal para permitir reintentos si es necesario
+      resetPayPal('Error activando plan')
     }
   }
 
