@@ -33,6 +33,7 @@ import {
 } from '@/lib/plans'
 import { toast } from '@/components/ui/use-toast'
 import SubscriptionGuard from '@/components/plans/SubscriptionGuard'
+import { PaymentSuccessModal } from '@/components/ui/payment-success-modal'
 
 declare global {
   interface Window {
@@ -59,6 +60,21 @@ function UpgradePageContent() {
   const [paypalInstance, setPaypalInstance] = useState<any>(null)
   const [paypalScriptLoaded, setPaypalScriptLoaded] = useState(false)
   const [orderCreationInProgress, setOrderCreationInProgress] = useState(false)
+  // 🎉 Estados para el modal de éxito
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successModalData, setSuccessModalData] = useState<{
+    planName: string
+    amount: number
+    transactionId: string
+    isUpgrade: boolean
+    planData?: {
+      tipo: string
+      duracion: {
+        cantidad: number
+        unidad: string
+      }
+    }
+  } | null>(null)
 
   // 🔄 Función helper para resetear PayPal
   const resetPayPal = (reason: string) => {
@@ -84,14 +100,14 @@ function UpgradePageContent() {
       setPaypalInstance(null)
     }
     
+    // Solo intentar limpiar el container si existe en el DOM
     const container = document.getElementById('paypal-button-container')
     if (container) {
       const hadContent = container.innerHTML.trim().length > 0
       container.innerHTML = ''
       console.log(`🧩 [PAYPAL-RESET] Container limpiado (tenía contenido: ${hadContent})`)
-    } else {
-      console.warn('⚠️ [PAYPAL-RESET] Container no encontrado')
     }
+    // No mostrar warning si el container no existe, es normal en algunos estados
     
     setPaypalInitialized(false)
     setCurrentInitializingPlan(null)
@@ -284,7 +300,19 @@ function UpgradePageContent() {
       esGratuito: plan.esGratuito
     })
 
+    // Suprimir warnings específicos de PayPal
+    const originalWarn = console.warn
+    console.warn = (...args) => {
+      const message = args.join(' ')
+      if (message.includes('global_session_not_found')) {
+        // Suprimir este warning específico de PayPal
+        return
+      }
+      originalWarn.apply(console, args)
+    }
+
     try {
+
       const buttons = window.paypal.Buttons({
         createOrder: async (data: any, actions: any) => {
           // Prevenir múltiples creaciones de órdenes
@@ -326,19 +354,18 @@ function UpgradePageContent() {
               brand_name: 'WhatsApp Pro API',
               landing_page: 'NO_PREFERENCE',
               shipping_preference: 'NO_SHIPPING',
-              user_action: 'PAY_NOW',
-              return_url: window.location.href,
-              cancel_url: window.location.href
-            })
-            
-            console.log('✅ [PAYPAL] Orden creada exitosamente:', order)
-            return order
-          } catch (error) {
-            console.error('❌ [PAYPAL] Error creando orden:', error)
-            throw error
-          } finally {
-            setOrderCreationInProgress(false)
-          }
+              user_action: 'PAY_NOW'
+            }
+          })
+          
+          console.log('✅ [PAYPAL] Orden creada exitosamente:', order)
+          return order
+        } catch (error) {
+          console.error('❌ [PAYPAL] Error creando orden:', error)
+          throw error
+        } finally {
+          setOrderCreationInProgress(false)
+        }
         },
         onApprove: async (data: any, actions: any) => {
           try {
@@ -349,14 +376,62 @@ function UpgradePageContent() {
             }
             
             setIsProcessingPayment(true)
-            console.log('✅ [PAYPAL] Pago aprobado, capturando orden...', {
-              orderId: data.orderID
+            console.log('✅ [PAYPAL] Pago aprobado, iniciando captura...', {
+              orderId: data.orderID,
+              paymentId: data.paymentID,
+              payerID: data.payerID
             })
             
-            // Capturar la orden
-            const details = await actions.order.capture()
+            // Verificar que tenemos los datos necesarios
+            if (!data.orderID) {
+              throw new Error('OrderID no encontrado en los datos de aprobación')
+            }
             
-            console.log('🎉 [PAYPAL] Orden capturada exitosamente:', {
+            // Capturar la orden desde el servidor (mejores prácticas de PayPal)
+            console.log('🔄 [PAYPAL] Ejecutando captura de orden desde servidor...')
+            
+            const captureResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/paypal/capture-order`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${user?.token}`
+              },
+              body: JSON.stringify({
+                orderID: data.orderID,
+                planId: selectedPlan,
+                amount: finalPrice
+              })
+            })
+            
+            const captureData = await captureResponse.json()
+            
+            console.log('🎉 [PAYPAL] Respuesta de captura del servidor:', {
+              success: captureData.success,
+              status: captureResponse.status,
+              data: captureData.data
+            })
+            
+            if (!captureResponse.ok || !captureData.success) {
+              console.error('❌ [PAYPAL] Error en captura desde servidor:', captureData)
+              throw new Error(captureData.message || 'Error capturando orden desde servidor')
+            }
+            
+            // Usar los datos de la captura del servidor
+            const details = {
+              id: captureData.data.transactionId,
+              status: captureData.data.status,
+              payer: {
+                email_address: captureData.data.payerEmail
+              },
+              purchase_units: [{
+                amount: {
+                  value: captureData.data.amount,
+                  currency_code: captureData.data.currency
+                }
+              }]
+            }
+            
+            console.log('✅ [PAYPAL] Orden capturada exitosamente desde servidor:', {
               transactionId: details.id,
               status: details.status,
               amount: details.purchase_units[0].amount.value,
@@ -365,8 +440,11 @@ function UpgradePageContent() {
             
             // Verificar que el pago fue completado
             if (details.status !== 'COMPLETED') {
+              console.error('❌ [PAYPAL] Estado de pago inesperado:', details.status)
               throw new Error(`Estado de pago inesperado: ${details.status}`)
             }
+            
+            console.log('🚀 [PAYPAL] Iniciando procesamiento de pago exitoso...')
             
             // Procesar el pago exitoso
             await handlePaymentSuccess({
@@ -377,27 +455,57 @@ function UpgradePageContent() {
               payerEmail: details.payer?.email_address || user?.email || ''
             })
             
-          } catch (error) {
-            console.error('❌ [PAYPAL] Error procesando pago:', error)
+            console.log('✅ [PAYPAL] Procesamiento de pago completado exitosamente')
             
+          } catch (error) {
             // Mensaje de error más específico
             let errorMessage = 'Hubo un problema procesando tu pago.'
+            let shouldShowToast = true
+            let shouldResetPayPal = true
+            let shouldLogAsError = true
+            
             if (error instanceof Error) {
-              if (error.message.includes('INSTRUMENT_DECLINED')) {
+              if (error.message.includes('Window closed before response')) {
+                // Usuario cerró la ventana de PayPal - mostrar mensaje de ayuda
+                console.log('ℹ️ [PAYPAL] Usuario cerró la ventana de PayPal')
+                
+                // Mostrar mensaje educativo sobre completar el pago
+                toast({
+                  title: '⚠️ Pago Interrumpido',
+                  description: 'Parece que cerraste la ventana de PayPal antes de completar el pago. Para que tu suscripción se active correctamente, es importante completar todo el proceso. ¿Quieres intentar de nuevo?',
+                  variant: 'default',
+                  duration: 10000
+                })
+                
+                shouldShowToast = false // Ya mostramos el toast personalizado
+                shouldResetPayPal = false // No resetear, el usuario puede intentar de nuevo
+                shouldLogAsError = false // No registrar como error
+              } else if (error.message.includes('INSTRUMENT_DECLINED')) {
                 errorMessage = 'Tu método de pago fue rechazado. Por favor, intenta con otro método.'
               } else if (error.message.includes('PAYER_CANNOT_PAY')) {
                 errorMessage = 'No se pudo procesar el pago. Verifica tu cuenta de PayPal.'
+              } else if (error.message.includes('PAYMENT_ALREADY_DONE')) {
+                errorMessage = 'Este pago ya fue procesado anteriormente.'
               }
             }
             
-            toast({
-              title: 'Error en el pago',
-              description: errorMessage,
-              variant: 'destructive'
-            })
+            // Solo registrar como error si es necesario
+            if (shouldLogAsError) {
+              console.error('❌ [PAYPAL] Error procesando pago:', error)
+            }
             
-            // Resetear PayPal para permitir reintentos
-            resetPayPal('Error procesando pago')
+            if (shouldShowToast) {
+              toast({
+                title: 'Error en el pago',
+                description: errorMessage,
+                variant: 'destructive'
+              })
+            }
+            
+            // Solo resetear PayPal si es necesario
+            if (shouldResetPayPal) {
+              resetPayPal('Error procesando pago')
+            }
           } finally {
             setIsProcessingPayment(false)
           }
@@ -431,10 +539,13 @@ function UpgradePageContent() {
         },
         onCancel: (data: any) => {
           console.log('🗑️ [PAYPAL] Pago cancelado por el usuario:', data)
+          
+          // Mostrar mensaje más informativo sobre la cancelación
           toast({
             title: 'Pago Cancelado',
-            description: 'Puedes continuar cuando estés listo para completar tu pago.',
-            variant: 'default'
+            description: '💡 Tip: Para completar tu pago, mantén la ventana de PayPal abierta hasta ver la confirmación. Puedes intentar de nuevo cuando estés listo.',
+            variant: 'default',
+            duration: 8000
           })
           setIsProcessingPayment(false)
         }
@@ -461,6 +572,9 @@ function UpgradePageContent() {
         description: 'Error inicializando el sistema de pagos. Recarga la página.',
         variant: 'destructive'
       })
+    } finally {
+      // Restaurar console.warn original
+      console.warn = originalWarn
     }
   }
 
@@ -472,8 +586,19 @@ function UpgradePageContent() {
     payerEmail: string
   }) => {
     try {
+      console.log('🎯 [PAYMENT-SUCCESS] Iniciando handlePaymentSuccess con datos:', paymentData)
+      
       const plan = planes.find(p => p.id === paymentData.planId)
-      if (!plan) throw new Error('Plan no encontrado')
+      if (!plan) {
+        console.error('❌ [PAYMENT-SUCCESS] Plan no encontrado:', paymentData.planId)
+        throw new Error('Plan no encontrado')
+      }
+      
+      console.log('✅ [PAYMENT-SUCCESS] Plan encontrado:', {
+        planId: plan.id,
+        planNombre: plan.nombre,
+        precio: plan.precioConDescuento
+      })
 
       // 🏦 Calcular detalles de comisión PayPal para enviar al backend
       const priceDetails = getPlanPriceDetails(plan)
@@ -484,7 +609,8 @@ function UpgradePageContent() {
         montoTotal: paymentData.amount,
         comisionPayPal: priceDetails.commission,
         esUpgrade: isUpgrade,
-        planActual: suscripcionActual?.plan?.nombre
+        planActual: suscripcionActual?.plan?.nombre,
+        usuario: user?.email
       })
 
       // Preparar datos de pago completos
@@ -508,6 +634,14 @@ function UpgradePageContent() {
       if (isUpgrade && suscripcionActual) {
         // Usar endpoint de cambio de plan
         console.log('🔄 [PAYMENT] Ejecutando cambio de plan...')
+        console.log('📤 [PAYMENT] Llamando planesApi.cambiarPlan con:', {
+          planId: paymentData.planId,
+          metodoPago: 'paypal',
+          transactionId: paymentData.transactionId,
+          amount: paymentData.amount,
+          commission: priceDetails.commission
+        })
+        
         resultado = await planesApi.cambiarPlan(
           paymentData.planId,
           'paypal',
@@ -515,13 +649,28 @@ function UpgradePageContent() {
           paymentData.amount,
           priceDetails.commission
         )
+        
+        console.log('📥 [PAYMENT] Respuesta de cambiarPlan:', resultado)
       } else {
         // Usar endpoint de nueva suscripción
         console.log('🆕 [PAYMENT] Creando nueva suscripción...')
         const token = localStorage.getItem('token')
-        if (!token) throw new Error('No autenticado')
+        if (!token) {
+          console.error('❌ [PAYMENT] Token no encontrado')
+          throw new Error('No autenticado')
+        }
+        
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://100.42.185.2:8015'
+        const endpoint = `${apiUrl}/planes/suscribirse`
+        
+        console.log('📤 [PAYMENT] Enviando request a:', endpoint)
+        console.log('📤 [PAYMENT] Payload:', paymentInfo)
+        console.log('📤 [PAYMENT] Headers:', {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer [TOKEN_PRESENTE]'
+        })
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://100.42.185.2:8015'}/planes/suscribirse`, {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -529,8 +678,21 @@ function UpgradePageContent() {
           },
           body: JSON.stringify(paymentInfo)
         })
+        
+        console.log('📥 [PAYMENT] Response status:', response.status)
+        console.log('📥 [PAYMENT] Response headers:', Object.fromEntries(response.headers.entries()))
+
+        if (!response.ok) {
+          console.error('❌ [PAYMENT] Response no OK:', {
+            status: response.status,
+            statusText: response.statusText
+          })
+          throw new Error(`Error HTTP: ${response.status} ${response.statusText}`)
+        }
 
         const data = await response.json()
+        console.log('📥 [PAYMENT] Response data:', data)
+        
         resultado = {
           success: data.success,
           data: data.data,
@@ -547,18 +709,44 @@ function UpgradePageContent() {
           
         console.log('✅ [PAYMENT] Suscripción actualizada exitosamente')
         
+        // Mostrar notificación de éxito
         toast({
           title: isUpgrade ? '¡Plan actualizado!' : '¡Pago exitoso!',
           description: mensajeExito,
           duration: 5000
         })
         
-        // Limpiar estados antes de redireccionar
-        resetPayPal('Pago exitoso - limpiando')
+        // Recargar datos del usuario para reflejar el nuevo plan
+        try {
+          console.log('🔄 [PAYMENT] Recargando datos del usuario...')
+          const nuevaSuscripcion = await planesApi.obtenerSuscripcionActual()
+          if (nuevaSuscripcion) {
+            setSuscripcionActual(nuevaSuscripcion)
+            console.log('✅ [PAYMENT] Datos del usuario actualizados:', {
+              planNuevo: nuevaSuscripcion.plan.nombre,
+              diasRestantes: nuevaSuscripcion.diasRestantes,
+              fechaVencimiento: nuevaSuscripcion.fechas.fin
+            })
+          }
+        } catch (reloadError) {
+          console.error('⚠️ [PAYMENT] Error recargando datos del usuario:', reloadError)
+        }
         
-        setTimeout(() => {
-          router.push('/dashboard/plans')
-        }, 2000)
+        // Mostrar modal de confirmación moderna
+        setSuccessModalData({
+          planName: plan.nombre,
+          amount: paymentData.amount,
+          transactionId: paymentData.transactionId,
+          isUpgrade: isUpgrade,
+          planData: {
+            tipo: plan.tipo,
+            duracion: plan.duracion
+          }
+        })
+        setShowSuccessModal(true)
+        
+        // Limpiar estados de PayPal
+        resetPayPal('Pago exitoso - limpiando')
       } else {
         throw new Error(resultado.error || 'Error activando el plan')
       }
@@ -1045,14 +1233,12 @@ function UpgradePageContent() {
                       <span>Pago seguro</span>
                     </CardTitle>
                     <CardDescription>
-                      <span className="flex items-center justify-between">
-                        <span>Procesado por PayPal con encriptación SSL</span>
-                        <span className="flex items-center space-x-1">
-                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                          <span className="text-xs text-green-600 font-medium">Seguro</span>
-                        </span>
-                      </span>
+                      Procesado por PayPal con encriptación SSL
                     </CardDescription>
+                    <div className="flex items-center justify-end space-x-1 mt-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-green-600 font-medium">Seguro</span>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {isProcessingPayment ? (
@@ -1079,6 +1265,26 @@ function UpgradePageContent() {
                             🔒 Transacción protegida por PayPal
                           </div>
                         </div>
+                        {/* Instrucciones de Pago */}
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0">
+                              <CreditCard className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                                💡 Instrucciones de Pago
+                              </h4>
+                              <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                                <li>• Haz clic en el botón de PayPal para iniciar el pago</li>
+                                <li>• <strong>Mantén la ventana abierta</strong> durante todo el proceso</li>
+                                <li>• Espera la confirmación antes de cerrar cualquier ventana</li>
+                                <li>• El proceso toma entre 30-60 segundos</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+
                         {!paypalInitialized && currentInitializingPlan === selectedPlan ? (
                           <div className="flex items-center justify-center py-4">
                             <div className="flex items-center space-x-2 text-sm text-blue-600">
@@ -1257,6 +1463,22 @@ function UpgradePageContent() {
           </div>
         </div>
       </div>
+      
+      {/* Modal de confirmación de pago exitoso */}
+      <PaymentSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        planName={successModalData?.planName || ''}
+        amount={successModalData?.amount || 0}
+        transactionId={successModalData?.transactionId || ''}
+        isUpgrade={successModalData?.isUpgrade || false}
+        onRedirect={() => {
+          setShowSuccessModal(false)
+          router.push('/dashboard/plans')
+        }}
+        userEmail={user?.email}
+        planData={successModalData?.planData}
+      />
     </div>
   )
 }

@@ -931,6 +931,17 @@ export const authAPI = {
     }
   },
 
+  // Actualizar datos completos del usuario
+  updateUserData: async (data: { token: string; userData: any }) => {
+    try {
+      const response = await api.put("/api/v2/auth/user-data", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error actualizando datos de usuario:", error);
+      throw error;
+    }
+  },
+
   // Obtener estadísticas del usuario
   getUserStats: async (token: string) => {
     try {
