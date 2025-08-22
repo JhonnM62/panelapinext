@@ -133,11 +133,14 @@ function UpgradePageContent() {
         const suscripcionData = await planesApi.obtenerSuscripcionActual()
         if (suscripcionData) {
           setSuscripcionActual(suscripcionData)
-          setIsUpgrade(true)
+          // Solo considerar upgrade si no es plan gratuito
+          const esPlanGratuito = suscripcionData.plan.tipo === 'prueba_gratuita' || suscripcionData.plan.precio === 0
+          setIsUpgrade(!esPlanGratuito)
           console.log('🔍 [UPGRADE] Usuario tiene suscripción activa:', {
             planActual: suscripcionData.plan.nombre,
             diasRestantes: suscripcionData.diasRestantes,
-            esUpgrade: true
+            esPlanGratuito: esPlanGratuito,
+            esUpgrade: !esPlanGratuito
           })
         } else {
           setIsUpgrade(false)
@@ -630,73 +633,24 @@ function UpgradePageContent() {
       
       let resultado
       
-      // 🔄 Decidir qué endpoint usar según si es upgrade o nueva suscripción
+      // ✅ El pago ya fue procesado exitosamente en /paypal/capture-order
+      // La suscripción ya fue creada o actualizada en el backend
+      console.log('✅ [PAYMENT] Pago procesado exitosamente por capture-order, omitiendo llamadas duplicadas')
+      
+      // Solo manejar upgrades si es necesario (pero el pago principal ya fue procesado)
       if (isUpgrade && suscripcionActual) {
-        // Usar endpoint de cambio de plan
-        console.log('🔄 [PAYMENT] Ejecutando cambio de plan...')
-        console.log('📤 [PAYMENT] Llamando planesApi.cambiarPlan con:', {
-          planId: paymentData.planId,
-          metodoPago: 'paypal',
-          transactionId: paymentData.transactionId,
-          amount: paymentData.amount,
-          commission: priceDetails.commission
-        })
-        
-        resultado = await planesApi.cambiarPlan(
-          paymentData.planId,
-          'paypal',
-          paymentData.transactionId,
-          paymentData.amount,
-          priceDetails.commission
-        )
-        
-        console.log('📥 [PAYMENT] Respuesta de cambiarPlan:', resultado)
+        console.log('ℹ️ [PAYMENT] Upgrade procesado en capture-order, no se requiere acción adicional')
       } else {
-        // Usar endpoint de nueva suscripción
-        console.log('🆕 [PAYMENT] Creando nueva suscripción...')
-        const token = localStorage.getItem('token')
-        if (!token) {
-          console.error('❌ [PAYMENT] Token no encontrado')
-          throw new Error('No autenticado')
-        }
-        
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://100.42.185.2:8015'
-        const endpoint = `${apiUrl}/planes/suscribirse`
-        
-        console.log('📤 [PAYMENT] Enviando request a:', endpoint)
-        console.log('📤 [PAYMENT] Payload:', paymentInfo)
-        console.log('📤 [PAYMENT] Headers:', {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer [TOKEN_PRESENTE]'
-        })
-
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(paymentInfo)
-        })
-        
-        console.log('📥 [PAYMENT] Response status:', response.status)
-        console.log('📥 [PAYMENT] Response headers:', Object.fromEntries(response.headers.entries()))
-
-        if (!response.ok) {
-          console.error('❌ [PAYMENT] Response no OK:', {
-            status: response.status,
-            statusText: response.statusText
-          })
-          throw new Error(`Error HTTP: ${response.status} ${response.statusText}`)
-        }
-
-        const data = await response.json()
-        console.log('📥 [PAYMENT] Response data:', data)
-        
-        resultado = {
-          success: data.success,
-          data: data.data,
-          error: data.message || data.error
+        console.log('ℹ️ [PAYMENT] Nueva suscripción creada en capture-order, no se requiere acción adicional')
+      }
+      
+      // Simular respuesta exitosa ya que el pago fue procesado
+      resultado = {
+        success: true,
+        message: 'Suscripción activada exitosamente',
+        data: {
+          transactionId: paymentData.transactionId,
+          planId: paymentData.planId
         }
       }
       

@@ -313,49 +313,47 @@ export default function WebhooksPage() {
   const loadSessions = async () => {
     try {
       setLoading(true);
-      const response = await sessionsAPI.list();
+      
+      // Obtener token del usuario autenticado
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No hay token de autenticación disponible");
+        setSessions([]);
+        return;
+      }
 
-      if (response.success && response.data) {
-        const sessionPromises = response.data.map(async (sessionId: string) => {
-          try {
-            const statusResponse = await sessionsAPI.status(sessionId);
-            return {
-              id: sessionId,
-              status: statusResponse.success
-                ? statusResponse.data.status
-                : "unknown",
-              authenticated: statusResponse.success
-                ? statusResponse.data.authenticated || false
-                : false,
-              nombresesion: statusResponse.success
-                ? statusResponse.data.nombresesion
-                : null,
-              phoneNumber: statusResponse.success
-                ? statusResponse.data.phoneNumber
-                : null,
-            };
-          } catch (error) {
-            return {
-              id: sessionId,
-              status: "error",
-              authenticated: false,
-              nombresesion: null,
-              phoneNumber: null,
-            };
-          }
-        });
+      // Usar listForUser en lugar de list para obtener solo las sesiones del usuario
+      const response = await sessionsAPI.listForUser(token);
+      
+      console.log("Response from listForUser:", response);
 
-        const sessionsWithStatus = await Promise.all(sessionPromises);
-        // Filtrar solo sesiones válidas
-        const validSessions = sessionsWithStatus.filter(
-          (session) =>
-            session &&
-            session.id &&
-            typeof session.id === "string" &&
+      if (response.success && response.data && response.data.sesiones) {
+        // Los datos vienen en response.data.sesiones
+        const sessionsArray = response.data.sesiones;
+        
+        console.log("Sessions array:", sessionsArray);
+        
+        // Los datos ya vienen del backend con la información completa de las sesiones
+        const validSessions = sessionsArray
+          .filter((session: any) => 
+            session && 
+            session.id && 
+            typeof session.id === "string" && 
             session.id.trim() !== ""
-        );
+          )
+          .map((session: any) => ({
+            id: session.id,
+            status: session.estadoSesion || "unknown",
+            // Corregido: comparar con "authenticated" en inglés que es lo que devuelve el backend
+            authenticated: session.estadoSesion === "authenticated" || session.estadoSesion === "autenticada",
+            nombresesion: session.nombresesion || null,
+            phoneNumber: session.lineaWhatsApp || null,
+          }));
+        
+        console.log("Valid sessions:", validSessions);
         setSessions(validSessions);
       } else {
+        console.log("No data or unsuccessful response");
         setSessions([]);
       }
     } catch (error) {
@@ -545,7 +543,7 @@ export default function WebhooksPage() {
           <TabsContent value="manager" className="space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               <WebhookManager
-                availableSessions={sessions}
+                sessions={sessions}
                 resourceLimits={resourceLimits}
               />
             </div>

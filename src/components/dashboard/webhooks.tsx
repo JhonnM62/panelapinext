@@ -561,17 +561,30 @@ export default function WebhooksComponent() {
   const loadSessions = async () => {
     console.log("🚀 [WEBHOOK SESSIONS] Cargando sesiones...");
     try {
-      const response = await sessionsAPI.list();
+      // 🔧 CORRECCIÓN: Usar listForUser para obtener solo las sesiones del usuario autenticado
+      const token = user?.token;
+      if (!token) {
+        console.warn("🚀 [WEBHOOK SESSIONS] No hay token disponible");
+        setSessions([]);
+        return [];
+      }
+      
+      const response = await sessionsAPI.listForUser(token);
       console.log(
-        "🚀 [WEBHOOK SESSIONS] Response from sessionsAPI.list():",
+        "🚀 [WEBHOOK SESSIONS] Response from sessionsAPI.listForUser():",
         response
       );
 
       if (response.success && response.data) {
         console.log("🚀 [WEBHOOK SESSIONS] Sessions data:", response.data);
 
+        // 🔧 CORRECCIÓN: listForUser devuelve objetos de sesión, no solo IDs
+        // Extraer los IDs de las sesiones para obtener el status
+        const sessionIds = response.data.map((sesion: any) => sesion._id || sesion.id);
+        console.log("🚀 [WEBHOOK SESSIONS] Session IDs extraídos:", sessionIds);
+
         // Convert session IDs to session objects with status
-        const sessionPromises = response.data.map(async (sessionId: string) => {
+        const sessionPromises = sessionIds.map(async (sessionId: string) => {
           try {
             console.log(
               "🚀 [WEBHOOK SESSIONS] Obteniendo status para sesión:",
@@ -583,6 +596,9 @@ export default function WebhooksComponent() {
               statusResponse
             );
 
+            // 🔧 CORRECCIÓN: Obtener información adicional de la sesión desde response.data
+            const sesionInfo = response.data.find((s: any) => (s._id || s.id) === sessionId);
+            
             return {
               id: sessionId,
               status: statusResponse.success
@@ -604,19 +620,22 @@ export default function WebhooksComponent() {
               webhookUrl: statusResponse.success
                 ? statusResponse.data.webhookUrl
                 : null,
-              // 🔧 SOLUCION: Añadir nombre de sesión para WebSocket
-              nombresesion: statusResponse.success
+              // 🔧 CORRECCIÓN: Usar información de la sesión desde la BD
+              nombresesion: sesionInfo?.nombresesion || (statusResponse.success
                 ? statusResponse.data.nombresesion
-                : null,
-              phoneNumber: statusResponse.success
+                : null),
+              phoneNumber: sesionInfo?.lineaWhatsApp || (statusResponse.success
                 ? statusResponse.data.phoneNumber
-                : null,
+                : null),
             };
           } catch (error) {
             console.error(
               `🚀 [WEBHOOK SESSIONS] Error obteniendo status para ${sessionId}:`,
               error
             );
+            // 🔧 CORRECCIÓN: Obtener información de la sesión incluso en caso de error
+            const sesionInfo = response.data.find((s: any) => (s._id || s.id) === sessionId);
+            
             return {
               id: sessionId,
               status: "error",
@@ -626,9 +645,9 @@ export default function WebhooksComponent() {
               webhookActivo: false,
               webhookCreado: false,
               webhookUrl: null,
-              // 🔧 SOLUCION: Inicializar propiedades nuevas
-              nombresesion: null,
-              phoneNumber: null,
+              // 🔧 CORRECCIÓN: Usar información de la sesión desde la BD incluso en error
+              nombresesion: sesionInfo?.nombresesion || null,
+              phoneNumber: sesionInfo?.lineaWhatsApp || null,
             };
           }
         });

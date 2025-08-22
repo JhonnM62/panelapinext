@@ -28,12 +28,16 @@ interface PaymentSuccessModalProps {
   onRedirect: () => void
   userEmail?: string
   planData?: {
+    _id: string
     tipo: string
+    nombre: string
     duracion: {
       cantidad: number
       unidad: string
     }
   }
+  orderID?: string
+  paymentInfo?: any
 }
 
 export function PaymentSuccessModal({
@@ -45,17 +49,45 @@ export function PaymentSuccessModal({
   isUpgrade,
   onRedirect,
   userEmail,
-  planData
+  planData,
+  orderID,
+  paymentInfo
 }: PaymentSuccessModalProps) {
   const [isUpdatingUser, setIsUpdatingUser] = useState(false)
   const [userUpdateComplete, setUserUpdateComplete] = useState(false)
   const [showRedirectMessage, setShowRedirectMessage] = useState(false)
+  const [countdown, setCountdown] = useState(10)
 
   useEffect(() => {
-    if (isOpen && !userUpdateComplete && !isUpdatingUser) {
+    if (isOpen) {
+      setUserUpdateComplete(false)
+      setIsUpdatingUser(false)
+      setShowRedirectMessage(false)
+      setCountdown(10)
+      
+      // Ejecutar actualización de datos automáticamente cuando se abre el modal
+      console.log('🚀 Modal abierto, iniciando actualización de datos automáticamente...')
       updateUserData()
     }
-  }, [isOpen, userUpdateComplete, isUpdatingUser])
+  }, [isOpen])
+
+  // Timer de 10 segundos para cerrar automáticamente el modal
+  useEffect(() => {
+    if (isOpen && userUpdateComplete) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            onRedirect()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      return () => clearInterval(timer)
+    }
+  }, [isOpen, userUpdateComplete, onRedirect])
 
   useEffect(() => {
     if (userUpdateComplete && !showRedirectMessage) {
@@ -81,17 +113,42 @@ export function PaymentSuccessModal({
     try {
       setIsUpdatingUser(true)
       
-      // El backend ahora actualiza automáticamente los datos del usuario
-      // Solo necesitamos refrescar la información en el frontend
-      console.log('🔄 Refrescando información del usuario después del pago...')
+      console.log('🔄 Actualizando datos del usuario después del pago...', {
+        planData,
+        transactionId,
+        amount,
+        orderID
+      })
       
-      // Esperar un momento para que el backend termine de actualizar
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Si tenemos planData, enviar petición para actualizar datos del usuario
+      if (planData && planData._id) {
+        try {
+          const updateResponse = await authAPI.updateUserAfterPayment({
+            planId: planData._id,
+            transactionId: transactionId,
+            amount: amount,
+            orderID: orderID,
+            paymentInfo: paymentInfo
+          })
+          
+          if (updateResponse.success) {
+            console.log('✅ Datos del usuario actualizados en el backend')
+          } else {
+            console.warn('⚠️ Respuesta del backend:', updateResponse.message)
+          }
+        } catch (updateError) {
+          console.error('❌ Error actualizando datos en el backend:', updateError)
+          // Continuar con el refresh aunque falle la actualización
+        }
+      }
+      
+      // Esperar un momento para que el backend termine de procesar
+      await new Promise(resolve => setTimeout(resolve, 2000))
       
       // Refrescar información del usuario para actualizar el dashboard automáticamente
       try {
         await useAuthStore.getState().refreshUserInfo()
-        console.log('✅ Información del usuario actualizada correctamente')
+        console.log('✅ Información del usuario refrescada correctamente')
       } catch (refreshError) {
         console.error('⚠️ Error refrescando información del usuario:', refreshError)
       }
@@ -202,19 +259,50 @@ export function PaymentSuccessModal({
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <p className="text-xs text-gray-500">Monto</p>
-                    <p className="font-semibold">${amount.toFixed(2)}</p>
+              <div className="space-y-3 pt-3 border-t border-gray-200">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-gray-500" />
+                    <div>
+                      <p className="text-xs text-gray-500">Monto</p>
+                      <p className="font-semibold">${amount.toFixed(2)} {paymentInfo?.currency || 'USD'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <div>
+                      <p className="text-xs text-gray-500">Estado</p>
+                      <p className="text-xs text-green-600 font-semibold">{paymentInfo?.status || 'COMPLETED'}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <p className="text-xs text-gray-500">ID Transacción</p>
-                    <p className="font-mono text-xs">{transactionId.slice(-8)}</p>
+                
+                {/* Información de PayPal */}
+                <div className="bg-blue-50 rounded-lg p-3 space-y-2">
+                  <h4 className="text-sm font-medium text-blue-900">Detalles de PayPal</h4>
+                  <div className="space-y-1">
+                    <div>
+                      <p className="text-xs text-blue-700">ID Transacción:</p>
+                      <p className="font-mono text-xs text-blue-900 break-all">{transactionId}</p>
+                    </div>
+                    {orderID && (
+                      <div>
+                        <p className="text-xs text-blue-700">ID Orden:</p>
+                        <p className="font-mono text-xs text-blue-900">{orderID}</p>
+                      </div>
+                    )}
+                    {paymentInfo?.payerEmail && (
+                      <div>
+                        <p className="text-xs text-blue-700">Email del pagador:</p>
+                        <p className="text-xs text-blue-900">{paymentInfo.payerEmail}</p>
+                      </div>
+                    )}
+                    {paymentInfo?.createTime && (
+                      <div>
+                        <p className="text-xs text-blue-700">Fecha de pago:</p>
+                        <p className="text-xs text-blue-900">{new Date(paymentInfo.createTime).toLocaleString('es-ES')}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -261,8 +349,8 @@ export function PaymentSuccessModal({
               )}
             </motion.div>
 
-            {/* Mensaje de redirección */}
-            {showRedirectMessage && (
+            {/* Mensaje de redirección con countdown */}
+            {userUpdateComplete && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -273,23 +361,26 @@ export function PaymentSuccessModal({
                   <span className="font-medium">Redirigiendo al dashboard...</span>
                 </div>
                 <p className="text-xs text-blue-600">
-                  Serás redirigido automáticamente en unos segundos.
+                  Serás redirigido automáticamente en <span className="font-bold text-blue-800">{countdown}</span> segundos.
+                </p>
+                <p className="text-xs text-blue-500 mt-1">
+                  O haz clic en el botón para ir ahora.
                 </p>
               </motion.div>
             )}
 
             {/* Botón de acción */}
-            {userUpdateComplete && !showRedirectMessage && (
+            {userUpdateComplete && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
               >
                 <Button
-                  onClick={handleClose}
+                  onClick={onRedirect}
                   className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-3 rounded-xl transition-all duration-200 transform hover:scale-[1.02]"
                 >
-                  <span>Ir al Dashboard</span>
+                  <span>Ir al Dashboard Ahora ({countdown}s)</span>
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </motion.div>

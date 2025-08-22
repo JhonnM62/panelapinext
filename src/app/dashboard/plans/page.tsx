@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   AlertTriangle, 
   CreditCard, 
@@ -21,7 +22,9 @@ import {
   Webhook,
   MessageSquare,
   TrendingUp,
-  Shield
+  Shield,
+  History,
+  DollarSign
 } from 'lucide-react'
 import { planesApi, Suscripcion } from '@/lib/plans'
 import { toast } from '@/components/ui/use-toast'
@@ -31,7 +34,10 @@ export default function PlansPage() {
   const { user, checkAuth } = useAuthStore()
   const [suscripcion, setSuscripcion] = useState<Suscripcion | null>(null)
   const [dashboardInfo, setDashboardInfo] = useState<any>(null)
+  const [historialSuscripciones, setHistorialSuscripciones] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingHistorial, setLoadingHistorial] = useState(false)
+  const [activeTab, setActiveTab] = useState('current')
 
   useEffect(() => {
     checkAuth()
@@ -55,7 +61,11 @@ export default function PlansPage() {
         
       } catch (error) {
         console.error('Error cargando datos:', error)
-        toast.error('Error al cargar información de la suscripción')
+        toast({
+          title: 'Error',
+          description: 'Error al cargar información de la suscripción',
+          variant: 'destructive'
+        })
       } finally {
         setLoading(false)
       }
@@ -63,6 +73,32 @@ export default function PlansPage() {
 
     cargarDatos()
   }, [user])
+
+  const cargarHistorial = async () => {
+    if (!user) return
+    
+    try {
+      setLoadingHistorial(true)
+      const historial = await planesApi.obtenerHistorialSuscripciones()
+      setHistorialSuscripciones(historial)
+    } catch (error) {
+        console.error('Error cargando historial:', error)
+        toast({
+          title: 'Error',
+          description: 'Error al cargar el historial de pagos',
+          variant: 'destructive'
+        })
+      } finally {
+      setLoadingHistorial(false)
+    }
+  }
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value)
+    if (value === 'history' && historialSuscripciones.length === 0) {
+      cargarHistorial()
+    }
+  }
 
   const handleUpgrade = () => {
     router.push('/dashboard/upgrade')
@@ -77,16 +113,27 @@ export default function PlansPage() {
       const resultado = await planesApi.cancelarSuscripcion('usuario', 'Cancelación desde dashboard')
       
       if (resultado.success) {
-        toast.success('Suscripción cancelada exitosamente')
+        toast({
+          title: 'Éxito',
+          description: 'Suscripción cancelada exitosamente'
+        })
         // Recargar datos
         setSuscripcion(null)
         setDashboardInfo(null)
       } else {
-        toast.error(resultado.error || 'Error al cancelar suscripción')
+        toast({
+          title: 'Error',
+          description: resultado.error || 'Error al cancelar suscripción',
+          variant: 'destructive'
+        })
       }
     } catch (error) {
       console.error('Error cancelando suscripción:', error)
-      toast.error('Error al cancelar suscripción')
+      toast({
+        title: 'Error',
+        description: 'Error al cancelar suscripción',
+        variant: 'destructive'
+      })
     }
   }
 
@@ -292,6 +339,21 @@ export default function PlansPage() {
           </CardHeader>
         </Card>
 
+        {/* Sistema de pestañas */}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="current" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Plan Actual
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Historial de Pagos
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="current" className="space-y-6 mt-6">
+
         {/* Resumen de uso */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Sesiones */}
@@ -491,6 +553,108 @@ export default function PlansPage() {
             </div>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-6 mt-6">
+            {loadingHistorial ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+                  <p className="text-gray-600 dark:text-gray-400">Cargando historial de pagos...</p>
+                </div>
+              </div>
+            ) : historialSuscripciones.length === 0 ? (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center">
+                    <History className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg font-semibold mb-2">Sin historial de pagos</h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      No tienes pagos registrados en tu cuenta.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                  Historial de Pagos ({historialSuscripciones.length})
+                </h3>
+                
+                {historialSuscripciones.map((suscripcion, index) => (
+                  <Card key={suscripcion.id || index} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Plan</p>
+                          <p className="font-semibold">{suscripcion.plan?.nombre || 'Plan no disponible'}</p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Estado</p>
+                          <div className="mt-1">
+                            {getStatusBadge(suscripcion.estado)}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Pago</p>
+                          <p className="font-semibold">
+                            ${suscripcion.pago?.monto || 0} {suscripcion.pago?.moneda || 'USD'}
+                          </p>
+                          <p className="text-xs text-gray-500 capitalize">
+                            {suscripcion.pago?.metodo || 'No especificado'}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Fecha</p>
+                          <p className="font-semibold">
+                            {new Date(suscripcion.createdAt).toLocaleDateString('es-ES')}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(suscripcion.createdAt).toLocaleTimeString('es-ES', { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {suscripcion.fechas && (
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-600 dark:text-gray-400">Inicio: </span>
+                              <span className="font-medium">
+                                {new Date(suscripcion.fechas.inicio).toLocaleDateString('es-ES')}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 dark:text-gray-400">Fin: </span>
+                              <span className="font-medium">
+                                {new Date(suscripcion.fechas.fin).toLocaleDateString('es-ES')}
+                              </span>
+                            </div>
+                            {suscripcion.fechas.cancelacion && (
+                              <div>
+                                <span className="text-gray-600 dark:text-gray-400">Cancelación: </span>
+                                <span className="font-medium text-red-600">
+                                  {new Date(suscripcion.fechas.cancelacion).toLocaleDateString('es-ES')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

@@ -1028,6 +1028,52 @@ export const authAPI = {
     }
   },
 
+  // **NUEVO: Actualizar datos del usuario después del pago**
+  updateUserAfterPayment: async (data: {
+    planId: string;
+    transactionId: string;
+    amount: number;
+    orderID?: string;
+    paymentInfo?: any;
+  }) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await fetch(`${API_URL}/api/v2/auth/update-after-payment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token,
+          planId: data.planId,
+          transactionId: data.transactionId,
+          amount: data.amount,
+          orderID: data.orderID,
+          paymentInfo: data.paymentInfo
+        }),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.message || "Failed to update user after payment");
+      }
+
+      return {
+        success: responseData.success,
+        data: responseData.data,
+        message: responseData.message,
+      };
+    } catch (error) {
+      console.error("Error actualizando usuario después del pago:", error);
+      throw error;
+    }
+  },
+
   // DEPRECATED: Esta función no debe usarse - usar sessionsAPI.delete en su lugar
   deleteUser: (token: string) => {
     console.warn("deleteUser está deprecated, usa sessionsAPI.delete");
