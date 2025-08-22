@@ -1,0 +1,59 @@
+# Dependencias
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Next.js build output
+.next
+out
+dist
+
+# Archivos de desarrollo
+*.md
+.git
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+.github
+
+# Archivos de configuración del IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de entorno
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos de prueba
+coverage
+.nyc_output
+jest.config.js
+
+# Archivos temporales
+tmp
+temp
+*.log
+
+# Documentación
+docs
+README.md
+LICENSE
+
+# Scripts y archivos HTML externos
+*.html
+clear-gemini-cache.js
+qr-modal-fix.js
+
+# TypeScript
+*.tsbuildinfo
