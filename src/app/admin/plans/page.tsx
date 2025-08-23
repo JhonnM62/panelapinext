@@ -1,1 +1,575 @@
-'use client'\n\nimport { useState, useEffect } from 'react'\nimport { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'\nimport { Button } from '@/components/ui/button'\nimport { Input } from '@/components/ui/input'\nimport { Label } from '@/components/ui/label'\nimport { Badge } from '@/components/ui/badge'\nimport { LoadingSpinner } from '@/components/ui/loading-spinner'\nimport { useToast } from '@/components/ui/use-toast'\nimport { \n  Dialog,\n  DialogContent,\n  DialogDescription,\n  DialogFooter,\n  DialogHeader,\n  DialogTitle,\n  DialogTrigger,\n} from '@/components/ui/dialog'\nimport { \n  Select,\n  SelectContent,\n  SelectItem,\n  SelectTrigger,\n  SelectValue,\n} from '@/components/ui/select'\nimport { Textarea } from '@/components/ui/textarea'\nimport { Switch } from '@/components/ui/switch'\nimport { \n  Plus, \n  Edit, \n  Trash2, \n  DollarSign,\n  Crown,\n  Zap,\n  Star,\n  Infinity,\n  Save,\n  X\n} from 'lucide-react'\nimport { PricingPlan } from '@/types'\n\nexport default function PlansAdminPage() {\n  const [plans, setPlans] = useState<PricingPlan[]>([])\n  const [isLoading, setIsLoading] = useState(true)\n  const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null)\n  const [isDialogOpen, setIsDialogOpen] = useState(false)\n  const [isSaving, setIsSaving] = useState(false)\n  const { toast } = useToast()\n\n  // Initial plans data\n  const initialPlans: PricingPlan[] = [\n    {\n      id: 'basic',\n      name: 'Prueba Gratuita',\n      price: 0,\n      duration: 1,\n      maxSessions: 1,\n      features: [\n        '1 día de acceso',\n        '1 sesión de WhatsApp',\n        'Mensajes básicos',\n        'Soporte por email'\n      ],\n      isActive: true\n    },\n    {\n      id: 'monthly',\n      name: 'Plan Mensual',\n      price: 7,\n      duration: 30,\n      maxSessions: 1,\n      features: [\n        '1 sesión de WhatsApp',\n        'Mensajes ilimitados',\n        'Automatización básica',\n        'Soporte 24/7',\n        'Analytics básicos'\n      ],\n      popular: false,\n      isActive: true\n    },\n    {\n      id: 'semiannual',\n      name: 'Plan 6 Meses',\n      price: 37.8,\n      originalPrice: 42,\n      discount: 10,\n      duration: 180,\n      maxSessions: 1,\n      features: [\n        '1 sesión de WhatsApp',\n        'Mensajes ilimitados',\n        'Automatización avanzada',\n        'Soporte prioritario 24/7',\n        'Analytics completos',\n        'Plantillas personalizadas',\n        '10% de descuento'\n      ],\n      popular: true,\n      isActive: true\n    },\n    {\n      id: 'annual',\n      name: 'Plan Anual',\n      price: 67.2,\n      originalPrice: 84,\n      discount: 20,\n      duration: 365,\n      maxSessions: 1,\n      features: [\n        '1 sesión de WhatsApp',\n        'Mensajes ilimitados',\n        'Automatización completa',\n        'Soporte VIP 24/7',\n        'Analytics avanzados',\n        'Plantillas premium',\n        'API personalizada',\n        '20% de descuento'\n      ],\n      isActive: true\n    },\n    {\n      id: 'lifetime',\n      name: 'Plan Vitalicio',\n      price: 100,\n      duration: 36500,\n      maxSessions: 15,\n      features: [\n        'Hasta 15 sesiones de WhatsApp',\n        'Mensajes ilimitados',\n        'Todas las funciones premium',\n        'Soporte VIP de por vida',\n        'Analytics profesionales',\n        'API completa',\n        'Actualizaciones gratuitas',\n        'Garantía de 1 año',\n        'Acceso vitalicio'\n      ],\n      isActive: true\n    }\n  ]\n\n  useEffect(() => {\n    // Simular carga de planes desde API\n    setTimeout(() => {\n      setPlans(initialPlans)\n      setIsLoading(false)\n    }, 1000)\n  }, [])\n\n  const handleEditPlan = (plan: PricingPlan) => {\n    setEditingPlan({ ...plan })\n    setIsDialogOpen(true)\n  }\n\n  const handleCreatePlan = () => {\n    setEditingPlan({\n      id: 'custom',\n      name: '',\n      price: 0,\n      duration: 30,\n      maxSessions: 1,\n      features: [''],\n      isActive: true\n    })\n    setIsDialogOpen(true)\n  }\n\n  const handleSavePlan = async () => {\n    if (!editingPlan) return\n\n    setIsSaving(true)\n    \n    try {\n      // Simular llamada a API\n      await new Promise(resolve => setTimeout(resolve, 1500))\n      \n      if (editingPlan.id === 'custom' || !plans.find(p => p.id === editingPlan.id)) {\n        // Crear nuevo plan\n        const newId = `custom_${Date.now()}`\n        const newPlan = { ...editingPlan, id: newId }\n        setPlans(prev => [...prev, newPlan])\n        toast({\n          title: 'Plan creado',\n          description: 'El nuevo plan ha sido creado exitosamente',\n        })\n      } else {\n        // Actualizar plan existente\n        setPlans(prev => prev.map(p => p.id === editingPlan.id ? editingPlan : p))\n        toast({\n          title: 'Plan actualizado',\n          description: 'El plan ha sido actualizado exitosamente',\n        })\n      }\n      \n      setIsDialogOpen(false)\n      setEditingPlan(null)\n    } catch (error) {\n      toast({\n        title: 'Error',\n        description: 'No se pudo guardar el plan',\n        variant: 'destructive',\n      })\n    } finally {\n      setIsSaving(false)\n    }\n  }\n\n  const handleDeletePlan = async (planId: string) => {\n    if (confirm('¿Estás seguro de que quieres eliminar este plan?')) {\n      try {\n        // Simular llamada a API\n        await new Promise(resolve => setTimeout(resolve, 1000))\n        \n        setPlans(prev => prev.filter(p => p.id !== planId))\n        toast({\n          title: 'Plan eliminado',\n          description: 'El plan ha sido eliminado exitosamente',\n        })\n      } catch (error) {\n        toast({\n          title: 'Error',\n          description: 'No se pudo eliminar el plan',\n          variant: 'destructive',\n        })\n      }\n    }\n  }\n\n  const handleToggleActive = async (planId: string) => {\n    try {\n      setPlans(prev => prev.map(p => \n        p.id === planId ? { ...p, isActive: !p.isActive } : p\n      ))\n      \n      toast({\n        title: 'Estado actualizado',\n        description: 'El estado del plan ha sido actualizado',\n      })\n    } catch (error) {\n      toast({\n        title: 'Error',\n        description: 'No se pudo actualizar el estado',\n        variant: 'destructive',\n      })\n    }\n  }\n\n  const getPlanIcon = (planId: string) => {\n    switch (planId) {\n      case 'basic': return <Zap className=\"h-5 w-5\" />\n      case 'monthly': return <Zap className=\"h-5 w-5\" />\n      case 'semiannual': return <Star className=\"h-5 w-5\" />\n      case 'annual': return <Crown className=\"h-5 w-5\" />\n      case 'lifetime': return <Infinity className=\"h-5 w-5\" />\n      default: return <DollarSign className=\"h-5 w-5\" />\n    }\n  }\n\n  const formatPrice = (price: number) => {\n    return new Intl.NumberFormat('es-US', {\n      style: 'currency',\n      currency: 'USD'\n    }).format(price)\n  }\n\n  const updateEditingPlan = (field: keyof PricingPlan, value: any) => {\n    if (!editingPlan) return\n    setEditingPlan({ ...editingPlan, [field]: value })\n  }\n\n  const addFeature = () => {\n    if (!editingPlan) return\n    setEditingPlan({ \n      ...editingPlan, \n      features: [...editingPlan.features, '']\n    })\n  }\n\n  const updateFeature = (index: number, value: string) => {\n    if (!editingPlan) return\n    const newFeatures = [...editingPlan.features]\n    newFeatures[index] = value\n    setEditingPlan({ ...editingPlan, features: newFeatures })\n  }\n\n  const removeFeature = (index: number) => {\n    if (!editingPlan) return\n    const newFeatures = editingPlan.features.filter((_, i) => i !== index)\n    setEditingPlan({ ...editingPlan, features: newFeatures })\n  }\n\n  if (isLoading) {\n    return (\n      <div className=\"flex items-center justify-center min-h-screen\">\n        <LoadingSpinner size={32} />\n      </div>\n    )\n  }\n\n  return (\n    <div className=\"space-y-6\">\n      {/* Header */}\n      <div className=\"flex items-center justify-between\">\n        <div>\n          <h1 className=\"text-3xl font-bold text-gray-900 dark:text-gray-100\">\n            Gestión de Planes\n          </h1>\n          <p className=\"text-gray-600 dark:text-gray-300 mt-1\">\n            Configura y administra los planes de suscripción\n          </p>\n        </div>\n        <Button onClick={handleCreatePlan}>\n          <Plus className=\"h-4 w-4 mr-2\" />\n          Nuevo Plan\n        </Button>\n      </div>\n\n      {/* Plans Grid */}\n      <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6\">\n        {plans.map((plan) => (\n          <Card \n            key={plan.id} \n            className={`relative ${!plan.isActive ? 'opacity-60' : ''} ${\n              plan.popular ? 'ring-2 ring-blue-500' : ''\n            }`}\n          >\n            {plan.popular && (\n              <div className=\"absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2\">\n                <Badge className=\"bg-blue-500\">Popular</Badge>\n              </div>\n            )}\n            \n            <CardHeader className=\"text-center\">\n              <div className=\"mx-auto p-2 bg-gray-100 dark:bg-gray-800 rounded-full w-fit mb-2\">\n                {getPlanIcon(plan.id)}\n              </div>\n              <CardTitle className=\"flex items-center justify-center space-x-2\">\n                <span>{plan.name}</span>\n                {!plan.isActive && <Badge variant=\"secondary\">Inactivo</Badge>}\n              </CardTitle>\n              <div className=\"space-y-1\">\n                <div className=\"flex items-center justify-center space-x-2\">\n                  {plan.originalPrice && (\n                    <span className=\"text-sm text-gray-500 line-through\">\n                      {formatPrice(plan.originalPrice)}\n                    </span>\n                  )}\n                  <span className=\"text-2xl font-bold\">\n                    {formatPrice(plan.price)}\n                  </span>\n                </div>\n                {plan.discount && (\n                  <Badge variant=\"secondary\" className=\"text-xs\">\n                    {plan.discount}% OFF\n                  </Badge>\n                )}\n                <CardDescription>\n                  {plan.duration === 36500 ? 'Vitalicio' : `${plan.duration} días`} · \n                  {plan.maxSessions} sesión{plan.maxSessions > 1 ? 'es' : ''}\n                </CardDescription>\n              </div>\n            </CardHeader>\n\n            <CardContent className=\"space-y-4\">\n              <div className=\"space-y-2\">\n                <h4 className=\"font-medium text-sm\">Características:</h4>\n                <ul className=\"text-xs space-y-1\">\n                  {plan.features.slice(0, 3).map((feature, index) => (\n                    <li key={index} className=\"text-gray-600 dark:text-gray-400\">\n                      • {feature}\n                    </li>\n                  ))}\n                  {plan.features.length > 3 && (\n                    <li className=\"text-gray-500 text-xs\">\n                      +{plan.features.length - 3} más...\n                    </li>\n                  )}\n                </ul>\n              </div>\n\n              <div className=\"flex items-center justify-between pt-4 border-t\">\n                <div className=\"flex items-center space-x-2\">\n                  <Switch\n                    checked={plan.isActive}\n                    onCheckedChange={() => handleToggleActive(plan.id)}\n                  />\n                  <span className=\"text-xs text-gray-600 dark:text-gray-400\">\n                    {plan.isActive ? 'Activo' : 'Inactivo'}\n                  </span>\n                </div>\n                <div className=\"flex items-center space-x-1\">\n                  <Button\n                    size=\"sm\"\n                    variant=\"outline\"\n                    onClick={() => handleEditPlan(plan)}\n                  >\n                    <Edit className=\"h-3 w-3\" />\n                  </Button>\n                  {!['basic', 'monthly', 'semiannual', 'annual', 'lifetime'].includes(plan.id) && (\n                    <Button\n                      size=\"sm\"\n                      variant=\"outline\"\n                      onClick={() => handleDeletePlan(plan.id)}\n                      className=\"text-red-600 hover:text-red-700\"\n                    >\n                      <Trash2 className=\"h-3 w-3\" />\n                    </Button>\n                  )}\n                </div>\n              </div>\n            </CardContent>\n          </Card>\n        ))}\n      </div>\n\n      {/* Edit/Create Plan Dialog */}\n      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>\n        <DialogContent className=\"max-w-2xl max-h-[80vh] overflow-y-auto\">\n          <DialogHeader>\n            <DialogTitle>\n              {editingPlan?.id === 'custom' || !plans.find(p => p.id === editingPlan?.id) \n                ? 'Crear Nuevo Plan' \n                : 'Editar Plan'\n              }\n            </DialogTitle>\n            <DialogDescription>\n              Configura los detalles del plan de suscripción\n            </DialogDescription>\n          </DialogHeader>\n\n          {editingPlan && (\n            <div className=\"space-y-4\">\n              <div className=\"grid grid-cols-2 gap-4\">\n                <div className=\"space-y-2\">\n                  <Label>Nombre del Plan</Label>\n                  <Input\n                    value={editingPlan.name}\n                    onChange={(e) => updateEditingPlan('name', e.target.value)}\n                    placeholder=\"Ej: Plan Premium\"\n                  />\n                </div>\n                <div className=\"space-y-2\">\n                  <Label>Precio (USD)</Label>\n                  <Input\n                    type=\"number\"\n                    min=\"0\"\n                    step=\"0.01\"\n                    value={editingPlan.price}\n                    onChange={(e) => updateEditingPlan('price', parseFloat(e.target.value) || 0)}\n                  />\n                </div>\n              </div>\n\n              <div className=\"grid grid-cols-2 gap-4\">\n                <div className=\"space-y-2\">\n                  <Label>Precio Original (Opcional)</Label>\n                  <Input\n                    type=\"number\"\n                    min=\"0\"\n                    step=\"0.01\"\n                    value={editingPlan.originalPrice || ''}\n                    onChange={(e) => updateEditingPlan('originalPrice', parseFloat(e.target.value) || undefined)}\n                    placeholder=\"Para mostrar descuento\"\n                  />\n                </div>\n                <div className=\"space-y-2\">\n                  <Label>Descuento (%)</Label>\n                  <Input\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"100\"\n                    value={editingPlan.discount || ''}\n                    onChange={(e) => updateEditingPlan('discount', parseInt(e.target.value) || undefined)}\n                  />\n                </div>\n              </div>\n\n              <div className=\"grid grid-cols-2 gap-4\">\n                <div className=\"space-y-2\">\n                  <Label>Duración (días)</Label>\n                  <Input\n                    type=\"number\"\n                    min=\"1\"\n                    value={editingPlan.duration}\n                    onChange={(e) => updateEditingPlan('duration', parseInt(e.target.value) || 1)}\n                  />\n                </div>\n                <div className=\"space-y-2\">\n                  <Label>Máximo de Sesiones</Label>\n                  <Input\n                    type=\"number\"\n                    min=\"1\"\n                    value={editingPlan.maxSessions}\n                    onChange={(e) => updateEditingPlan('maxSessions', parseInt(e.target.value) || 1)}\n                  />\n                </div>\n              </div>\n\n              <div className=\"space-y-2\">\n                <div className=\"flex items-center justify-between\">\n                  <Label>Características</Label>\n                  <Button type=\"button\" size=\"sm\" onClick={addFeature}>\n                    <Plus className=\"h-3 w-3 mr-1\" />\n                    Agregar\n                  </Button>\n                </div>\n                <div className=\"space-y-2 max-h-40 overflow-y-auto\">\n                  {editingPlan.features.map((feature, index) => (\n                    <div key={index} className=\"flex items-center space-x-2\">\n                      <Input\n                        value={feature}\n                        onChange={(e) => updateFeature(index, e.target.value)}\n                        placeholder=\"Característica del plan\"\n                      />\n                      <Button\n                        type=\"button\"\n                        size=\"sm\"\n                        variant=\"outline\"\n                        onClick={() => removeFeature(index)}\n                      >\n                        <X className=\"h-3 w-3\" />\n                      </Button>\n                    </div>\n                  ))}\n                </div>\n              </div>\n\n              <div className=\"flex items-center space-x-4\">\n                <div className=\"flex items-center space-x-2\">\n                  <Switch\n                    checked={editingPlan.popular || false}\n                    onCheckedChange={(checked) => updateEditingPlan('popular', checked)}\n                  />\n                  <Label>Plan Popular</Label>\n                </div>\n                <div className=\"flex items-center space-x-2\">\n                  <Switch\n                    checked={editingPlan.isActive}\n                    onCheckedChange={(checked) => updateEditingPlan('isActive', checked)}\n                  />\n                  <Label>Plan Activo</Label>\n                </div>\n              </div>\n            </div>\n          )}\n\n          <DialogFooter>\n            <Button \n              variant=\"outline\" \n              onClick={() => setIsDialogOpen(false)}\n              disabled={isSaving}\n            >\n              Cancelar\n            </Button>\n            <Button onClick={handleSavePlan} disabled={isSaving}>\n              {isSaving ? (\n                <>\n                  <LoadingSpinner className=\"mr-2\" size={16} />\n                  Guardando...\n                </>\n              ) : (\n                <>\n                  <Save className=\"h-4 w-4 mr-2\" />\n                  Guardar Plan\n                </>\n              )}\n            </Button>\n          </DialogFooter>\n        </DialogContent>\n      </Dialog>\n    </div>\n  )\n}\n
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useToast } from '@/components/ui/use-toast'
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  DollarSign,
+  Crown,
+  Zap,
+  Star,
+  Infinity,
+  Save,
+  X
+} from 'lucide-react'
+import { PricingPlan } from '@/types'
+
+export default function PlansAdminPage() {
+  const [plans, setPlans] = useState<PricingPlan[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const { toast } = useToast()
+
+  // Initial plans data
+  const initialPlans: PricingPlan[] = [
+    {
+      id: 'basic',
+      name: 'Prueba Gratuita',
+      price: 0,
+      duration: 1,
+      maxSessions: 1,
+      features: [
+        '1 día de acceso',
+        '1 sesión de WhatsApp',
+        'Mensajes básicos',
+        'Soporte por email'
+      ],
+      isActive: true
+    },
+    {
+      id: 'monthly',
+      name: 'Plan Mensual',
+      price: 7,
+      duration: 30,
+      maxSessions: 1,
+      features: [
+        '1 sesión de WhatsApp',
+        'Mensajes ilimitados',
+        'Automatización básica',
+        'Soporte 24/7',
+        'Analytics básicos'
+      ],
+      popular: false,
+      isActive: true
+    },
+    {
+      id: 'semiannual',
+      name: 'Plan 6 Meses',
+      price: 37.8,
+      originalPrice: 42,
+      discount: 10,
+      duration: 180,
+      maxSessions: 1,
+      features: [
+        '1 sesión de WhatsApp',
+        'Mensajes ilimitados',
+        'Automatización avanzada',
+        'Soporte prioritario 24/7',
+        'Analytics completos',
+        'Plantillas personalizadas',
+        '10% de descuento'
+      ],
+      popular: true,
+      isActive: true
+    },
+    {
+      id: 'annual',
+      name: 'Plan Anual',
+      price: 67.2,
+      originalPrice: 84,
+      discount: 20,
+      duration: 365,
+      maxSessions: 1,
+      features: [
+        '1 sesión de WhatsApp',
+        'Mensajes ilimitados',
+        'Automatización completa',
+        'Soporte VIP 24/7',
+        'Analytics avanzados',
+        'Plantillas premium',
+        'API personalizada',
+        '20% de descuento'
+      ],
+      isActive: true
+    },
+    {
+      id: 'lifetime',
+      name: 'Plan Vitalicio',
+      price: 100,
+      duration: 36500,
+      maxSessions: 15,
+      features: [
+        'Hasta 15 sesiones de WhatsApp',
+        'Mensajes ilimitados',
+        'Todas las funciones premium',
+        'Soporte VIP de por vida',
+        'Analytics profesionales',
+        'API completa',
+        'Actualizaciones gratuitas',
+        'Garantía de 1 año',
+        'Acceso vitalicio'
+      ],
+      isActive: true
+    }
+  ]
+
+  useEffect(() => {
+    // Simular carga de planes desde API
+    setTimeout(() => {
+      setPlans(initialPlans)
+      setIsLoading(false)
+    }, 1000)
+  }, [])
+
+  const handleEditPlan = (plan: PricingPlan) => {
+    setEditingPlan({ ...plan })
+    setIsDialogOpen(true)
+  }
+
+  const handleCreatePlan = () => {
+    setEditingPlan({
+      id: 'custom',
+      name: '',
+      price: 0,
+      duration: 30,
+      maxSessions: 1,
+      features: [''],
+      isActive: true
+    })
+    setIsDialogOpen(true)
+  }
+
+  const handleSavePlan = async () => {
+    if (!editingPlan) return
+
+    setIsSaving(true)
+    
+    try {
+      // Simular llamada a API
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      if (editingPlan.id === 'custom' || !plans.find(p => p.id === editingPlan.id)) {
+        // Crear nuevo plan
+        const newId = `custom_${Date.now()}`
+        const newPlan = { ...editingPlan, id: newId }
+        setPlans(prev => [...prev, newPlan])
+        toast({
+          title: 'Plan creado',
+          description: 'El nuevo plan ha sido creado exitosamente',
+        })
+      } else {
+        // Actualizar plan existente
+        setPlans(prev => prev.map(p => p.id === editingPlan.id ? editingPlan : p))
+        toast({
+          title: 'Plan actualizado',
+          description: 'El plan ha sido actualizado exitosamente',
+        })
+      }
+      
+      setIsDialogOpen(false)
+      setEditingPlan(null)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar el plan',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeletePlan = async (planId: string) => {
+    if (confirm('¿Estás seguro de que quieres eliminar este plan?')) {
+      try {
+        // Simular llamada a API
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        setPlans(prev => prev.filter(p => p.id !== planId))
+        toast({
+          title: 'Plan eliminado',
+          description: 'El plan ha sido eliminado exitosamente',
+        })
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'No se pudo eliminar el plan',
+          variant: 'destructive',
+        })
+      }
+    }
+  }
+
+  const handleToggleActive = async (planId: string) => {
+    try {
+      setPlans(prev => prev.map(p => 
+        p.id === planId ? { ...p, isActive: !p.isActive } : p
+      ))
+      
+      toast({
+        title: 'Estado actualizado',
+        description: 'El estado del plan ha sido actualizado',
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el estado',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const getPlanIcon = (planId: string) => {
+    switch (planId) {
+      case 'basic': return <Zap className="h-5 w-5" />
+      case 'monthly': return <Zap className="h-5 w-5" />
+      case 'semiannual': return <Star className="h-5 w-5" />
+      case 'annual': return <Crown className="h-5 w-5" />
+      case 'lifetime': return <Infinity className="h-5 w-5" />
+      default: return <DollarSign className="h-5 w-5" />
+    }
+  }
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(price)
+  }
+
+  const updateEditingPlan = (field: keyof PricingPlan, value: any) => {
+    if (!editingPlan) return
+    setEditingPlan({ ...editingPlan, [field]: value })
+  }
+
+  const addFeature = () => {
+    if (!editingPlan) return
+    setEditingPlan({ 
+      ...editingPlan, 
+      features: [...editingPlan.features, '']
+    })
+  }
+
+  const updateFeature = (index: number, value: string) => {
+    if (!editingPlan) return
+    const newFeatures = [...editingPlan.features]
+    newFeatures[index] = value
+    setEditingPlan({ ...editingPlan, features: newFeatures })
+  }
+
+  const removeFeature = (index: number) => {
+    if (!editingPlan) return
+    const newFeatures = editingPlan.features.filter((_, i) => i !== index)
+    setEditingPlan({ ...editingPlan, features: newFeatures })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size={32} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Gestión de Planes
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-1">
+            Configura y administra los planes de suscripción
+          </p>
+        </div>
+        <Button onClick={handleCreatePlan}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nuevo Plan
+        </Button>
+      </div>
+
+      {/* Plans Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {plans.map((plan) => (
+          <Card 
+            key={plan.id} 
+            className={`relative ${!plan.isActive ? 'opacity-60' : ''} ${
+              plan.popular ? 'ring-2 ring-blue-500' : ''
+            }`}
+          >
+            {plan.popular && (
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <Badge className="bg-blue-500">Popular</Badge>
+              </div>
+            )}
+            
+            <CardHeader className="text-center">
+              <div className="mx-auto p-2 bg-gray-100 dark:bg-gray-800 rounded-full w-fit mb-2">
+                {getPlanIcon(plan.id)}
+              </div>
+              <CardTitle className="flex items-center justify-center space-x-2">
+                <span>{plan.name}</span>
+                {!plan.isActive && <Badge variant="secondary">Inactivo</Badge>}
+              </CardTitle>
+              <div className="space-y-1">
+                <div className="flex items-center justify-center space-x-2">
+                  {plan.originalPrice && (
+                    <span className="text-sm text-gray-500 line-through">
+                      {formatPrice(plan.originalPrice)}
+                    </span>
+                  )}
+                  <span className="text-2xl font-bold">
+                    {formatPrice(plan.price)}
+                  </span>
+                </div>
+                {plan.discount && (
+                  <Badge variant="secondary" className="text-xs">
+                    {plan.discount}% OFF
+                  </Badge>
+                )}
+                <CardDescription>
+                  {plan.duration === 36500 ? 'Vitalicio' : `${plan.duration} días`} · 
+                  {plan.maxSessions} sesión{plan.maxSessions > 1 ? 'es' : ''}
+                </CardDescription>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">Características:</h4>
+                <ul className="text-xs space-y-1">
+                  {plan.features.slice(0, 3).map((feature, index) => (
+                    <li key={index} className="text-gray-600 dark:text-gray-400">
+                      • {feature}
+                    </li>
+                  ))}
+                  {plan.features.length > 3 && (
+                    <li className="text-gray-500 text-xs">
+                      +{plan.features.length - 3} más...
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={plan.isActive}
+                    onCheckedChange={() => handleToggleActive(plan.id)}
+                  />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                    {plan.isActive ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEditPlan(plan)}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                  {!['basic', 'monthly', 'semiannual', 'annual', 'lifetime'].includes(plan.id) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeletePlan(plan.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Edit/Create Plan Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingPlan?.id === 'custom' || !plans.find(p => p.id === editingPlan?.id) 
+                ? 'Crear Nuevo Plan' 
+                : 'Editar Plan'
+              }
+            </DialogTitle>
+            <DialogDescription>
+              Configura los detalles del plan de suscripción
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingPlan && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nombre del Plan</Label>
+                  <Input
+                    value={editingPlan.name}
+                    onChange={(e) => updateEditingPlan('name', e.target.value)}
+                    placeholder="Ej: Plan Premium"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Precio (USD)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editingPlan.price}
+                    onChange={(e) => updateEditingPlan('price', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Precio Original (Opcional)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editingPlan.originalPrice || ''}
+                    onChange={(e) => updateEditingPlan('originalPrice', parseFloat(e.target.value) || undefined)}
+                    placeholder="Para mostrar descuento"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Descuento (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editingPlan.discount || ''}
+                    onChange={(e) => updateEditingPlan('discount', parseInt(e.target.value) || undefined)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Duración (días)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editingPlan.duration}
+                    onChange={(e) => updateEditingPlan('duration', parseInt(e.target.value) || 1)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Máximo de Sesiones</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editingPlan.maxSessions}
+                    onChange={(e) => updateEditingPlan('maxSessions', parseInt(e.target.value) || 1)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Características</Label>
+                  <Button type="button" size="sm" onClick={addFeature}>
+                    <Plus className="h-3 w-3 mr-1" />
+                    Agregar
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {editingPlan.features.map((feature, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <Input
+                        value={feature}
+                        onChange={(e) => updateFeature(index, e.target.value)}
+                        placeholder="Característica del plan"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => removeFeature(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={editingPlan.popular || false}
+                    onCheckedChange={(checked) => updateEditingPlan('popular', checked)}
+                  />
+                  <Label>Plan Popular</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={editingPlan.isActive}
+                    onCheckedChange={(checked) => updateEditingPlan('isActive', checked)}
+                  />
+                  <Label>Plan Activo</Label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDialogOpen(false)}
+              disabled={isSaving}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSavePlan} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <LoadingSpinner className="mr-2" size={16} />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Guardar Plan
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
