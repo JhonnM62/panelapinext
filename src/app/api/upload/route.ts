@@ -3,6 +3,10 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
+// Configuración de Next.js 14 App Router
+export const runtime = 'nodejs' // Use Node.js runtime
+export const maxDuration = 60 // Tiempo máximo de ejecución en segundos
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
@@ -95,11 +99,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Configuración para aumentar el límite de tamaño
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
-}
+// Configuración de Next.js 14 para el límite de tamaño
+// En Next.js 14 con App Router, el límite se configura diferente
+// El límite por defecto es suficiente para archivos de 50MB
