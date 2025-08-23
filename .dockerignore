@@ -50,10 +50,25 @@ docs
 README.md
 LICENSE
 
-# Scripts y archivos HTML externos
+# Scripts y archivos de prueba local
 *.html
-clear-gemini-cache.js
-qr-modal-fix.js
+test-docker-local.sh
+test-docker-local.ps1
 
 # TypeScript
 *.tsbuildinfo
+
+# Archivos de documentación en la raíz
+APPLIED-*.md
+FIX-*.md
+FIX_*.md
+CORRECCION_*.md
+MEJORAS_*.md
+SOLUCION_*.md
+PROBLEMA_*.md
+CONFIGURACION_*.md
+ENHANCED_*.md
+CAMBIOS_*.md
+BACKEND_*.md
+CI_CD_*.md
+*.html
