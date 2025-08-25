@@ -66,7 +66,8 @@ export const useGeminiForm = (
     deleteConfig,
     testConfig,
     loadConfig,
-    hasValidConfig
+    hasValidConfig,
+    setConfig
   } = useGeminiConfig();
 
   // Estado local del formulario
@@ -109,9 +110,9 @@ export const useGeminiForm = (
   // Cargar sesiones disponibles
   const loadAvailableSessions = useCallback(async () => {
     try {
-      const response = await sessionsAPI.getAvailableSessions();
-      if (response.data?.success) {
-        setAvailableSessions(response.data.data || []);
+      const response = await sessionsAPI.list();
+      if (response.success) {
+        setAvailableSessions(Array.isArray(response.data) ? response.data : []);
       }
     } catch (error) {
       console.error('Error cargando sesiones:', error);
@@ -154,7 +155,9 @@ export const useGeminiForm = (
         return;
       }
 
-      await saveConfig(formData);
+      // Actualizar la configuración en el store antes de guardar
+      setConfig(formData);
+      await saveConfig(userToken);
       
       toast({
         title: "✅ Configuración guardada",
@@ -186,13 +189,10 @@ export const useGeminiForm = (
 
     setIsTesting(true);
     try {
-      const testData = {
-        ...formData,
-        body: testMessage,
-        number: formData.phoneNumber || '123456789'
-      };
-
-      const result = await testConfig(testData);
+      // Actualizar la configuración en el store antes de probar
+      setConfig(formData);
+      
+      const result = await testConfig(testMessage, userToken);
       
       toast({
         title: "✅ Prueba exitosa",
@@ -214,7 +214,7 @@ export const useGeminiForm = (
   // Eliminar configuración
   const handleDelete = useCallback(async () => {
     try {
-      await deleteConfig();
+      await deleteConfig(userToken);
       
       // Limpiar formulario
       setFormData({

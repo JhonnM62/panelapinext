@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { Session, SessionCreateRequest, SessionEnhanced, CreateSessionEnhancedRequest } from '@/types'
 import { sessionsAPI, authAPI } from '@/lib/api'
-import { enhancedBaileysAPI } from '@/lib/enhanced-baileys-api' // NUEVO: API Enhanced
+import { enhancedBaileysAPI } from '@/lib/gemini-api' // NUEVO: API Enhanced
 import { canCreateSession, getSessionsLimitMessage } from '@/lib/plans'
 
 interface SessionsState {
@@ -43,33 +43,34 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
       if (token && userStr) {
         try {
           // Intentar obtener sesiones del usuario desde la API Enhanced
-          const response = await enhancedBaileysAPI.getUserSessionsEnhanced(token)
+          // Por ahora usar la API regular hasta que se implemente getUserSessionsEnhanced
+          // const response = await enhancedBaileysAPI.getUserSessionsEnhanced(token)
           
-          if (response.success && response.data) {
-            console.log('🔧 [Sessions] Usando API Enhanced para sesiones')
-            
-            // Convertir sesiones enhanced a formato legacy para compatibilidad
-            const enhancedSessions = response.data.sesiones || []
-            const compatibleSessions: Session[] = enhancedSessions.map(sesion => ({
-              id: sesion.nombresesion,
-              status: mapEstadoToStatus(sesion.estadoSesion),
-              qr: sesion.codigoQR,
-              phoneNumber: sesion.lineaWhatsApp,
-              createdAt: sesion.fechaCreacion,
-              userId: sesion.userId
-            }))
-            
-            console.log('🔧 [Sessions] Sesiones Enhanced obtenidas:', compatibleSessions.length)
-            set({ sessions: compatibleSessions, isLoading: false })
-            return
-          }
+          // if (response.success && response.data) {
+          //   console.log('🔧 [Sessions] Usando API Enhanced para sesiones')
+          //   
+          //   // Convertir sesiones enhanced a formato legacy para compatibilidad
+          //   const enhancedSessions = response.data.sesiones || []
+          //   const compatibleSessions: Session[] = enhancedSessions.map(sesion => ({
+          //     id: sesion.nombresesion,
+          //     status: mapEstadoToStatus(sesion.estadoSesion),
+          //     qr: sesion.codigoQR,
+          //     phoneNumber: sesion.lineaWhatsApp,
+          //     createdAt: sesion.fechaCreacion,
+          //     userId: sesion.userId
+          //   }))
+          //   
+          //   console.log('🔧 [Sessions] Sesiones Enhanced obtenidas:', compatibleSessions.length)
+          //   set({ sessions: compatibleSessions, isLoading: false })
+          //   return
+          // }
         } catch (enhancedError) {
           console.log('🔧 [Sessions] API Enhanced no disponible, usando API legacy')
         }
       }
       
       // **FALLBACK: Usar API legacy pero con endpoint de usuario**
-      const token = localStorage.getItem('token')
+      // Reutilizar token ya declarado arriba
       let response
       
       if (token) {
@@ -91,7 +92,7 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
       // Si es respuesta V2 (sesiones del usuario), mapear directamente
       if (token && response.data && response.data.sesiones && Array.isArray(response.data.sesiones)) {
         const userSessions = response.data.sesiones
-        const compatibleSessions: Session[] = userSessions.map(sesion => {
+        const compatibleSessions: Session[] = userSessions.map((sesion: any) => {
           // 🔧 CORRECCIÓN: Mapear correctamente los estados
           let mappedStatus = 'disconnected'
           if (sesion.estadoSesion === 'conectada') {
@@ -122,7 +123,7 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
       }
       
       // Fallback a lógica V1
-      const sessionIds = response.data?.data || response.data || []
+      const sessionIds = response?.data?.data || response?.data || []
       
       // Solo procesar si tenemos IDs de sesiones (modo V1)
       if (Array.isArray(sessionIds) && sessionIds.length > 0) {
@@ -136,7 +137,7 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
             const statusResponse = await sessionsAPI.status(id)
             serverSessions.push({
               id,
-              status: statusResponse.data.data?.status || 'disconnected',
+              status: statusResponse?.data?.status || 'disconnected',
               createdAt: new Date().toISOString()
             })
           } catch (error) {
@@ -152,7 +153,7 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
         const localOnlyIDs = new Set(sessionIds)
         const sessionsToPreserve = currentLocalSessions.filter(localSession => {
           // Preservar si la sesión local no está en el servidor Y fue creada recientemente (últimos 2 minutos)
-          const isRecent = new Date().getTime() - new Date(localSession.createdAt).getTime() < 120000 // 2 minutos
+          const isRecent = localSession.createdAt ? new Date().getTime() - new Date(localSession.createdAt).getTime() < 120000 : false // 2 minutos
           const notInServer = !localOnlyIDs.has(localSession.id)
           
           if (notInServer && isRecent) {
@@ -246,8 +247,8 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
       const newSession: Session = {
         id: data.nombrebot,
         status: 'connecting',
-        qr: response.data.qrcode || response.data.data?.qr, // QR de la respuesta
-        code: response.data.data?.code, // Código de verificación
+        qr: response.data?.qrcode || response.data?.data?.qr, // QR de la respuesta
+        code: response.data?.data?.code, // Código de verificación
         phoneNumber: data.phoneNumber,
         createdAt: new Date().toISOString()
       }
@@ -317,7 +318,7 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
   getSessionStatus: async (id: string) => {
     try {
       const response = await sessionsAPI.status(id)
-      const status = response.data.data?.status
+      const status = response?.data?.status
       
       set((state) => ({
         sessions: state.sessions.map(s => 
@@ -416,20 +417,25 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
         }
       }
       
-      // Crear sesión usando API Enhanced
-      const response = await enhancedBaileysAPI.createSessionEnhanced(data)
+      // Crear sesión usando API regular por ahora
+      // TODO: Implementar createSessionEnhanced en enhancedBaileysAPI
+      const response = await sessionsAPI.add({
+        nombrebot: data.nombresesion,
+        typeAuth: data.tipoAuth || 'qr',
+        phoneNumber: data.lineaWhatsApp
+      })
       
-      if (!response.success || !response.data) {
+      if (!response.success) {
         throw new Error(response.message || 'Error al crear sesión Enhanced')
       }
       
-      console.log('🔧 [Sessions] Respuesta Enhanced:', response.data)
+      console.log('🔧 [Sessions] Respuesta:', response?.data || 'No data')
       
-      // Convertir respuesta Enhanced a formato compatible
+      // Convertir respuesta a formato compatible
       const newSession: Session = {
-        id: response.data.nombresesion,
-        status: mapEstadoToStatus(response.data.estadoSesion),
-        qr: response.data.codigoQR,
+        id: data.nombresesion,
+        status: 'connecting',
+        qr: response.data?.qrcode || response.data?.data?.qr,
         phoneNumber: data.lineaWhatsApp,
         createdAt: new Date().toISOString(),
         userId: data.token
@@ -545,7 +551,7 @@ async function cleanupSpecificSessions(sessionsToClean: Session[], token: string
       
       // === PASO 1: NO ELIMINAR USUARIO SI HAY SESIONES AUTENTICADAS ===
       // 🔧 CORRECCIÓN: Solo eliminar usuario si no hay sesiones autenticadas activas
-      const allCurrentSessions = get().sessions
+      const allCurrentSessions = useSessionsStore.getState().sessions
       const hasAuthenticatedSessions = allCurrentSessions.some(s => 
         s.status === 'authenticated' || s.status === 'connected'
       )
@@ -661,7 +667,7 @@ function startSessionStatusMonitoring(sessionId: string): void {
       }
       
       const statusResponse = await sessionsAPI.status(sessionId)
-      const status = statusResponse.data.data?.status
+      const status = statusResponse?.data?.status
       
       console.log(`Estado de sesión ${sessionId}:`, status)
       

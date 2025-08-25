@@ -77,16 +77,18 @@ class WebSocketSingleton {
 
   private async createConnection(userId: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      let timeout: NodeJS.Timeout | undefined;
+      
       try {
         this.ws = new WebSocket('ws://100.42.185.2:8015/ws');
 
-        const timeout = setTimeout(() => {
+        timeout = setTimeout(() => {
           reject(new Error('Connection timeout'));
           this.cleanup();
         }, 10000);
 
         this.ws.onopen = () => {
-          clearTimeout(timeout);
+          if (timeout) clearTimeout(timeout);
           this.isConnecting = false;
           console.log('[WS Singleton] ✅ Connected');
           
@@ -115,7 +117,7 @@ class WebSocketSingleton {
         };
 
         this.ws.onclose = () => {
-          clearTimeout(timeout);
+          if (timeout) clearTimeout(timeout);
           console.log('[WS Singleton] 🔴 Disconnected');
           this.cleanup();
           this.disconnectionCallbacks.forEach(cb => {
@@ -127,14 +129,14 @@ class WebSocketSingleton {
         };
 
         this.ws.onerror = (error) => {
-          clearTimeout(timeout);
+          if (timeout) clearTimeout(timeout);
           console.error('[WS Singleton] ❌ Error:', error);
           this.cleanup();
           reject(error);
         };
 
       } catch (error) {
-        clearTimeout(timeout);
+        if (timeout) clearTimeout(timeout);
         this.isConnecting = false;
         reject(error);
       }
@@ -274,7 +276,7 @@ export function useWebSocketManager({
   }, [userId, onError]);
 
   const markUpsertAsProcessed = useCallback(() => {
-    setLastUpsertMessage(prev => prev ? { ...prev, processed: true } : null);
+    setLastUpsertMessage((prev: any) => prev ? { ...prev, processed: true } : null);
   }, []);
 
   return {

@@ -249,7 +249,7 @@ export default function SystemSettings({ token, baseUrl }: SystemSettingsProps) 
             Exportar
           </Button>
           <Label htmlFor="import-settings" className="cursor-pointer">
-            <Button variant="outline" as="span">
+            <Button variant="outline">
               <Upload className="h-4 w-4 mr-2" />
               Importar
             </Button>

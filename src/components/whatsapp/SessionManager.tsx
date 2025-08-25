@@ -47,7 +47,7 @@ export function SessionManager() {
       setLoading(true)
       const response = await baileysAPI.listSessions()
       
-      if (response.success) {
+      if (response.success && Array.isArray(response.data)) {
         const sessionList = response.data.map((id: string) => ({ id }))
         setSessions(sessionList)
         
@@ -107,8 +107,11 @@ export function SessionManager() {
         }
         setSessions(prev => [...prev, newSession])
         
-        if (response.data.qr) {
-          showQRModal(response.data.qr, sessionId)
+        if (response.data && typeof response.data === 'object' && 'qr' in response.data) {
+          const data = response.data as { qr?: string }
+          if (data.qr) {
+            showQRModal(data.qr, sessionId)
+          }
         }
       }
     } catch (error) {

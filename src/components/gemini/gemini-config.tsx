@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -183,7 +183,7 @@ export default function GeminiConfig({
     setLoadingSessions(true);
     try {
       const response = await sessionsAPI.list();
-      if (response.success && response.data) {
+      if (response.success && response.data && Array.isArray(response.data)) {
         console.log("🤖 [CHATBOT] Sesiones disponibles:", response.data);
 
         // Obtener detalles de cada sesión
@@ -198,7 +198,7 @@ export default function GeminiConfig({
               authenticated: statusResponse.success
                 ? statusResponse.data.authenticated || false
                 : false,
-              phone: statusResponse.success
+              phone: statusResponse.success && statusResponse.data && 'lineaWhatsApp' in statusResponse.data
                 ? statusResponse.data.lineaWhatsApp
                 : null,
             };

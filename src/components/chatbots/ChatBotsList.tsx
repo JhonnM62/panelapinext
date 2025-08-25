@@ -181,7 +181,7 @@ export default function ChatBotsList() {
         }
         
         // 🔧 MAPEAR estadoBot basado en configIA.activo
-        botsData = botsData.map(bot => {
+        botsData = botsData.map((bot: BotCreado) => {
           const isActivo = bot.configIA?.activo === true
           console.log(`🔧 [BOTS LIST] Bot ${bot.nombreBot}: configIA.activo=${bot.configIA?.activo}, isActivo=${isActivo}`)
           return {
@@ -250,11 +250,9 @@ export default function ChatBotsList() {
       case 'activo':
         return <CheckCircle className="h-4 w-4 text-green-600" />
       case 'inactivo':
-        return <Clock className="h-4 w-4 text-yellow-600" />
-      case 'configurando':
-        return <Settings className="h-4 w-4 text-blue-600" />
+        return <Clock className="h-4 w-4 text-yellow-600" />       
       default:
-        return <AlertCircle className="h-4 w-4 text-gray-400" />
+        return <AlertCircle className="h-4 w-4 text-gray-400" />   
     }
   }
 
@@ -342,7 +340,11 @@ export default function ChatBotsList() {
     setDeletingBot(prev => ({ ...prev, isDeleting: true }))
     
     try {
-      const result = await botsAPI.delete(deletingBot.bot.id || deletingBot.bot._id)
+      const botId = deletingBot.bot.id || deletingBot.bot._id;
+      if (!botId) {
+        throw new Error('ID del bot no encontrado');
+      }
+      const result = await botsAPI.delete(botId)
       if (result.success) {
         toast({
           title: 'Bot eliminado',
@@ -499,7 +501,7 @@ export default function ChatBotsList() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Sesión WhatsApp</p>
-                    <p className="font-medium truncate">{bot.sesionId || bot.sesion?.id || 'Sin sesión'}</p>
+                    <p className="font-medium truncate">{bot.sesionId || 'Sin sesión'}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Modelo IA</p>
@@ -543,10 +545,13 @@ export default function ChatBotsList() {
                       const newActiveState = !currentState
                       console.log(`🎯 [BOTÓN] Bot ${bot.nombreBot}: Estado actual=${currentState}, Nuevo estado=${newActiveState}`)
                       // Enviar tanto configIA.activo como estadoBot para compatibilidad
-                      toggleBotStatus(bot.id || bot._id, {
-                        'configIA.activo': newActiveState,
-                        estadoBot: newActiveState ? 'activo' : 'inactivo'
-                      })
+                      const botId = bot.id || bot._id
+                      if (botId) {
+                        toggleBotStatus(botId, {
+                          'configIA.activo': newActiveState,
+                          estadoBot: newActiveState ? 'activo' : 'inactivo'
+                        })
+                      }
                     }}
                     className="flex-1"
                   >

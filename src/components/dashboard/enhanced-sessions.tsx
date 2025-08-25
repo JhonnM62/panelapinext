@@ -160,9 +160,9 @@ export default function EnhancedSessionsComponent() {
         setDashboardStats(prev => ({
           ...prev,
           totalSessions: enhancedSessions.length,
-          connectedSessions: enhancedSessions.filter(s => s.status === 'connected').length,
-          authenticatedSessions: enhancedSessions.filter(s => s.authenticated).length,
-          activeConnections: enhancedSessions.filter(s => s.status !== 'disconnected').length
+          connectedSessions: enhancedSessions.filter((s: any) => s.status === 'connected').length,
+          authenticatedSessions: enhancedSessions.filter((s: any) => s.authenticated).length,
+          activeConnections: enhancedSessions.filter((s: any) => s.status !== 'disconnected').length
         }))
       } else {
         setSessions([])

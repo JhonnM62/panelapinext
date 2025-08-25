@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { planesApi, Suscripcion } from '@/lib/plans'
+import { planesApi } from '@/lib/plans'
 import { useAuthStore } from '@/store/auth'
 import { 
   ResourceLimits, 
   LimitValidation, 
   ResourceType,
-  CreateResourceParams 
+  CreateResourceParams,
+  Suscripcion 
 } from '@/types/plans'
 
 export const usePlanLimits = () => {
@@ -269,12 +270,12 @@ export const usePlanLimits = () => {
     }
   }, [user, validateResourceCreation, incrementResourceUsage])
 
-  const checkLimits = useCallback((type: ResourceType): boolean => {
+  const checkLimits = useCallback((type: ResourceType | 'chatbots'): boolean => {
     if (type === 'chatbots') {
       // Convertir 'chatbots' a 'botsIA' para compatibilidad
       return canCreateResource('botsIA')
     }
-    return canCreateResource(type)
+    return canCreateResource(type as ResourceType)
   }, [canCreateResource])
 
   const refreshData = useCallback(() => {

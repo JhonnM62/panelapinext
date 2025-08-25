@@ -93,7 +93,6 @@ export default function AdvancedConfigForm({
               Contexto de Mensajes: {formData.numerodemensajes}
             </Label>
             <Slider
-              id="numerodemensajes"
               min={3}
               max={20}
               step={1}
@@ -112,7 +111,6 @@ export default function AdvancedConfigForm({
               Delay de Respuesta: {formData.delay_seconds}s
             </Label>
             <Slider
-              id="delay_seconds"
               min={1}
               max={30}
               step={1}
@@ -147,7 +145,6 @@ export default function AdvancedConfigForm({
             Timeout de Pausa: {formData.pause_timeout_minutes} minutos
           </Label>
           <Slider
-            id="pause_timeout_minutes"
             min={5}
             max={120}
             step={5}

@@ -135,10 +135,9 @@ export const LimitsCard: React.FC<LimitsCardProps> = memo(({
                 <Progress 
                   value={data.percentage} 
                   className="h-2"
-                  // @ts-ignore - custom color
                   style={{
                     '--progress-background': getProgressColor(data.percentage)
-                  }}
+                  } as React.CSSProperties}
                 />
                 <div className="flex items-center justify-between text-xs">
                   <span className={getUsageColor(data.percentage)}>

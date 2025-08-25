@@ -1,4 +1,6 @@
 // Gemini API Client - Funcionalidades de IA con Google Gemini
+import { toSafeError, getErrorMessage, logError } from './error-utils';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://100.42.185.2:8015'
 
 // Tipos e interfaces
@@ -43,7 +45,7 @@ export interface ProcessIARequest {
   pause_timeout_minutes: number;
   ai_model: string;
   thinking_budget: number;
-  token: string; // Token de autenticación requerido
+  token?: string; // Token de autenticación opcional para uso directo
 }
 
 export interface ProcessIAResponse {
@@ -69,7 +71,7 @@ class EnhancedBaileysAPI {
     const defaultHeaders = { 'Content-Type': 'application/json' };
     
     try {
-      const mergedHeaders = { ...defaultHeaders, ...options.headers };
+      const mergedHeaders: any = { ...defaultHeaders, ...options.headers };
       const hasAuthHeader = !!(mergedHeaders['Authorization'] || mergedHeaders['x-access-token']);
       
       console.log('🔧 [GEMINI API] Making request:', {
@@ -118,12 +120,13 @@ class EnhancedBaileysAPI {
       });
       return data;
     } catch (error) {
+      const safeError = toSafeError(error);
       console.error('🔧 [GEMINI API] Request failed:', {
         endpoint,
-        error: error.message,
-        status: (error as any).status
+        error: safeError.message,
+        status: safeError.status
       });
-      throw error;
+      throw safeError;
     }
   }
 
@@ -148,10 +151,10 @@ class EnhancedBaileysAPI {
         message: response.message || 'Configuración obtenida exitosamente'
       };
     } catch (error) {
-      console.error('🔧 [GEMINI API] Error obteniendo configuración Gemini:', error);
+      logError('GEMINI API - getGeminiConfig', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Error desconocido'
+        message: getErrorMessage(error)
       };
     }
   }
@@ -182,14 +185,13 @@ class EnhancedBaileysAPI {
         message: response.message || 'Configuración guardada exitosamente'
       };
     } catch (error) {
-      console.error('🔧 [GEMINI API] Error guardando configuración Gemini:', error);
-      console.error('🔧 [GEMINI API] Error details:', {
-        message: error.message,
-        stack: error.stack?.substring(0, 500)
+      logError('GEMINI API - saveGeminiConfig', error, {
+        hasToken: !!params.token,
+        configKeys: Object.keys(params.config)
       });
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Error desconocido'
+        message: getErrorMessage(error)
       };
     }
   }
@@ -223,10 +225,13 @@ class EnhancedBaileysAPI {
         message: response.message || 'Configuración eliminada exitosamente'
       };
     } catch (error) {
-      console.error('🔧 [GEMINI API] Error eliminando configuración Gemini:', error);
+      logError('GEMINI API - deleteGeminiConfig', error, {
+        botId: params.botId,
+        sesionId: params.sesionId
+      });
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Error desconocido'
+        message: getErrorMessage(error)
       };
     }
   }
@@ -269,15 +274,15 @@ class EnhancedBaileysAPI {
         usage: response.data?.usage
       };
     } catch (error) {
-      console.error('Error procesando IA directamente:', error);
+      logError('GEMINI API - processIADirect', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error desconocido'
+        error: getErrorMessage(error)
       };
     }
   }
 
-  async processWithIA(params: { token: string; body: string; number: string }): Promise<ProcessIAResponse> {
+  async processWithIA(params: { token: string; body: string; number: string; configId?: string }): Promise<ProcessIAResponse> {
     try {
       // Este método requiere configuración previa guardada en BD
       const response = await this.request<any>(`/wa/process`, {
@@ -285,8 +290,8 @@ class EnhancedBaileysAPI {
         body: JSON.stringify({
           lineaWA: params.number,
           mensaje_reciente: params.body,
-          token: params.token
-          // Los demás parámetros deberían venir de la configuración guardada
+          token: params.token,
+          configId: params.configId // Añadir configId para usar configuración específica
         })
       });
       
@@ -299,10 +304,10 @@ class EnhancedBaileysAPI {
         usage: response.usage
       };
     } catch (error) {
-      console.error('Error procesando con IA:', error);
+      logError('GEMINI API - processWithIA', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error desconocido'
+        error: getErrorMessage(error)
       };
     }
   }
@@ -329,10 +334,10 @@ class EnhancedBaileysAPI {
         message: response.message || 'Mensajes masivos enviados exitosamente'
       };
     } catch (error) {
-      console.error('Error enviando mensajes masivos:', error);
+      logError('GEMINI API - sendBulkMessages', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Error desconocido'
+        message: getErrorMessage(error)
       };
     }
   }
@@ -352,10 +357,10 @@ class EnhancedBaileysAPI {
         message: response.message || 'Estadísticas avanzadas obtenidas exitosamente'
       };
     } catch (error) {
-      console.error('Error obteniendo estadísticas avanzadas:', error);
+      logError('GEMINI API - getAdvancedStats', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Error desconocido'
+        message: getErrorMessage(error)
       };
     }
   }

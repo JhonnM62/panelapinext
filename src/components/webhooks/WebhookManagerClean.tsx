@@ -65,6 +65,14 @@ interface WebhookStats {
   connectedClients: number;
 }
 
+interface NotificationResponse {
+  success: boolean;
+  data?: {
+    notifications?: NotificationItem[];
+  } | NotificationItem[];
+  message?: string;
+}
+
 interface SessionOption {
   id: string;
   status: string;
@@ -292,7 +300,7 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
           const currentWebhooks = webhookConfigs;
           
           const phantoms = currentWebhooks.filter(localWebhook => 
-            !serverWebhooks.find(serverWebhook => 
+            !serverWebhooks.find((serverWebhook: any) => 
               serverWebhook.webhookId === localWebhook.webhookId
             )
           ).map(phantom => phantom.webhookId);
@@ -379,7 +387,7 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
           
           // Encontrar webhooks que existen localmente pero no en el servidor
           const phantoms = localWebhooks.filter(localWebhook => 
-            !serverWebhooks.find(serverWebhook => 
+            !serverWebhooks.find((serverWebhook: any) => 
               serverWebhook.webhookId === localWebhook.webhookId
             )
           );
@@ -466,12 +474,12 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
       );
 
       if (response.ok) {
-        const result = await response.json();
+        const result: NotificationResponse = await response.json();
         if (result.success && result.data) {
-          const notificationsData = Array.isArray(result.data.notifications)
-            ? result.data.notifications
-            : Array.isArray(result.data)
+          const notificationsData = Array.isArray(result.data) 
             ? result.data
+            : Array.isArray((result.data as any).notifications)
+            ? (result.data as any).notifications
             : [];
 
           setNotifications(notificationsData);
@@ -733,7 +741,7 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
     }
   };
 
-  const testWebhook = async (webhook: WebhookConfig, payload: any) => {
+  const testWebhookWithPayload = async (webhook: WebhookConfig, payload: any) => {
     if (!payload) {
       toast({
         title: "Error",
@@ -804,6 +812,20 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
     } finally {
       setTesting(false);
     }
+  };
+
+  // Función wrapper para WebhookList que solo recibe webhook
+  const testWebhook = (webhook: WebhookConfig) => {
+    const defaultPayload = {
+      type: "test_notification",
+      data: {
+        message: "Webhook de prueba desde el panel de control",
+        timestamp: new Date().toISOString(),
+        source: "dashboard",
+        testId: crypto.randomUUID(),
+      },
+    };
+    testWebhookWithPayload(webhook, defaultPayload);
   };
 
   const markAsRead = async (notificationId: string) => {
@@ -1134,7 +1156,7 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
               Notificaciones
               {(webhookStats?.unreadNotifications || 0) > 0 && (
                 <Badge variant="destructive" className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center">
-                  {webhookStats.unreadNotifications}
+                  {webhookStats?.unreadNotifications || 0}
                 </Badge>
               )}
             </TabsTrigger>
@@ -1226,7 +1248,7 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
             webhookConfigs={webhookConfigs}
             testing={testing}
             testResult={testResult}
-            onTest={testWebhook}
+            onTest={testWebhookWithPayload}
           />
         </TabsContent>
 

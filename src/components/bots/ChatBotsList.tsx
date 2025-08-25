@@ -293,8 +293,13 @@ export default function ChatBotsList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => toggleBotStatus(bot.id || bot._id, bot.estadoBot === 'activo' ? 'inactivo' : 'activo')}
-                        disabled={isLoading}
+                        onClick={() => {
+                          const botId = bot.id || bot._id;
+                          if (botId) {
+                            toggleBotStatus(botId, bot.estadoBot === 'activo' ? 'inactivo' : 'activo');
+                          }
+                        }}
+                        disabled={isLoading || !(bot.id || bot._id)}
                       >
                         {bot.estadoBot === 'activo' ? 'Desactivar' : 'Activar'}
                       </Button>
@@ -316,8 +321,13 @@ export default function ChatBotsList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteBot(bot.id || bot._id, bot.nombreBot)}
-                        disabled={isLoading}
+                        onClick={() => {
+                          const botId = bot.id || bot._id;
+                          if (botId) {
+                            handleDeleteBot(botId, bot.nombreBot);
+                          }
+                        }}
+                        disabled={isLoading || !(bot.id || bot._id)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />

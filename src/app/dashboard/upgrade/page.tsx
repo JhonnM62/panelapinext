@@ -68,7 +68,9 @@ function UpgradePageContent() {
     transactionId: string
     isUpgrade: boolean
     planData?: {
+      _id: string
       tipo: string
+      nombre: string
       duracion: {
         cantidad: number
         unidad: string
@@ -134,7 +136,7 @@ function UpgradePageContent() {
         if (suscripcionData) {
           setSuscripcionActual(suscripcionData)
           // Solo considerar upgrade si no es plan gratuito
-          const esPlanGratuito = suscripcionData.plan.tipo === 'prueba_gratuita' || suscripcionData.plan.precio === 0
+          const esPlanGratuito = suscripcionData.plan.tipo === 'prueba_gratuita'
           setIsUpgrade(!esPlanGratuito)
           console.log('🔍 [UPGRADE] Usuario tiene suscripción activa:', {
             planActual: suscripcionData.plan.nombre,
@@ -693,7 +695,9 @@ function UpgradePageContent() {
           transactionId: paymentData.transactionId,
           isUpgrade: isUpgrade,
           planData: {
+            _id: plan.id,
             tipo: plan.tipo,
+            nombre: plan.nombre,
             duracion: plan.duracion
           }
         })
@@ -702,7 +706,7 @@ function UpgradePageContent() {
         // Limpiar estados de PayPal
         resetPayPal('Pago exitoso - limpiando')
       } else {
-        throw new Error(resultado.error || 'Error activando el plan')
+        throw new Error(resultado.message || 'Error activando el plan')
       }
       
     } catch (error) {

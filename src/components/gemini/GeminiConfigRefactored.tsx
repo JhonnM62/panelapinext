@@ -85,8 +85,8 @@ export default function GeminiConfig({
 
       {/* Componentes de procesamiento automático */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <AutoProcessor />
-        <AutomationToggle />
+        <AutoProcessor userToken={userToken} />
+        <AutomationToggle userToken={userToken} />
       </div>
 
       {/* Formularios de configuración */}

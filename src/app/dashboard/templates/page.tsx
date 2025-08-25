@@ -521,6 +521,7 @@ export default function TemplatesPage() {
 
   // 📝 FUNCIONES PARA TEMPLATES
   const toggleFavorite = (templateId: string) => {
+    const currentTemplate = templates.find(t => t.id === templateId);
     setTemplates((prev) =>
       prev.map((template) =>
         template.id === templateId
@@ -529,7 +530,7 @@ export default function TemplatesPage() {
       )
     );
     toast({
-      title: template?.isFavorite
+      title: currentTemplate?.isFavorite
         ? "Eliminado de favoritos"
         : "Agregado a favoritos",
       description: "Plantilla actualizada correctamente",

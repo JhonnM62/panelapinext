@@ -27,7 +27,8 @@ import {
   Rocket,
   Globe,
   Key,
-  Lock
+  Lock,
+  Clock
 } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 

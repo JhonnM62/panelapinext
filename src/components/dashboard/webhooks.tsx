@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -612,20 +612,20 @@ export default function WebhooksComponent() {
                 ? statusResponse.data.webhook
                 : undefined,
               webhookActivo: statusResponse.success
-                ? statusResponse.data.webhookActivo || false
+                ? (statusResponse.data as any)?.webhookActivo || false
                 : false,
               webhookCreado: statusResponse.success
-                ? statusResponse.data.webhookCreado || false
+                ? (statusResponse.data as any)?.webhookCreado || false
                 : false,
               webhookUrl: statusResponse.success
-                ? statusResponse.data.webhookUrl
+                ? (statusResponse.data as any)?.webhookUrl
                 : null,
               // 🔧 CORRECCIÓN: Usar información de la sesión desde la BD
               nombresesion: sesionInfo?.nombresesion || (statusResponse.success
-                ? statusResponse.data.nombresesion
+                ? (statusResponse.data as any)?.nombresesion
                 : null),
               phoneNumber: sesionInfo?.lineaWhatsApp || (statusResponse.success
-                ? statusResponse.data.phoneNumber
+                ? (statusResponse.data as any)?.phoneNumber
                 : null),
             };
           } catch (error) {
@@ -736,13 +736,11 @@ export default function WebhooksComponent() {
             });
 
             setWebhookStats({
-              totalNotifications: data.estadisticas?.mensajesRecientes || 0,
+              totalNotifications: 0, // Se calcula después
               unreadNotifications: 0, // Se calcula después
               webhookActive: webhooksActivos > 0,
               lastNotification: null, // Se obtiene después
               connectedClients: sesionesConectadas,
-              webhooksConfigurados: webhooksActivos,
-              totalSesiones: sesiones.length,
             });
 
             console.log(
@@ -1138,14 +1136,14 @@ export default function WebhooksComponent() {
 
           case "notification":
             if (message.data) {
-              const formattedNotification = {
+              const formattedNotification: NotificationItem = {
                 id: message.data.id || `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 sessionId: message.data.sessionId || "",
                 eventType: message.data.eventType || "UNKNOWN",
                 eventData: message.data.data || message.data.eventData || {},
                 timestamp: message.data.timestamp || new Date().toISOString(),
                 read: message.data.read || false,
-                source: "whatsapp",
+                source: "whatsapp" as const,
               };
               console.log("[WS SINGLETON] 📬 Nueva notificación:", formattedNotification);
               handleNewNotification(formattedNotification);
@@ -1184,14 +1182,14 @@ export default function WebhooksComponent() {
             
             // Si es evento de WhatsApp, procesarlo
             if (message.type && typeof message.type === "string" && message.type.includes("_")) {
-              const eventNotification = {
+              const eventNotification: NotificationItem = {
                 id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 sessionId: sessionUserId,
                 eventType: message.type,
                 eventData: message.data || message,
                 timestamp: new Date().toISOString(),
                 read: false,
-                source: "whatsapp",
+                source: "whatsapp" as const,
               };
               console.log('[WS SINGLETON] 🎯 Procesando como evento WhatsApp:', eventNotification.eventType);
               handleNewNotification(eventNotification);
@@ -2809,7 +2807,7 @@ export default function WebhooksComponent() {
               variant="destructive"
               className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center"
               >
-              {webhookStats.unreadNotifications}
+              {webhookStats?.unreadNotifications || 0}
               </Badge>
               )}
             </TabsTrigger>

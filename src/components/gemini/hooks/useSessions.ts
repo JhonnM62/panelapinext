@@ -31,12 +31,12 @@ export const useSessions = (): UseSessionsReturn => {
     setError(null);
     
     try {
-      const response = await sessionsAPI.getAvailableSessions();
+      const response = await sessionsAPI.list();
       
-      if (response.data?.success) {
-        setSessions(response.data.data || []);
+      if (response.success) {
+        setSessions(Array.isArray(response.data) ? response.data : []);
       } else {
-        throw new Error(response.data?.message || 'Error cargando sesiones');
+        throw new Error(response.message || 'Error cargando sesiones');
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Error cargando sesiones';

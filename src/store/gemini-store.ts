@@ -145,9 +145,9 @@ export const useGeminiStore = create<GeminiStore>()(
 
         // 🔧 SINCRONIZAR con configuración de servidor antes de cargar
         const serverConfigStore = useServerConfigStore.getState();
-        if (serverConfigStore.config?.server) {
+        if (serverConfigStore.config?.backendUrl) {
           // Actualizar el servidor por defecto si está configurado
-          defaultGeminiConfig.server = serverConfigStore.config.server;
+          defaultGeminiConfig.server = serverConfigStore.config.backendUrl;
         }
 
         set({ isLoading: true, error: null });
@@ -156,12 +156,11 @@ export const useGeminiStore = create<GeminiStore>()(
           const api = useGeminiAPI();
           const response = await api.getGeminiConfig(token);
           
-          if (response.success) {
+          if (response.success && response.data) {
             const configData = response.data;
             console.log('🤖 [STORE] Configuración cargada:', {
               hasApikey: !!configData.apikey,
-              apikeyPreview: configData.apikey,
-              apikey_full: configData.apikey_full
+              apikeyPreview: configData.apikey
             });
             
             set({
@@ -321,7 +320,6 @@ export const useGeminiStore = create<GeminiStore>()(
             body: testMessage,
             number: config.phoneNumber || '123456789',
             token: authToken,
-            botId: config.botId, // ID del bot si está disponible
             // Campos requeridos por compatibilidad
             userbot: config.sesionId || config.userbot, // 🔧 CORREGIDO: Usar sesionId como userbot
             apikey: config.apikey,
@@ -448,7 +446,7 @@ export const useGeminiConfig = () => {
   return {
     ...store,
     // Métodos de conveniencia
-    hasValidConfig: store.config && store.config.userbot && store.config.apikey && store.config.promt && store.config.sesionId,
+    hasValidConfig: !!(store.config && store.config.userbot && store.config.apikey && store.config.promt && store.config.sesionId),
     isReadyToUse: store.isConfigured && !store.isLoading && !store.error,
   };
 };

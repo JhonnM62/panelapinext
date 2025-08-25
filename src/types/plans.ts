@@ -20,7 +20,7 @@ export interface Plan {
   descripcion?: string
   precio?: number
   duracion?: number // en días
-  tipo: 'gratuito' | 'mensual' | 'semestral' | 'anual' | 'vitalicio'
+  tipo: 'prueba_gratuita' | 'mensual' | 'semestral' | 'anual' | 'vitalicio'
   limites: PlanLimits
   caracteristicas?: string[]
   activo?: boolean
@@ -40,7 +40,7 @@ export interface Suscripcion {
     ultimoPago?: string
     proximoPago?: string
   }
-  estado: 'activa' | 'expirada' | 'cancelada' | 'pausada'
+  estado: 'activa' | 'expirada' | 'cancelada' | 'pausada' | 'pendiente_pago'
   usoActual: PlanUsage
   limites?: PlanLimits // Opcional porque puede estar en plan.limites
   diasRestantes: number
@@ -127,7 +127,9 @@ export interface ChatBotConfig {
   updatedAt?: string
 }
 
-export type ResourceType = 'sesiones' | 'botsIA' | 'webhooks' | 'chatbots'
+// Tipo normalizado sin 'chatbots' para evitar duplicidad
+// 'botsIA' es el término correcto, 'chatbots' es legacy
+export type ResourceType = 'sesiones' | 'botsIA' | 'webhooks'
 
 export interface CreateResourceParams {
   type: ResourceType

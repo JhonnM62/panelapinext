@@ -110,7 +110,7 @@ export default function WebhookCleanup() {
         };
 
         // Verificar si la sesión existe
-        const sessionExists = sessions.some(session => 
+        const sessionExists = sessions.some((session: any) => 
           session._id === webhook.sessionId || 
           session.sesionId === webhook.sessionId
         );
@@ -125,9 +125,9 @@ export default function WebhookCleanup() {
 
         // Verificar consistencia de datos
         if (sessionExists) {
-          const matchingSession = sessions.find(session => 
-            session._id === webhook.sessionId || 
-            session.sesionId === webhook.sessionId
+          const matchingSession = sessions.find((session: any) => 
+            session._id === webhook.sessionId ||
+            session.sesionId === webhook.sessionId       
           );
 
           if (matchingSession) {
@@ -168,7 +168,7 @@ export default function WebhookCleanup() {
             diagnostic.canDelete = false; // No se puede eliminar porque no existe
           }
         } catch (error) {
-          diagnostic.issues.push(`Error verificando webhook: ${error.message}`);
+          diagnostic.issues.push(`Error verificando webhook: ${error instanceof Error ? error.message : String(error)}`);
         }
 
         diagnosticResults.push(diagnostic);
@@ -190,7 +190,7 @@ export default function WebhookCleanup() {
       console.error("Error analizando webhooks:", error);
       toast({
         title: "❌ Error de Análisis",
-        description: error.message || "No se pudo completar el análisis",
+        description: error instanceof Error ? error.message : "No se pudo completar el análisis",
         variant: "destructive"
       });
     } finally {
@@ -251,7 +251,7 @@ export default function WebhookCleanup() {
             console.error(`❌ Error eliminando ${webhook.webhookId}: ${errorMsg}`);
           }
         } catch (error) {
-          results.errors.push(`${webhook.webhookId}: ${error.message}`);
+          results.errors.push(`${webhook.webhookId}: ${error instanceof Error ? error.message : String(error)}`);
           console.error(`❌ Excepción eliminando ${webhook.webhookId}:`, error);
         }
       }
@@ -282,7 +282,7 @@ export default function WebhookCleanup() {
       console.error("Error en limpieza de webhooks:", error);
       toast({
         title: "❌ Error de Limpieza",
-        description: error.message || "No se pudo completar la limpieza",
+        description: error instanceof Error ? error.message : "No se pudo completar la limpieza",
         variant: "destructive"
       });
     } finally {

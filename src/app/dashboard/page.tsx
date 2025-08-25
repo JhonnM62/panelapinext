@@ -429,7 +429,7 @@ export default function DashboardPage() {
       ]);
 
       const sessionsData: string[] = sessionsResponse.success
-        ? sessionsResponse.data
+        ? (Array.isArray(sessionsResponse.data) ? sessionsResponse.data : [])
         : [];
       const health = healthResponse.success ? healthResponse.data : null;
 

@@ -179,7 +179,7 @@ export function AdvancedChart({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
-          {renderChart()}
+          {renderChart() || <div>Tipo de gráfico no soportado</div>}
         </ResponsiveContainer>
       </CardContent>
     </Card>

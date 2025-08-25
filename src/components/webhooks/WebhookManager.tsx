@@ -668,7 +668,7 @@ export default function WebhookManager() {
                 eventData: message.data.data || message.data.eventData || {},
                 timestamp: message.data.timestamp || new Date().toISOString(),
                 read: message.data.read || false,
-                source: "whatsapp",
+                source: "whatsapp" as const,
               };
               handleNewNotification(formattedNotification);
             }
@@ -706,7 +706,7 @@ export default function WebhookManager() {
                 eventData: message.data || message,
                 timestamp: new Date().toISOString(),
                 read: false,
-                source: "whatsapp",
+                source: "whatsapp" as const,
               };
               handleNewNotification(eventNotification);
             }
@@ -1054,7 +1054,7 @@ export default function WebhookManager() {
               Notificaciones
               {(webhookStats?.unreadNotifications || 0) > 0 && (
                 <Badge variant="destructive" className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center">
-                  {webhookStats.unreadNotifications}
+                  {webhookStats?.unreadNotifications || 0}
                 </Badge>
               )}
             </TabsTrigger>

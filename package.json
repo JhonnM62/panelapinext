@@ -6,7 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check:types": "tsc --noEmit --pretty false",
+    "check:lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
+    "check:imports": "tsc --noEmit --pretty false && ts-prune || true",
+    "check:circles": "madge --ts-config tsconfig.json --extensions ts,tsx,js,jsx --circular .",
+    "check:all": "npm-run-all check:types check:lint check:imports check:circles",
+    "check:build": "node check-build.js",
+    "check:quick": "node quick-check.js",
+    "prebuild": "npm run check:build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -51,11 +59,19 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.1.0",
+    "eslint-import-resolver-typescript": "^3.5.2",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-unused-imports": "^4.2.0",
+    "madge": "^8.0.0",
+    "npm-run-all": "^4.1.5",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
+    "ts-prune": "^0.10.3",
     "typescript": "^5"
   }
 }

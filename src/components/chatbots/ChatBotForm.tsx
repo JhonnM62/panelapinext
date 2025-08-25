@@ -337,7 +337,7 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
             autoActivar: formData.autoActivar,
             limiteConversacionesDiario: formData.limiteConversacionesDiario
           },
-          tags: formData.tags.split(',').map(t => t.trim()).filter(t => t)
+          tags: formData.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t)
         })
       }
 
@@ -838,7 +838,7 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                 <div className="flex items-center gap-2">
                   <Input
                     id="webhookUrl"
-                    value={`${formData.server}/api/v2/webhook/${user?.userId || '[USER_ID]'}`}
+                    value={`${formData.server}/api/v2/webhook/${user?.id || user?._id || '[USER_ID]'}`}
                     disabled
                     className="flex-1"
                   />

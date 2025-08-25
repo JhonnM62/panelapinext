@@ -245,6 +245,9 @@ class SimpleBaileysAPI {
       let responseText;
       try {
         console.log(`[DEBUG-ULTRA] Leyendo response text...`);
+        if (!response) {
+          throw new Error('Response object is undefined');
+        }
         responseText = await response.text();
         console.log(
           `[DEBUG-ULTRA] Response text length: ${responseText.length}`
@@ -1691,7 +1694,7 @@ export const analyticsAPI = {
 
       // Procesar solo sesiones activas para evitar demoras
       const activeSessions = sessions.filter(
-        (s) =>
+        (s: any) =>
           s.estadoSesion === "conectada" || s.estadoSesion === "autenticada"
       );
 
@@ -1722,22 +1725,22 @@ export const analyticsAPI = {
             );
 
             // Filtrar mensajes por fecha
-            const todayMessages = messages.filter((msg) => {
+            const todayMessages = messages.filter((msg: any) => {
               const msgDate = new Date(msg.fechaCreacion || msg.timestamp);
               return msgDate.toDateString() === today.toDateString();
             });
 
-            const yesterdayMessages = messages.filter((msg) => {
+            const yesterdayMessages = messages.filter((msg: any) => {
               const msgDate = new Date(msg.fechaCreacion || msg.timestamp);
               return msgDate.toDateString() === yesterday.toDateString();
             });
 
-            const weekMessages = messages.filter((msg) => {
+            const weekMessages = messages.filter((msg: any) => {
               const msgDate = new Date(msg.fechaCreacion || msg.timestamp);
               return msgDate >= weekAgo;
             });
 
-            const monthMessages = messages.filter((msg) => {
+            const monthMessages = messages.filter((msg: any) => {
               const msgDate = new Date(msg.fechaCreacion || msg.timestamp);
               return msgDate >= monthAgo;
             });
@@ -1808,7 +1811,7 @@ export const analyticsAPI = {
         ) {
           const sessions = sessionsResponse.data.data.sesiones;
           const activeSessions = sessions.filter(
-            (s) => s.estadoSesion === "conectada"
+            (s: any) => s.estadoSesion === "conectada"
           );
 
           // Estimación basada en sesiones activas
@@ -1827,7 +1830,7 @@ export const analyticsAPI = {
                 total: sessions.length,
                 activas: activeSessions.length,
                 authenticated: sessions.filter(
-                  (s) =>
+                  (s: any) =>
                     s.estadoSesion === "autenticada" ||
                     s.estadoSesion === "conectada"
                 ).length,

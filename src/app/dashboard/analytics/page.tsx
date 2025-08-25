@@ -343,15 +343,15 @@ export default function AnalyticsPage() {
         // Procesar respuesta de sesiones
         if (
           sessionsResponse.status === "fulfilled" &&
-          sessionsResponse.value.status
+          sessionsResponse.value.success
         ) {
-          sessions = sessionsResponse.value.data || [];
+          sessions = Array.isArray(sessionsResponse.value.data) ? sessionsResponse.value.data : [];
         }
 
         // Procesar respuesta de health
         if (
           healthResponse.status === "fulfilled" &&
-          healthResponse.value.status
+          healthResponse.value.success
         ) {
           health = healthResponse.value.data;
         }
@@ -365,8 +365,8 @@ export default function AnalyticsPage() {
         let webhookStats: WebhookAnalytics | null = null;
         try {
           const webhookResponse = await webhooksAPI.getStats(userId);
-          if (webhookResponse.status) {
-            webhookStats = webhookResponse.data;
+          if (webhookResponse.success) {
+            webhookStats = webhookResponse.data as WebhookAnalytics;
           }
         } catch (error) {
           console.warn(
@@ -439,7 +439,7 @@ export default function AnalyticsPage() {
             id: `activity-${session.id}`,
             type:
               session.status === "authenticated"
-                ? "session_connected"
+                ? ("session_connected" as const)
                 : ("session_created" as const),
             title: `Sesión ${
               session.status === "authenticated" ? "autenticada" : "creada"
@@ -452,7 +452,7 @@ export default function AnalyticsPage() {
             timestamp: session.lastActivity || new Date().toISOString(),
             status:
               session.status === "authenticated"
-                ? "success"
+                ? ("success" as const)
                 : ("warning" as const),
             sessionId: session.id,
           })),
@@ -464,7 +464,7 @@ export default function AnalyticsPage() {
               health?.memory?.used || "N/A"
             }`,
             timestamp: health?.timestamp || new Date().toISOString(),
-            status: health?.status === "ok" ? "success" : ("warning" as const),
+            status: health?.status === "ok" ? ("success" as const) : ("warning" as const),
           },
         ].sort(
           (a, b) =>

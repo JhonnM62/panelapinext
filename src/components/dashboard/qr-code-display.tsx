@@ -344,7 +344,7 @@ export function QRCodeDisplay({ session, open, onOpenChange }: QRCodeDisplayProp
                     </div>
                   )}
                   
-                  {!canRegenerate && session.status !== 'authenticated' && (
+                  {!canRegenerate && session.status !== 'connected' && (
                     <div className="text-xs text-blue-600 dark:text-blue-400">
                       📝 La regeneración estará disponible cuando sea necesaria
                     </div>

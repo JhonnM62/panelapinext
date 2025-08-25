@@ -394,15 +394,15 @@ export default function AnalyticsSettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <Badge variant="secondary" className="justify-start">
                     <Activity className="h-3 w-3 mr-2" />
-                    Memoria > {settings.memoryThreshold}%
+                    Memoria {'>'} {settings.memoryThreshold}%
                   </Badge>
                   <Badge variant="secondary" className="justify-start">
                     <AlertTriangle className="h-3 w-3 mr-2" />
-                    Errores > {settings.errorRateThreshold}/min
+                    Errores {'>'} {settings.errorRateThreshold}/min
                   </Badge>
                   <Badge variant="secondary" className="justify-start">
                     <Clock className="h-3 w-3 mr-2" />
-                    Respuesta > {settings.responseTimeThreshold}ms
+                    Respuesta {'>'} {settings.responseTimeThreshold}ms
                   </Badge>
                   {settings.sessionDisconnectAlert && (
                     <Badge variant="secondary" className="justify-start">

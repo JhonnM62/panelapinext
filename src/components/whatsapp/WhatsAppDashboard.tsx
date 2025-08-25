@@ -43,7 +43,7 @@ export function WhatsAppDashboard() {
   const loadSessions = async () => {
     try {
       const response = await baileysAPI.listSessions()
-      if (response.success) {
+      if (response.success && Array.isArray(response.data)) {
         const sessionList = response.data.map((id: string) => ({ id }))
         setSessions(sessionList)
         

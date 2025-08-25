@@ -22,8 +22,7 @@ export interface Plan {
     sesiones: number
     botsIA: number
     webhooks: number
-    mensajesDiarios: number
-    almacenamientoMB: number
+    mensajesEnviados: number
   }
   descuento: {
     porcentaje: number
@@ -45,22 +44,21 @@ export interface Suscripcion {
   plan: {
     id: string
     nombre: string
-    tipo: string
+    tipo: 'prueba_gratuita' | 'mensual' | 'semestral' | 'anual' | 'vitalicio'
     limites: {
       sesiones: number
       botsIA: number
       webhooks: number
-      mensajesDiarios: number
-      almacenamientoMB: number
+      mensajesEnviados: number
     }
   }
   estado: 'activa' | 'pausada' | 'cancelada' | 'expirada' | 'pendiente_pago'
   fechas: {
     inicio: string
     fin: string
-    ultimoPago: string | null
-    proximoPago: string | null
-    cancelacion: string | null
+    ultimoPago?: string
+    proximoPago?: string
+    cancelacion?: string
   }
   usoActual: {
     sesiones: number
@@ -73,8 +71,7 @@ export interface Suscripcion {
   estaActiva: boolean
   renovacionAutomatica: {
     activa: boolean
-    intentos: number
-    ultimoIntento: string | null
+    fechaProximaRenovacion?: string
   }
 }
 

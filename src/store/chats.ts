@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { Chat, Message, SendMessageRequest } from '@/types'
-import { chatsAPI } from '@/lib/api'
+import { chatsAPI, baileysAPI } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error-utils'
 
 interface ChatsState {
   chats: Chat[]
@@ -53,9 +54,9 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
       }))
       
       set({ chats, isLoading: false })
-    } catch (error: any) {
+    } catch (error) {
       set({ 
-        error: error.response?.data?.message || 'Error al obtener chats',
+        error: getErrorMessage(error),
         isLoading: false 
       })
     }
@@ -65,17 +66,20 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
     try {
       set({ isLoadingMessages: true, error: null })
       
-      const response = await chatsAPI.getConversation(sessionId, chatId, {
-        limit: 50,
-        isGroup: chatId.includes('@g.us')
-      })
+      // Usar baileysAPI que tiene el método getConversation
+      const response = await baileysAPI.getConversation(
+        sessionId,
+        chatId,
+        50,
+        chatId.includes('@g.us')
+      )
       
       const messages: Message[] = response.data.data || []
       
       set({ messages, isLoadingMessages: false })
-    } catch (error: any) {
+    } catch (error) {
       set({ 
-        error: error.response?.data?.message || 'Error al obtener mensajes',
+        error: getErrorMessage(error),
         isLoadingMessages: false 
       })
     }
@@ -85,7 +89,7 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
     try {
       set({ isSending: true, error: null })
       
-      await chatsAPI.send(sessionId, data)
+      await chatsAPI.sendMessage(sessionId, data)
       
       // Refresh messages after sending
       const { selectedChat } = get()
@@ -94,12 +98,13 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
       }
       
       set({ isSending: false })
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
       set({ 
-        error: error.response?.data?.message || 'Error al enviar mensaje',
+        error: errorMessage,
         isSending: false 
       })
-      throw error
+      throw new Error(errorMessage)
     }
   },
 

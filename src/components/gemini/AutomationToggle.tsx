@@ -132,7 +132,7 @@ export default function AutomationToggle({
         },
       };
 
-      let debugData = { ...frontendData, backend_status: null };
+      let debugData: any = { ...frontendData, backend_status: null };
 
       // 🔧 NUEVO: Verificar estado en el backend usando el nuevo endpoint
       if (config?.sesionId && userToken) {
@@ -188,7 +188,7 @@ export default function AutomationToggle({
         } catch (fetchError) {
           debugData.backend_status = {
             success: false,
-            error: fetchError.message,
+            error: fetchError instanceof Error ? fetchError.message : String(fetchError),
             type: "fetch_error",
           };
 
@@ -212,7 +212,7 @@ export default function AutomationToggle({
       console.error("❌ [AUTOMATION DEBUG] Error en debug:", error);
       setDebugInfo({
         timestamp: new Date().toISOString(),
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         type: "debug_error",
       });
     }

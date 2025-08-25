@@ -148,7 +148,7 @@ export interface AdminStats {
 }
 
 export interface PricingPlan {
-  id: 'basic' | 'monthly' | 'semiannual' | 'annual' | 'lifetime'
+  id: string // Permitir cualquier string para IDs personalizados
   name: string
   price: number
   originalPrice?: number

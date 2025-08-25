@@ -94,7 +94,6 @@ export default function IAConfigForm({
               Creatividad (Temperature): {formData.temperature}
             </Label>
             <Slider
-              id="temperature"
               min={0}
               max={2}
               step={0.1}
@@ -112,7 +111,6 @@ export default function IAConfigForm({
               Top P: {formData.topP}
             </Label>
             <Slider
-              id="topP"
               min={0.1}
               max={1}
               step={0.1}
@@ -134,7 +132,6 @@ export default function IAConfigForm({
               Tokens Máximos: {formData.maxOutputTokens}
             </Label>
             <Slider
-              id="maxOutputTokens"
               min={128}
               max={2048}
               step={64}

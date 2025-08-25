@@ -92,7 +92,7 @@ export default function MessageSenderComponent() {
     try {
       // Cargar sesiones reales desde la API
       const response = await sessionsAPI.list()
-      if (response.success && response.data) {
+      if (response.success && response.data && Array.isArray(response.data)) {
         const sessionsData = response.data.map((sessionId: string) => ({
           id: sessionId,
           status: 'authenticated' // Por defecto, luego se puede consultar el estado real
@@ -136,7 +136,7 @@ export default function MessageSenderComponent() {
       id: Date.now().toString(),
       name: newTemplateName,
       content: messageText,
-      type: contentType,
+      type: contentType === 'document' || contentType === 'image' ? 'media' : contentType,
       variables: extractVariables(messageText)
     }
 
@@ -171,7 +171,7 @@ export default function MessageSenderComponent() {
     const template = templates.find(t => t.id === templateId)
     if (template) {
       setMessageText(template.content)
-      setContentType(template.type)
+      setContentType(template.type === 'media' ? 'image' : template.type)
       setSelectedTemplate(templateId)
     }
   }

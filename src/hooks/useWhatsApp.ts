@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { baileysAPI, type ApiResponse } from '@/lib/api'
+import { baileysAPI } from '@/lib/api'
 import { useToast } from '@/components/ui/use-toast'
 
 interface Session {
@@ -42,8 +42,10 @@ export function useWhatsAppSessions() {
       
       const response = await baileysAPI.listSessions()
       
-      if (response.success) {
-        const sessionList = response.data.map((id: string) => ({ 
+      if (response.success && response.data) {
+        // Asegurar que response.data es un array
+        const sessionsData = Array.isArray(response.data) ? response.data : []
+        const sessionList = sessionsData.map((id: string) => ({ 
           id,
           lastUpdate: new Date()
         }))
@@ -58,7 +60,7 @@ export function useWhatsAppSessions() {
                 setSessions(prev => 
                   prev.map(s => 
                     s.id === session.id 
-                      ? { ...s, status: statusResponse.data.status, lastUpdate: new Date() }
+                      ? { ...s, status: statusResponse.data?.status || 'disconnected', lastUpdate: new Date() }
                       : s
                   )
                 )
@@ -92,7 +94,7 @@ export function useWhatsAppSessions() {
         typeAuth: 'qr'
       })
 
-      if (response.success) {
+      if (response.success && response.data) {
         const newSession: Session = {
           id,
           status: 'connecting',
@@ -105,8 +107,9 @@ export function useWhatsAppSessions() {
           description: 'Escanea el código QR para conectar WhatsApp',
         })
         
+        const responseData = response.data as any
         return {
-          qr: response.data.qr,
+          qr: responseData?.qr,
           sessionId: id
         }
       }
@@ -159,11 +162,11 @@ export function useWhatsAppSessions() {
         setSessions(prev => 
           prev.map(s => 
             s.id === sessionId 
-              ? { ...s, status: response.data.status, lastUpdate: new Date() }
+              ? { ...s, status: response.data?.status || 'disconnected', lastUpdate: new Date() }
               : s
           )
         )
-        return response.data.status
+        return response.data?.status || null
       }
       return null
     } catch (error) {
@@ -205,8 +208,9 @@ export function useWhatsAppChats(sessionId?: string) {
       
       const response = await baileysAPI.getChatList(sessionId)
       
-      if (response.success) {
-        const formattedChats = response.data.map((chat: any) => ({
+      if (response.success && response.data) {
+        const chatsData = Array.isArray(response.data) ? response.data : []
+        const formattedChats = chatsData.map((chat: any) => ({
           id: chat.id,
           name: extractNameFromJid(chat.id),
           unreadCount: chat.unreadCount || 0,
@@ -242,8 +246,9 @@ export function useWhatsAppChats(sessionId?: string) {
         chat.isGroup || false
       )
       
-      if (response.success) {
-        setMessages(response.data || [])
+      if (response.success && response.data) {
+        const messagesData = Array.isArray(response.data) ? response.data : []
+        setMessages(messagesData)
         setSelectedChat(chat)
       }
     } catch (error) {

@@ -1,1 +1,256 @@
-import { create } from 'zustand'\nimport { PricingPlan, PaymentRequest, PaymentResponse } from '@/types'\nimport { api } from '@/lib/api'\n\ninterface PlansState {\n  plans: PricingPlan[]\n  isLoading: boolean\n  error: string | null\n  \n  // Actions\n  fetchPlans: () => Promise<void>\n  createPlan: (plan: Omit<PricingPlan, 'id'>) => Promise<void>\n  updatePlan: (id: string, plan: Partial<PricingPlan>) => Promise<void>\n  deletePlan: (id: string) => Promise<void>\n  togglePlanActive: (id: string) => Promise<void>\n  processPayment: (paymentRequest: PaymentRequest) => Promise<PaymentResponse>\n  clearError: () => void\n}\n\nconst defaultPlans: PricingPlan[] = [\n  {\n    id: 'basic',\n    name: 'Prueba Gratuita',\n    price: 0,\n    duration: 1,\n    maxSessions: 1,\n    features: [\n      '1 día de acceso',\n      '1 sesión de WhatsApp',\n      'Mensajes básicos',\n      'Soporte por email'\n    ],\n    isActive: true\n  },\n  {\n    id: 'monthly',\n    name: 'Plan Mensual',\n    price: 7,\n    duration: 30,\n    maxSessions: 1,\n    features: [\n      '1 sesión de WhatsApp',\n      'Mensajes ilimitados',\n      'Automatización básica',\n      'Soporte 24/7',\n      'Analytics básicos'\n    ],\n    isActive: true\n  },\n  {\n    id: 'semiannual',\n    name: 'Plan 6 Meses',\n    price: 37.8,\n    originalPrice: 42,\n    discount: 10,\n    duration: 180,\n    maxSessions: 1,\n    features: [\n      '1 sesión de WhatsApp',\n      'Mensajes ilimitados',\n      'Automatización avanzada',\n      'Soporte prioritario 24/7',\n      'Analytics completos',\n      'Plantillas personalizadas',\n      '10% de descuento'\n    ],\n    popular: true,\n    isActive: true\n  },\n  {\n    id: 'annual',\n    name: 'Plan Anual',\n    price: 67.2,\n    originalPrice: 84,\n    discount: 20,\n    duration: 365,\n    maxSessions: 1,\n    features: [\n      '1 sesión de WhatsApp',\n      'Mensajes ilimitados',\n      'Automatización completa',\n      'Soporte VIP 24/7',\n      'Analytics avanzados',\n      'Plantillas premium',\n      'API personalizada',\n      '20% de descuento'\n    ],\n    isActive: true\n  },\n  {\n    id: 'lifetime',\n    name: 'Plan Vitalicio',\n    price: 100,\n    duration: 36500,\n    maxSessions: 15,\n    features: [\n      'Hasta 15 sesiones de WhatsApp',\n      'Mensajes ilimitados',\n      'Todas las funciones premium',\n      'Soporte VIP de por vida',\n      'Analytics profesionales',\n      'API completa',\n      'Actualizaciones gratuitas',\n      'Garantía de 1 año',\n      'Acceso vitalicio'\n    ],\n    isActive: true\n  }\n]\n\nexport const usePlansStore = create<PlansState>((set, get) => ({\n  plans: defaultPlans,\n  isLoading: false,\n  error: null,\n\n  fetchPlans: async () => {\n    try {\n      set({ isLoading: true, error: null })\n      \n      // Por ahora usar datos por defecto\n      // En producción, hacer llamada a API:\n      // const response = await api.get('/api/plans')\n      // set({ plans: response.data, isLoading: false })\n      \n      // Simular delay de API\n      await new Promise(resolve => setTimeout(resolve, 500))\n      set({ plans: defaultPlans, isLoading: false })\n      \n    } catch (error: any) {\n      set({ \n        error: error.response?.data?.message || 'Error al obtener planes',\n        isLoading: false \n      })\n    }\n  },\n\n  createPlan: async (planData) => {\n    try {\n      set({ isLoading: true, error: null })\n      \n      // Simular llamada a API\n      await new Promise(resolve => setTimeout(resolve, 1000))\n      \n      const newPlan: PricingPlan = {\n        ...planData,\n        id: `custom_${Date.now()}`\n      }\n      \n      set((state) => ({\n        plans: [...state.plans, newPlan],\n        isLoading: false\n      }))\n      \n    } catch (error: any) {\n      set({ \n        error: error.response?.data?.message || 'Error al crear plan',\n        isLoading: false \n      })\n      throw error\n    }\n  },\n\n  updatePlan: async (id, planData) => {\n    try {\n      set({ isLoading: true, error: null })\n      \n      // Simular llamada a API\n      await new Promise(resolve => setTimeout(resolve, 1000))\n      \n      set((state) => ({\n        plans: state.plans.map(plan => \n          plan.id === id ? { ...plan, ...planData } : plan\n        ),\n        isLoading: false\n      }))\n      \n    } catch (error: any) {\n      set({ \n        error: error.response?.data?.message || 'Error al actualizar plan',\n        isLoading: false \n      })\n      throw error\n    }\n  },\n\n  deletePlan: async (id) => {\n    try {\n      set({ isLoading: true, error: null })\n      \n      // Simular llamada a API\n      await new Promise(resolve => setTimeout(resolve, 1000))\n      \n      set((state) => ({\n        plans: state.plans.filter(plan => plan.id !== id),\n        isLoading: false\n      }))\n      \n    } catch (error: any) {\n      set({ \n        error: error.response?.data?.message || 'Error al eliminar plan',\n        isLoading: false \n      })\n      throw error\n    }\n  },\n\n  togglePlanActive: async (id) => {\n    try {\n      set((state) => ({\n        plans: state.plans.map(plan => \n          plan.id === id ? { ...plan, isActive: !plan.isActive } : plan\n        )\n      }))\n      \n      // Simular llamada a API\n      await new Promise(resolve => setTimeout(resolve, 500))\n      \n    } catch (error: any) {\n      set({ \n        error: error.response?.data?.message || 'Error al cambiar estado del plan'\n      })\n      throw error\n    }\n  },\n\n  processPayment: async (paymentRequest) => {\n    try {\n      set({ isLoading: true, error: null })\n      \n      // En producción, hacer llamada a API de pagos\n      // const response = await api.post('/api/payments/process', paymentRequest)\n      \n      // Simular procesamiento de pago\n      await new Promise(resolve => setTimeout(resolve, 2000))\n      \n      const mockResponse: PaymentResponse = {\n        success: true,\n        paymentId: `pay_${Date.now()}`,\n        token: 'new_jwt_token_here',\n        message: 'Pago procesado exitosamente'\n      }\n      \n      set({ isLoading: false })\n      return mockResponse\n      \n    } catch (error: any) {\n      set({ \n        error: error.response?.data?.message || 'Error al procesar pago',\n        isLoading: false \n      })\n      throw error\n    }\n  },\n\n  clearError: () => set({ error: null })\n}))\n
+import { create } from 'zustand'
+import { PricingPlan, PaymentRequest, PaymentResponse } from '@/types'
+import { api } from '@/lib/api'
+
+interface PlansState {
+  plans: PricingPlan[]
+  isLoading: boolean
+  error: string | null
+  
+  // Actions
+  fetchPlans: () => Promise<void>
+  createPlan: (plan: Omit<PricingPlan, 'id'>) => Promise<void>
+  updatePlan: (id: string, plan: Partial<PricingPlan>) => Promise<void>
+  deletePlan: (id: string) => Promise<void>
+  togglePlanActive: (id: string) => Promise<void>
+  processPayment: (paymentRequest: PaymentRequest) => Promise<PaymentResponse>
+  clearError: () => void
+}
+
+const defaultPlans: PricingPlan[] = [
+  {
+    id: 'basic',
+    name: 'Prueba Gratuita',
+    price: 0,
+    duration: 1,
+    maxSessions: 1,
+    features: [
+      '1 día de acceso',
+      '1 sesión de WhatsApp',
+      'Mensajes básicos',
+      'Soporte por email'
+    ],
+    isActive: true
+  },
+  {
+    id: 'monthly',
+    name: 'Plan Mensual',
+    price: 7,
+    duration: 30,
+    maxSessions: 1,
+    features: [
+      '1 sesión de WhatsApp',
+      'Mensajes ilimitados',
+      'Automatización básica',
+      'Soporte 24/7',
+      'Analytics básicos'
+    ],
+    isActive: true
+  },
+  {
+    id: 'semiannual',
+    name: 'Plan 6 Meses',
+    price: 37.8,
+    originalPrice: 42,
+    discount: 10,
+    duration: 180,
+    maxSessions: 1,
+    features: [
+      '1 sesión de WhatsApp',
+      'Mensajes ilimitados',
+      'Automatización avanzada',
+      'Soporte prioritario 24/7',
+      'Analytics completos',
+      'Plantillas personalizadas',
+      '10% de descuento'
+    ],
+    popular: true,
+    isActive: true
+  },
+  {
+    id: 'annual',
+    name: 'Plan Anual',
+    price: 67.2,
+    originalPrice: 84,
+    discount: 20,
+    duration: 365,
+    maxSessions: 1,
+    features: [
+      '1 sesión de WhatsApp',
+      'Mensajes ilimitados',
+      'Automatización completa',
+      'Soporte VIP 24/7',
+      'Analytics avanzados',
+      'Plantillas premium',
+      'API personalizada',
+      '20% de descuento'
+    ],
+    isActive: true
+  },
+  {
+    id: 'lifetime',
+    name: 'Plan Vitalicio',
+    price: 100,
+    duration: 36500,
+    maxSessions: 15,
+    features: [
+      'Hasta 15 sesiones de WhatsApp',
+      'Mensajes ilimitados',
+      'Todas las funciones premium',
+      'Soporte VIP de por vida',
+      'Analytics profesionales',
+      'API completa',
+      'Actualizaciones gratuitas',
+      'Garantía de 1 año',
+      'Acceso vitalicio'
+    ],
+    isActive: true
+  }
+]
+
+export const usePlansStore = create<PlansState>((set, get) => ({
+  plans: defaultPlans,
+  isLoading: false,
+  error: null,
+
+  fetchPlans: async () => {
+    try {
+      set({ isLoading: true, error: null })
+      
+      // Por ahora usar datos por defecto
+      // En producción, hacer llamada a API:
+      // const response = await api.get('/api/plans')
+      // set({ plans: response.data, isLoading: false })
+      
+      // Simular delay de API
+      await new Promise(resolve => setTimeout(resolve, 500))
+      set({ plans: defaultPlans, isLoading: false })
+      
+    } catch (error: any) {
+      set({ 
+        error: error.response?.data?.message || 'Error al obtener planes',
+        isLoading: false 
+      })
+    }
+  },
+
+  createPlan: async (planData) => {
+    try {
+      set({ isLoading: true, error: null })
+      
+      // Simular llamada a API
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const newPlan: PricingPlan = {
+        ...planData,
+        id: `custom_${Date.now()}`
+      }
+      
+      set((state) => ({
+        plans: [...state.plans, newPlan],
+        isLoading: false
+      }))
+      
+    } catch (error: any) {
+      set({ 
+        error: error.response?.data?.message || 'Error al crear plan',
+        isLoading: false 
+      })
+      throw error
+    }
+  },
+
+  updatePlan: async (id, planData) => {
+    try {
+      set({ isLoading: true, error: null })
+      
+      // Simular llamada a API
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      set((state) => ({
+        plans: state.plans.map(plan => 
+          plan.id === id ? { ...plan, ...planData } : plan
+        ),
+        isLoading: false
+      }))
+      
+    } catch (error: any) {
+      set({ 
+        error: error.response?.data?.message || 'Error al actualizar plan',
+        isLoading: false 
+      })
+      throw error
+    }
+  },
+
+  deletePlan: async (id) => {
+    try {
+      set({ isLoading: true, error: null })
+      
+      // Simular llamada a API
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      set((state) => ({
+        plans: state.plans.filter(plan => plan.id !== id),
+        isLoading: false
+      }))
+      
+    } catch (error: any) {
+      set({ 
+        error: error.response?.data?.message || 'Error al eliminar plan',
+        isLoading: false 
+      })
+      throw error
+    }
+  },
+
+  togglePlanActive: async (id) => {
+    try {
+      set((state) => ({
+        plans: state.plans.map(plan => 
+          plan.id === id ? { ...plan, isActive: !plan.isActive } : plan
+        )
+      }))
+      
+      // Simular llamada a API
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+    } catch (error: any) {
+      set({ 
+        error: error.response?.data?.message || 'Error al cambiar estado del plan'
+      })
+      throw error
+    }
+  },
+
+  processPayment: async (paymentRequest) => {
+    try {
+      set({ isLoading: true, error: null })
+      
+      // En producción, hacer llamada a API de pagos
+      // const response = await api.post('/api/payments/process', paymentRequest)
+      
+      // Simular procesamiento de pago
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      const mockResponse: PaymentResponse = {
+        success: true,
+        paymentId: `pay_${Date.now()}`,
+        token: 'new_jwt_token_here',
+        message: 'Pago procesado exitosamente'
+      }
+      
+      set({ isLoading: false })
+      return mockResponse
+      
+    } catch (error: any) {
+      set({ 
+        error: error.response?.data?.message || 'Error al procesar pago',
+        isLoading: false 
+      })
+      throw error
+    }
+  },
+
+  clearError: () => set({ error: null })
+}))

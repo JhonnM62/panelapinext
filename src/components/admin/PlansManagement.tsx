@@ -365,7 +365,7 @@ export default function PlansManagement({ token, baseUrl }: PlansManagementProps
                           Gratis
                         </Badge>
                       )}
-                      {plan.esPopular && (
+                      {plan.tipo === 'mensual' && (
                         <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
                           Popular
                         </Badge>
@@ -645,8 +645,8 @@ export default function PlansManagement({ token, baseUrl }: PlansManagementProps
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Estado</p>
-                  <Badge variant={selectedPlan.activo ? "default" : "secondary"}>
-                    {selectedPlan.activo ? 'Activo' : 'Inactivo'}
+                  <Badge variant="default">
+                    Activo
                   </Badge>
                 </div>
               </div>
@@ -731,7 +731,7 @@ export default function PlansManagement({ token, baseUrl }: PlansManagementProps
                   <Label>Tipo</Label>
                   <Select
                     value={selectedPlan.tipo}
-                    onValueChange={(value) => setSelectedPlan({ ...selectedPlan, tipo: value })}
+                    onValueChange={(value) => setSelectedPlan({ ...selectedPlan, tipo: value as 'prueba_gratuita' | 'mensual' | 'semestral' | 'anual' | 'vitalicio' })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -817,21 +817,8 @@ export default function PlansManagement({ token, baseUrl }: PlansManagementProps
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={selectedPlan.activo}
-                    onCheckedChange={(checked) => setSelectedPlan({ ...selectedPlan, activo: checked })}
-                  />
-                  <Label>Plan Activo</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={selectedPlan.esPopular}
-                    onCheckedChange={(checked) => setSelectedPlan({ ...selectedPlan, esPopular: checked })}
-                  />
-                  <Label>Marcar como Popular</Label>
-                </div>
+              <div className="text-sm text-muted-foreground">
+                Configuración adicional del plan
               </div>
             </div>
           )}

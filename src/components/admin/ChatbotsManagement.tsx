@@ -514,7 +514,7 @@ export default function ChatbotsManagement({
                       Mensajes Procesados
                     </p>
                     <p className="text-xl font-semibold text-blue-600">
-                      {selectedBot.estadisticas.mensajesProcesados.toLocaleString()}
+                      {selectedBot.estadisticas?.mensajesProcesados?.toLocaleString() || '0'}
                     </p>
                   </div>
                   <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -522,13 +522,13 @@ export default function ChatbotsManagement({
                       Respuestas Enviadas
                     </p>
                     <p className="text-xl font-semibold text-green-600">
-                      {selectedBot.estadisticas.respuestasEnviadas.toLocaleString()}
+                      {selectedBot.estadisticas?.respuestasEnviadas?.toLocaleString() || '0'}
                     </p>
                   </div>
                   <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <p className="text-xs text-muted-foreground">Errores</p>
                     <p className="text-xl font-semibold text-red-600">
-                      {selectedBot.estadisticas.errores}
+                      {selectedBot.estadisticas?.errores || '0'}
                     </p>
                   </div>
                 </div>
