@@ -67,9 +67,11 @@ interface WebhookStats {
 
 interface NotificationResponse {
   success: boolean;
-  data?: {
-    notifications?: NotificationItem[];
-  } | NotificationItem[];
+  data?:
+    | {
+        notifications?: NotificationItem[];
+      }
+    | NotificationItem[];
   message?: string;
 }
 
@@ -106,10 +108,10 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
   const router = useRouter();
   const { user, token } = useAuthStore();
   const { suscripcion, resourceLimits, checkLimits } = usePlanLimits();
-  
+
   // 🛡️ Asegurar que sessions siempre sea un array válido
   const safeSessions = Array.isArray(sessions) ? sessions : [];
-  
+
   // Estados principales
   const [activeTab, setActiveTab] = useState("list");
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -117,95 +119,108 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
   const [webhookStats, setWebhookStats] = useState<WebhookStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Estados para operaciones
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [testing, setTesting] = useState(false);
-  
+
   // Estados para edición
-  const [editingWebhook, setEditingWebhook] = useState<WebhookConfig | null>(null);
+  const [editingWebhook, setEditingWebhook] = useState<WebhookConfig | null>(
+    null
+  );
   const [selectedSessionId, setSelectedSessionId] = useState("");
-  
+
   // Estados para pruebas
   const [testResult, setTestResult] = useState<TestResult | null>(null);
-  
+
   // 🔧 NUEVO: Estado para detección de webhooks fantasma
   const [phantomWebhooks, setPhantomWebhooks] = useState<string[]>([]);
   const [autoCleanupEnabled, setAutoCleanupEnabled] = useState(true);
-  
+
   // Cache para prevenir notificaciones duplicadas
   const processedNotificationIds = useRef<Set<string>>(new Set());
   const lastProcessedTime = useRef<number>(0);
 
   // Función para manejar nuevas notificaciones - DEFINIDA PRIMERO
-  const handleNewNotification = useCallback((notification: NotificationItem) => {
-    console.log("[WEBHOOK MANAGER] 📬 Nueva notificación:", notification);
+  const handleNewNotification = useCallback(
+    (notification: NotificationItem) => {
+      console.log("[WEBHOOK MANAGER] 📬 Nueva notificación:", notification);
 
-    // Verificar duplicados
-    if (processedNotificationIds.current.has(notification.id)) {
-      console.log("[WEBHOOK MANAGER] 🚫 Notificación duplicada:", notification.id);
-      return;
-    }
-
-    // Limpiar cache periódicamente
-    const now = Date.now();
-    if (now - lastProcessedTime.current > 300000) { // 5 minutos
-      processedNotificationIds.current.clear();
-      lastProcessedTime.current = now;
-    }
-
-    // Marcar como procesada
-    processedNotificationIds.current.add(notification.id);
-
-    // Actualizar lista de notificaciones
-    setNotifications((prev) => {
-      const existingIndex = prev.findIndex((n) => n.id === notification.id);
-      
-      if (existingIndex >= 0) {
-        // Actualizar existente
-        const updated = [...prev];
-        updated[existingIndex] = notification;
-        return updated;
+      // Verificar duplicados
+      if (processedNotificationIds.current.has(notification.id)) {
+        console.log(
+          "[WEBHOOK MANAGER] 🚫 Notificación duplicada:",
+          notification.id
+        );
+        return;
       }
 
-      // Agregar nueva (máximo 50)
-      return [notification, ...prev.slice(0, 49)];
-    });
+      // Limpiar cache periódicamente
+      const now = Date.now();
+      if (now - lastProcessedTime.current > 300000) {
+        // 5 minutos
+        processedNotificationIds.current.clear();
+        lastProcessedTime.current = now;
+      }
 
-    // Actualizar estadísticas
-    setWebhookStats((prev) => {
-      if (!prev) {
+      // Marcar como procesada
+      processedNotificationIds.current.add(notification.id);
+
+      // Actualizar lista de notificaciones
+      setNotifications((prev) => {
+        const existingIndex = prev.findIndex((n) => n.id === notification.id);
+
+        if (existingIndex >= 0) {
+          // Actualizar existente
+          const updated = [...prev];
+          updated[existingIndex] = notification;
+          return updated;
+        }
+
+        // Agregar nueva (máximo 50)
+        return [notification, ...prev.slice(0, 49)];
+      });
+
+      // Actualizar estadísticas
+      setWebhookStats((prev) => {
+        if (!prev) {
+          return {
+            totalNotifications: 1,
+            unreadNotifications: notification.read ? 0 : 1,
+            webhookActive: true,
+            lastNotification: notification.timestamp,
+            connectedClients: 1,
+          };
+        }
+
         return {
-          totalNotifications: 1,
-          unreadNotifications: notification.read ? 0 : 1,
-          webhookActive: true,
+          ...prev,
+          totalNotifications: prev.totalNotifications + 1,
+          unreadNotifications:
+            prev.unreadNotifications + (notification.read ? 0 : 1),
           lastNotification: notification.timestamp,
-          connectedClients: 1,
         };
-      }
-
-      return {
-        ...prev,
-        totalNotifications: prev.totalNotifications + 1,
-        unreadNotifications: prev.unreadNotifications + (notification.read ? 0 : 1),
-        lastNotification: notification.timestamp,
-      };
-    });
-  }, []);
+      });
+    },
+    []
+  );
 
   // WebSocket connection - ESTABILIZADO para evitar re-renders
   const stableUserId = useMemo(() => user?.nombrebot || "", [user?.nombrebot]);
-  
-  const stableOnNotification = useCallback((notification: NotificationItem) => {
-    handleNewNotification(notification);
-  }, [handleNewNotification]);
-  
+
+  const stableOnNotification = useCallback(
+    (notification: NotificationItem) => {
+      handleNewNotification(notification);
+    },
+    [handleNewNotification]
+  );
+
   const stableOnStatsUpdate = useCallback((stats: WebhookStats) => {
     setWebhookStats(stats);
   }, []);
-  
+
   const {
     isConnected: wsConnected,
     connectionError,
@@ -223,7 +238,7 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
     const initializeData = async () => {
       await loadInitialData();
-      
+
       // Limpieza de webhooks órfanos después de cargar
       setTimeout(() => {
         if (safeSessions && safeSessions.length > 0) {
@@ -231,13 +246,18 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
         }
       }, 2000);
     };
-    
+
     initializeData();
   }, [user]);
 
   // Limpiar notificaciones cuando cambien las sesiones
   useEffect(() => {
-    if (safeSessions && safeSessions.length > 0 && notifications && notifications.length > 0) {
+    if (
+      safeSessions &&
+      safeSessions.length > 0 &&
+      notifications &&
+      notifications.length > 0
+    ) {
       cleanupOrphanedNotifications(safeSessions);
     }
   }, [safeSessions]);
@@ -245,10 +265,15 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
   // Limpieza automática periódica (cada 2 minutos)
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
-      if (safeSessions && safeSessions.length >= 0 && notifications && notifications.length > 0) {
+      if (
+        safeSessions &&
+        safeSessions.length >= 0 &&
+        notifications &&
+        notifications.length > 0
+      ) {
         cleanupOrphanedNotifications(safeSessions);
       }
-      
+
       // Limpiar cache de IDs procesados
       const now = Date.now();
       if (now - lastProcessedTime.current > 300000) {
@@ -281,46 +306,53 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
     try {
       const response = await fetch(
-        `http://100.42.185.2:8015/webhook/user/${user.nombrebot}/list`,
+        `https://backend.autosystemprojects.site/webhook/user/${user.nombrebot}/list`,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
       if (response.ok) {
         const result = await response.json();
-        
+
         if (result.success && Array.isArray(result.data)) {
           // 🔧 NUEVO: Detectar webhooks fantasma comparando con servidor
           const serverWebhooks = result.data;
           const currentWebhooks = webhookConfigs;
-          
-          const phantoms = currentWebhooks.filter(localWebhook => 
-            !serverWebhooks.find((serverWebhook: any) => 
-              serverWebhook.webhookId === localWebhook.webhookId
+
+          const phantoms = currentWebhooks
+            .filter(
+              (localWebhook) =>
+                !serverWebhooks.find(
+                  (serverWebhook: any) =>
+                    serverWebhook.webhookId === localWebhook.webhookId
+                )
             )
-          ).map(phantom => phantom.webhookId);
-          
+            .map((phantom) => phantom.webhookId);
+
           if (phantoms.length > 0 && autoCleanupEnabled) {
-            console.log(`🔧 [PHANTOM DETECTION] Encontrados ${phantoms.length} webhooks fantasma:`, phantoms);
+            console.log(
+              `🔧 [PHANTOM DETECTION] Encontrados ${phantoms.length} webhooks fantasma:`,
+              phantoms
+            );
             setPhantomWebhooks(phantoms);
-            
+
             toast({
               title: "👻 Webhooks Fantasma Detectados",
               description: `Se encontraron ${phantoms.length} webhook(s) que no existen en el servidor`,
               variant: "default",
             });
-            
+
             // Auto-limpiar webhooks fantasma después de 3 segundos
             setTimeout(() => {
               cleanupPhantomWebhooks(phantoms);
             }, 3000);
           }
-          
+
           setWebhookConfigs(result.data);
         } else {
           setWebhookConfigs([]);
@@ -337,93 +369,104 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
   // 🔧 NUEVA FUNCIÓN: Limpieza automática de webhooks fantasma
   const cleanupPhantomWebhooks = async (phantomIds: string[]) => {
     if (phantomIds.length === 0) return;
-    
-    console.log(`🧹 [PHANTOM CLEANUP] Limpiando ${phantomIds.length} webhooks fantasma:`, phantomIds);
-    
-    // Remover de la lista local inmediatamente
-    setWebhookConfigs(prev => 
-      prev.filter(webhook => !phantomIds.includes(webhook.webhookId))
+
+    console.log(
+      `🧹 [PHANTOM CLEANUP] Limpiando ${phantomIds.length} webhooks fantasma:`,
+      phantomIds
     );
-    
+
+    // Remover de la lista local inmediatamente
+    setWebhookConfigs((prev) =>
+      prev.filter((webhook) => !phantomIds.includes(webhook.webhookId))
+    );
+
     // Limpiar del estado de phantoms
     setPhantomWebhooks([]);
-    
+
     // Notificar al usuario
     toast({
       title: "🧹 Limpieza Automática",
       description: `Se removieron ${phantomIds.length} webhook(s) fantasma de la lista`,
       variant: "default",
     });
-    
+
     // Recargar stats para reflejar los cambios
     await loadWebhookStats();
   };
-  
+
   // 🔧 NUEVA FUNCIÓN: Verificación manual de webhooks fantasma
   const checkForPhantomWebhooks = async () => {
     if (!user?.nombrebot) return;
-    
-    console.log('🔍 [PHANTOM CHECK] Verificando webhooks fantasma...');
-    
+
+    console.log("🔍 [PHANTOM CHECK] Verificando webhooks fantasma...");
+
     try {
       // Obtener lista actual del servidor
       const response = await fetch(
-        `http://100.42.185.2:8015/webhook/user/${user.nombrebot}/list`,
+        `https://backend.autosystemprojects.site/webhook/user/${user.nombrebot}/list`,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
-      
+
       if (response.ok) {
         const result = await response.json();
-        
+
         if (result.success && Array.isArray(result.data)) {
           const serverWebhooks = result.data;
           const localWebhooks = webhookConfigs;
-          
+
           // Encontrar webhooks que existen localmente pero no en el servidor
-          const phantoms = localWebhooks.filter(localWebhook => 
-            !serverWebhooks.find((serverWebhook: any) => 
-              serverWebhook.webhookId === localWebhook.webhookId
-            )
+          const phantoms = localWebhooks.filter(
+            (localWebhook) =>
+              !serverWebhooks.find(
+                (serverWebhook: any) =>
+                  serverWebhook.webhookId === localWebhook.webhookId
+              )
           );
-          
+
           if (phantoms.length > 0) {
-            console.log(`👻 [PHANTOM CHECK] Encontrados ${phantoms.length} webhooks fantasma:`);
-            phantoms.forEach(phantom => {
-              console.log(`   - ${phantom.webhookId} (sesión: ${phantom.sessionId})`);
+            console.log(
+              `👻 [PHANTOM CHECK] Encontrados ${phantoms.length} webhooks fantasma:`
+            );
+            phantoms.forEach((phantom) => {
+              console.log(
+                `   - ${phantom.webhookId} (sesión: ${phantom.sessionId})`
+              );
             });
-            
-            const phantomIds = phantoms.map(p => p.webhookId);
+
+            const phantomIds = phantoms.map((p) => p.webhookId);
             setPhantomWebhooks(phantomIds);
-            
+
             const shouldClean = confirm(
               `Se encontraron ${phantoms.length} webhook(s) fantasma que no existen en el servidor.\n\n` +
-              `IDs: ${phantomIds.join(', ')}\n\n` +
-              `¿Deseas removerlos de la lista local?`
+                `IDs: ${phantomIds.join(", ")}\n\n` +
+                `¿Deseas removerlos de la lista local?`
             );
-            
+
             if (shouldClean) {
               await cleanupPhantomWebhooks(phantomIds);
             }
           } else {
-            console.log('✅ [PHANTOM CHECK] No se encontraron webhooks fantasma');
+            console.log(
+              "✅ [PHANTOM CHECK] No se encontraron webhooks fantasma"
+            );
             toast({
               title: "✅ Verificación Completada",
               description: "No se encontraron webhooks fantasma",
             });
           }
-          
+
           // Actualizar la lista con datos frescos del servidor
           setWebhookConfigs(serverWebhooks);
         }
       }
     } catch (error) {
-      console.error('❌ [PHANTOM CHECK] Error verificando webhooks:', error);
+      console.error("❌ [PHANTOM CHECK] Error verificando webhooks:", error);
       toast({
         title: "❌ Error de Verificación",
         description: "No se pudo verificar el estado de los webhooks",
@@ -437,12 +480,12 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
     try {
       const response = await fetch(
-        `http://100.42.185.2:8015/webhook/stats/${user.nombrebot}`,
+        `https://backend.autosystemprojects.site/webhook/stats/${user.nombrebot}`,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -463,12 +506,12 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
     try {
       const response = await fetch(
-        `http://100.42.185.2:8015/webhook/notifications/${user.nombrebot}?limit=50&offset=0`,
+        `https://backend.autosystemprojects.site/webhook/notifications/${user.nombrebot}?limit=50&offset=0`,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -476,7 +519,7 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
       if (response.ok) {
         const result: NotificationResponse = await response.json();
         if (result.success && result.data) {
-          const notificationsData = Array.isArray(result.data) 
+          const notificationsData = Array.isArray(result.data)
             ? result.data
             : Array.isArray((result.data as any).notifications)
             ? (result.data as any).notifications
@@ -502,11 +545,12 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
     webhookActive: boolean;
   }) => {
     // Verificar límites del plan
-    const canCreate = await checkLimits('webhooks');
+    const canCreate = await checkLimits("webhooks");
     if (!canCreate) {
       toast({
         title: "🔒 Límite Alcanzado",
-        description: "Has alcanzado el límite de webhooks de tu plan. Actualiza para crear más.",
+        description:
+          "Has alcanzado el límite de webhooks de tu plan. Actualiza para crear más.",
         variant: "destructive",
         action: (
           <Button
@@ -541,14 +585,17 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
         webhookUrl: formData.clientWebhookUrl || null,
       };
 
-      const response = await fetch("http://100.42.185.2:8015/webhook/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetch(
+        "https://backend.autosystemprojects.site/webhook/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       const result = await response.json();
 
@@ -565,7 +612,7 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
           deliverySettings: result.data.deliverySettings,
         };
 
-        setWebhookConfigs(prev => [newWebhook, ...prev]);
+        setWebhookConfigs((prev) => [newWebhook, ...prev]);
 
         toast({
           title: "✅ Webhook Creado",
@@ -610,13 +657,13 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
         active: formData.webhookActive,
       };
 
-      const url = `http://100.42.185.2:8015/webhook/${editingWebhook.webhookId}/update`;
-      
+      const url = `https://backend.autosystemprojects.site/webhook/${editingWebhook.webhookId}/update`;
+
       const response = await fetch(url, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(requestBody),
       });
@@ -625,9 +672,9 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
       if (result.success) {
         // Actualizar en la lista local
-        setWebhookConfigs(prev => 
-          prev.map(webhook => 
-            webhook.webhookId === editingWebhook.webhookId 
+        setWebhookConfigs((prev) =>
+          prev.map((webhook) =>
+            webhook.webhookId === editingWebhook.webhookId
               ? {
                   ...webhook,
                   events: formData.selectedEvents,
@@ -665,15 +712,17 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
   const deleteWebhook = async (webhookId: string) => {
     setDeleting(true);
     try {
-      console.log(`[WEBHOOK DELETE] Iniciando eliminación de webhook: ${webhookId}`);
-      
-      const url = `http://100.42.185.2:8015/webhook/${webhookId}/delete`;
-      
+      console.log(
+        `[WEBHOOK DELETE] Iniciando eliminación de webhook: ${webhookId}`
+      );
+
+      const url = `https://backend.autosystemprojects.site/webhook/${webhookId}/delete`;
+
       const response = await fetch(url, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -682,15 +731,19 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
       // 🔧 MEJORA: Manejar diferentes códigos de estado
       if (response.status === 404) {
         // Webhook ya no existe - remover de la lista local
-        console.log(`[WEBHOOK DELETE] Webhook ${webhookId} no encontrado en servidor, removiendo de lista local`);
-        
-        setWebhookConfigs(prev => prev.filter(webhook => webhook.webhookId !== webhookId));
-        
+        console.log(
+          `[WEBHOOK DELETE] Webhook ${webhookId} no encontrado en servidor, removiendo de lista local`
+        );
+
+        setWebhookConfigs((prev) =>
+          prev.filter((webhook) => webhook.webhookId !== webhookId)
+        );
+
         toast({
           title: "🗑️ Webhook Limpiado",
           description: "El webhook fantasma ha sido removido de la lista",
         });
-        
+
         await loadWebhookStats();
         return;
       }
@@ -700,7 +753,9 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
       if (result.success || response.ok) {
         // Remover de la lista local
-        setWebhookConfigs(prev => prev.filter(webhook => webhook.webhookId !== webhookId));
+        setWebhookConfigs((prev) =>
+          prev.filter((webhook) => webhook.webhookId !== webhookId)
+        );
 
         toast({
           title: "🗑️ Webhook Eliminado",
@@ -713,24 +768,35 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
         throw new Error(result.message || "Error desconocido del servidor");
       }
     } catch (error: any) {
-      console.error(`[WEBHOOK DELETE] Error eliminando webhook ${webhookId}:`, error);
-      
+      console.error(
+        `[WEBHOOK DELETE] Error eliminando webhook ${webhookId}:`,
+        error
+      );
+
       // 🔧 MEJORA: Si es un webhook fantasma, ofrecer limpieza
-      if (error.message?.includes('Webhook no encontrado') || error.message?.includes('not found')) {
-        console.log(`[WEBHOOK DELETE] Detectado webhook fantasma: ${webhookId}`);
-        
+      if (
+        error.message?.includes("Webhook no encontrado") ||
+        error.message?.includes("not found")
+      ) {
+        console.log(
+          `[WEBHOOK DELETE] Detectado webhook fantasma: ${webhookId}`
+        );
+
         // Remover de la lista local automáticamente
-        setWebhookConfigs(prev => prev.filter(webhook => webhook.webhookId !== webhookId));
-        
+        setWebhookConfigs((prev) =>
+          prev.filter((webhook) => webhook.webhookId !== webhookId)
+        );
+
         toast({
           title: "👻 Webhook Fantasma Removido",
-          description: "El webhook no existía en el servidor y fue removido de la lista local",
+          description:
+            "El webhook no existía en el servidor y fue removido de la lista local",
           variant: "default",
         });
-        
+
         return;
       }
-      
+
       toast({
         title: "❌ Error",
         description: error.message || "No se pudo eliminar el webhook",
@@ -741,7 +807,10 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
     }
   };
 
-  const testWebhookWithPayload = async (webhook: WebhookConfig, payload: any) => {
+  const testWebhookWithPayload = async (
+    webhook: WebhookConfig,
+    payload: any
+  ) => {
     if (!payload) {
       toast({
         title: "Error",
@@ -753,15 +822,15 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
     setTesting(true);
     setTestResult(null);
-    
+
     try {
       const response = await fetch(
-        `http://100.42.185.2:8015/webhook/${webhook.webhookId}`,
+        `https://backend.autosystemprojects.site/webhook/${webhook.webhookId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
         }
@@ -778,7 +847,8 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
       };
 
       if (!result.success) {
-        testResultData.error = result.message || "Error en la prueba del webhook";
+        testResultData.error =
+          result.message || "Error en la prueba del webhook";
       }
 
       setTestResult(testResultData);
@@ -840,28 +910,37 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
       // Verificar si la sesión aún existe
       if (notification.sessionId && safeSessions && safeSessions.length > 0) {
-        const sessionExists = safeSessions.some((s) => s.id === notification.sessionId);
+        const sessionExists = safeSessions.some(
+          (s) => s.id === notification.sessionId
+        );
         if (!sessionExists) {
           // Limpiar notificación huérfana
-          setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+          setNotifications((prev) =>
+            prev.filter((n) => n.id !== notificationId)
+          );
           setWebhookStats((prev) =>
-            prev ? {
-              ...prev,
-              unreadNotifications: Math.max(0, prev.unreadNotifications - (!notification.read ? 1 : 0)),
-              totalNotifications: Math.max(0, prev.totalNotifications - 1),
-            } : null
+            prev
+              ? {
+                  ...prev,
+                  unreadNotifications: Math.max(
+                    0,
+                    prev.unreadNotifications - (!notification.read ? 1 : 0)
+                  ),
+                  totalNotifications: Math.max(0, prev.totalNotifications - 1),
+                }
+              : null
           );
           return;
         }
       }
 
       const response = await fetch(
-        `http://100.42.185.2:8015/webhook/notifications/${userEmail}/${notificationId}/read`,
+        `https://backend.autosystemprojects.site/webhook/notifications/${userEmail}/${notificationId}/read`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ read: true }),
         }
@@ -871,27 +950,32 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
         // Limpiar notificación que ya no existe
         setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
         setWebhookStats((prev) =>
-          prev ? {
-            ...prev,
-            unreadNotifications: Math.max(0, prev.unreadNotifications - (!notification.read ? 1 : 0)),
-            totalNotifications: Math.max(0, prev.totalNotifications - 1),
-          } : null
+          prev
+            ? {
+                ...prev,
+                unreadNotifications: Math.max(
+                  0,
+                  prev.unreadNotifications - (!notification.read ? 1 : 0)
+                ),
+                totalNotifications: Math.max(0, prev.totalNotifications - 1),
+              }
+            : null
         );
         return;
       }
 
       if (response.ok) {
         setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notificationId ? { ...n, read: true } : n
-          )
+          prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
         );
 
         setWebhookStats((prev) =>
-          prev ? {
-            ...prev,
-            unreadNotifications: Math.max(0, prev.unreadNotifications - 1),
-          } : null
+          prev
+            ? {
+                ...prev,
+                unreadNotifications: Math.max(0, prev.unreadNotifications - 1),
+              }
+            : null
         );
       }
     } catch (error) {
@@ -949,7 +1033,9 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `webhooks_notifications_${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `webhooks_notifications_${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
     a.click();
     URL.revokeObjectURL(url);
 
@@ -961,25 +1047,28 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
   const cleanupOrphanedWebhooks = async () => {
     if (!user?.nombrebot || !safeSessions || safeSessions.length === 0) return;
-    
+
     try {
-      const availableSessionIds = safeSessions.map(s => s.id);
-      const orphanedWebhooks = webhookConfigs.filter(webhook => 
-        !availableSessionIds.includes(webhook.sessionId)
+      const availableSessionIds = safeSessions.map((s) => s.id);
+      const orphanedWebhooks = webhookConfigs.filter(
+        (webhook) => !availableSessionIds.includes(webhook.sessionId)
       );
-      
+
       if (orphanedWebhooks.length > 0) {
-        console.log('🧹 [WEBHOOK CLEANUP] Webhooks órfanos detectados:', orphanedWebhooks.length);
-        
+        console.log(
+          "🧹 [WEBHOOK CLEANUP] Webhooks órfanos detectados:",
+          orphanedWebhooks.length
+        );
+
         toast({
           title: "⚠️ Configuración de Webhooks",
           description: `Se encontraron ${orphanedWebhooks.length} webhook(s) configurados para sesiones que ya no existen.`,
           variant: "default",
-          duration: 6000
+          duration: 6000,
         });
       }
     } catch (error) {
-      console.warn('🧹 [WEBHOOK CLEANUP] Error en verificación:', error);
+      console.warn("🧹 [WEBHOOK CLEANUP] Error en verificación:", error);
     }
   };
 
@@ -987,13 +1076,19 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
     try {
       // Verificar que currentSessions no sea undefined o null
       if (!currentSessions || !Array.isArray(currentSessions)) {
-        console.warn('🧹 [WEBHOOK CLEANUP] currentSessions no es válido:', currentSessions);
+        console.warn(
+          "🧹 [WEBHOOK CLEANUP] currentSessions no es válido:",
+          currentSessions
+        );
         return;
       }
 
       // Verificar que notifications exista y sea un array
       if (!notifications || !Array.isArray(notifications)) {
-        console.warn('🧹 [WEBHOOK CLEANUP] notifications no es válido:', notifications);
+        console.warn(
+          "🧹 [WEBHOOK CLEANUP] notifications no es válido:",
+          notifications
+        );
         return;
       }
 
@@ -1005,16 +1100,20 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
       const removedCount = notifications.length - validNotifications.length;
       if (removedCount > 0) {
-        console.log(`🧹 [WEBHOOK CLEANUP] Limpiando ${removedCount} notificaciones órfanas`);
+        console.log(
+          `🧹 [WEBHOOK CLEANUP] Limpiando ${removedCount} notificaciones órfanas`
+        );
         setNotifications(validNotifications);
 
         const unreadCount = validNotifications.filter((n) => !n.read).length;
         setWebhookStats((prev) =>
-          prev ? {
-            ...prev,
-            totalNotifications: validNotifications.length,
-            unreadNotifications: unreadCount,
-          } : null
+          prev
+            ? {
+                ...prev,
+                totalNotifications: validNotifications.length,
+                unreadNotifications: unreadCount,
+              }
+            : null
         );
       }
     } catch (error) {
@@ -1081,26 +1180,30 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
             </h3>
           </div>
           <p className="text-red-700 dark:text-red-300 text-sm mb-3">
-            Se encontraron {phantomWebhooks.length} webhook(s) que existen en la lista local pero no en el servidor:
+            Se encontraron {phantomWebhooks.length} webhook(s) que existen en la
+            lista local pero no en el servidor:
           </p>
           <div className="flex flex-wrap gap-1 mb-3">
             {phantomWebhooks.map((phantomId, index) => (
-              <code key={index} className="text-xs bg-red-100 dark:bg-red-800 px-2 py-1 rounded">
+              <code
+                key={index}
+                className="text-xs bg-red-100 dark:bg-red-800 px-2 py-1 rounded"
+              >
                 {phantomId}
               </code>
             ))}
           </div>
           <div className="flex gap-2">
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={() => cleanupPhantomWebhooks(phantomWebhooks)}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               <Trash2 className="h-3 w-3 mr-1" />
               Limpiar Ahora
             </Button>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="outline"
               onClick={() => setPhantomWebhooks([])}
             >
@@ -1150,9 +1253,14 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
               className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             >
               <option value="list">📋 Lista de Webhooks</option>
-              <option value="create">{editingWebhook ? "✏️ Editar" : "➕ Crear"} Webhook</option>
+              <option value="create">
+                {editingWebhook ? "✏️ Editar" : "➕ Crear"} Webhook
+              </option>
               <option value="notifications">
-                🔔 Notificaciones {(webhookStats?.unreadNotifications || 0) > 0 ? `(${webhookStats?.unreadNotifications})` : ''}
+                🔔 Notificaciones{" "}
+                {(webhookStats?.unreadNotifications || 0) > 0
+                  ? `(${webhookStats?.unreadNotifications})`
+                  : ""}
               </option>
               <option value="test">🧪 Pruebas</option>
               <option value="cleanup">🧹 Limpieza</option>
@@ -1162,14 +1270,21 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
           {/* 📱 Mobile Actions */}
           <div className="sm:hidden flex flex-col gap-2">
             <div className="flex gap-2">
-              <Button variant="outline" onClick={refreshData} disabled={refreshing} className="flex-1">
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+              <Button
+                variant="outline"
+                onClick={refreshData}
+                disabled={refreshing}
+                className="flex-1"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+                />
                 Actualizar
               </Button>
-              
+
               {/* 🔧 NUEVO: Botón para verificar webhooks fantasma */}
-              <Button 
-                variant={phantomWebhooks.length > 0 ? "destructive" : "outline"} 
+              <Button
+                variant={phantomWebhooks.length > 0 ? "destructive" : "outline"}
                 onClick={checkForPhantomWebhooks}
                 disabled={loading}
                 className="flex-1"
@@ -1187,9 +1302,13 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
                 )}
               </Button>
             </div>
-            
+
             {notifications.length > 0 && (
-              <Button variant="outline" onClick={exportNotifications} className="w-full">
+              <Button
+                variant="outline"
+                onClick={exportNotifications}
+                className="w-full"
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Exportar Notificaciones
               </Button>
@@ -1205,13 +1324,21 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
               </TabsTrigger>
               <TabsTrigger value="create" className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                <span className="hidden lg:inline">{editingWebhook ? "Editar" : "Crear"}</span>
+                <span className="hidden lg:inline">
+                  {editingWebhook ? "Editar" : "Crear"}
+                </span>
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <TabsTrigger
+                value="notifications"
+                className="flex items-center gap-2"
+              >
                 <Bell className="h-4 w-4" />
                 <span className="hidden lg:inline">Notificaciones</span>
                 {(webhookStats?.unreadNotifications || 0) > 0 && (
-                  <Badge variant="destructive" className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center">
+                  <Badge
+                    variant="destructive"
+                    className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center"
+                  >
                     {webhookStats?.unreadNotifications || 0}
                   </Badge>
                 )}
@@ -1227,14 +1354,20 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
             </TabsList>
 
             <div className="flex gap-2">
-              <Button variant="outline" onClick={refreshData} disabled={refreshing}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+              <Button
+                variant="outline"
+                onClick={refreshData}
+                disabled={refreshing}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+                />
                 Actualizar
               </Button>
-              
+
               {/* 🔧 NUEVO: Botón para verificar webhooks fantasma */}
-              <Button 
-                variant={phantomWebhooks.length > 0 ? "destructive" : "outline"} 
+              <Button
+                variant={phantomWebhooks.length > 0 ? "destructive" : "outline"}
                 onClick={checkForPhantomWebhooks}
                 disabled={loading}
               >
@@ -1250,7 +1383,7 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
                   </>
                 )}
               </Button>
-              
+
               {notifications.length > 0 && (
                 <Button variant="outline" onClick={exportNotifications}>
                   <Download className="h-4 w-4 mr-2" />

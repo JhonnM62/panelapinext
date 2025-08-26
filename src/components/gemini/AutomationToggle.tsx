@@ -143,7 +143,7 @@ export default function AutomationToggle({
 
         try {
           const response = await fetch(
-            "http://100.42.185.2:8015/api/v2/gemini/debug/bot-status",
+            "https://backend.autosystemprojects.site/api/v2/gemini/debug/bot-status",
             {
               method: "POST",
               headers: {
@@ -188,7 +188,10 @@ export default function AutomationToggle({
         } catch (fetchError) {
           debugData.backend_status = {
             success: false,
-            error: fetchError instanceof Error ? fetchError.message : String(fetchError),
+            error:
+              fetchError instanceof Error
+                ? fetchError.message
+                : String(fetchError),
             type: "fetch_error",
           };
 

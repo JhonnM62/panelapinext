@@ -1,15 +1,21 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  BookOpen, 
-  Search, 
-  Copy, 
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  BookOpen,
+  Search,
+  Copy,
   ExternalLink,
   ChevronRight,
   ChevronDown,
@@ -28,74 +34,79 @@ import {
   Globe,
   Key,
   Lock,
-  Clock
-} from 'lucide-react'
-import { toast } from '@/components/ui/use-toast'
+  Clock,
+} from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 interface DocSection {
-  id: string
-  title: string
-  description: string
-  icon: any
-  category: 'guide' | 'api' | 'tutorial' | 'reference'
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  estimatedTime: string
-  content: DocContent[]
-  tags: string[]
+  id: string;
+  title: string;
+  description: string;
+  icon: any;
+  category: "guide" | "api" | "tutorial" | "reference";
+  difficulty: "beginner" | "intermediate" | "advanced";
+  estimatedTime: string;
+  content: DocContent[];
+  tags: string[];
 }
 
 interface DocContent {
-  type: 'text' | 'code' | 'warning' | 'tip' | 'example' | 'image'
-  content: string
-  language?: string
-  title?: string
+  type: "text" | "code" | "warning" | "tip" | "example" | "image";
+  content: string;
+  language?: string;
+  title?: string;
 }
 
 const docSections: DocSection[] = [
   {
-    id: 'getting-started',
-    title: 'Primeros Pasos',
-    description: 'Guía completa para comenzar a usar la API de WhatsApp con Baileys',
+    id: "getting-started",
+    title: "Primeros Pasos",
+    description:
+      "Guía completa para comenzar a usar la API de WhatsApp con Baileys",
     icon: Rocket,
-    category: 'guide',
-    difficulty: 'beginner',
-    estimatedTime: '10 min',
-    tags: ['inicio', 'configuracion', 'basico'],
+    category: "guide",
+    difficulty: "beginner",
+    estimatedTime: "10 min",
+    tags: ["inicio", "configuracion", "basico"],
     content: [
       {
-        type: 'text',
-        content: 'Bienvenido a la API de WhatsApp con Baileys. Esta guía te ayudará a configurar tu primer bot de WhatsApp en minutos.'
+        type: "text",
+        content:
+          "Bienvenido a la API de WhatsApp con Baileys. Esta guía te ayudará a configurar tu primer bot de WhatsApp en minutos.",
       },
       {
-        type: 'warning',
-        content: 'Asegúrate de tener un número de teléfono dedicado para el bot. No uses tu número personal.'
+        type: "warning",
+        content:
+          "Asegúrate de tener un número de teléfono dedicado para el bot. No uses tu número personal.",
       },
       {
-        type: 'text',
-        content: '## Paso 1: Configuración Inicial\n\nPrimero, necesitas obtener tu token de autenticación desde el panel de control.'
+        type: "text",
+        content:
+          "## Paso 1: Configuración Inicial\n\nPrimero, necesitas obtener tu token de autenticación desde el panel de control.",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Configuración básica',
+        type: "code",
+        language: "javascript",
+        title: "Configuración básica",
         content: `// Configurar la URL base de la API
-const API_URL = 'http://100.42.185.2:8015'
+const API_URL = 'https://backend.autosystemprojects.site'
 const AUTH_TOKEN = 'tu-token-aqui'
 
 // Headers básicos para todas las peticiones
 const headers = {
   'Content-Type': 'application/json',
   'x-access-token': AUTH_TOKEN
-}`
+}`,
       },
       {
-        type: 'text',
-        content: '## Paso 2: Crear tu Primera Sesión\n\nUna sesión representa una instancia de WhatsApp conectada.'
+        type: "text",
+        content:
+          "## Paso 2: Crear tu Primera Sesión\n\nUna sesión representa una instancia de WhatsApp conectada.",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Crear sesión',
+        type: "code",
+        language: "javascript",
+        title: "Crear sesión",
         content: `async function createSession(sessionId) {
   const response = await fetch(\`\${API_URL}/sessions/add\`, {
     method: 'POST',
@@ -115,20 +126,22 @@ const headers = {
   }
   
   return data
-}`
+}`,
       },
       {
-        type: 'tip',
-        content: 'Usa nombres descriptivos para tus sesiones como "bot-ventas" o "soporte-cliente".'
+        type: "tip",
+        content:
+          'Usa nombres descriptivos para tus sesiones como "bot-ventas" o "soporte-cliente".',
       },
       {
-        type: 'text',
-        content: '## Paso 3: Verificar Estado de la Sesión\n\nAntes de enviar mensajes, verifica que la sesión esté autenticada.'
+        type: "text",
+        content:
+          "## Paso 3: Verificar Estado de la Sesión\n\nAntes de enviar mensajes, verifica que la sesión esté autenticada.",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Verificar estado',
+        type: "code",
+        language: "javascript",
+        title: "Verificar estado",
         content: `async function checkSessionStatus(sessionId) {
   const response = await fetch(\`\${API_URL}/sessions/status/\${sessionId}\`, {
     headers
@@ -143,16 +156,17 @@ const headers = {
   }
   
   return false
-}`
+}`,
       },
       {
-        type: 'text',
-        content: '## Paso 4: Enviar tu Primer Mensaje\n\nAhora puedes enviar mensajes a cualquier número de WhatsApp.'
+        type: "text",
+        content:
+          "## Paso 4: Enviar tu Primer Mensaje\n\nAhora puedes enviar mensajes a cualquier número de WhatsApp.",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Enviar mensaje',
+        type: "code",
+        language: "javascript",
+        title: "Enviar mensaje",
         content: `async function sendMessage(sessionId, phoneNumber, message) {
   const response = await fetch(\`\${API_URL}/chats/send?id=\${sessionId}\`, {
     method: 'POST',
@@ -175,11 +189,11 @@ const headers = {
   }
   
   return data
-}`
+}`,
       },
       {
-        type: 'example',
-        title: 'Ejemplo completo',
+        type: "example",
+        title: "Ejemplo completo",
         content: `// Ejemplo completo de uso
 async function main() {
   const sessionId = 'mi-primer-bot'
@@ -200,32 +214,35 @@ async function main() {
   }
 }
 
-main().catch(console.error)`
-      }
-    ]
+main().catch(console.error)`,
+      },
+    ],
   },
   {
-    id: 'advanced-messaging',
-    title: 'Mensajería Avanzada',
-    description: 'Aprende a enviar diferentes tipos de mensajes: imágenes, videos, documentos y más',
+    id: "advanced-messaging",
+    title: "Mensajería Avanzada",
+    description:
+      "Aprende a enviar diferentes tipos de mensajes: imágenes, videos, documentos y más",
     icon: MessageSquare,
-    category: 'tutorial',
-    difficulty: 'intermediate',
-    estimatedTime: '20 min',
-    tags: ['mensajes', 'multimedia', 'avanzado'],
+    category: "tutorial",
+    difficulty: "intermediate",
+    estimatedTime: "20 min",
+    tags: ["mensajes", "multimedia", "avanzado"],
     content: [
       {
-        type: 'text',
-        content: 'La API soporta múltiples tipos de mensajes más allá del texto simple. Aquí aprenderás a usar todas las opciones disponibles.'
+        type: "text",
+        content:
+          "La API soporta múltiples tipos de mensajes más allá del texto simple. Aquí aprenderás a usar todas las opciones disponibles.",
       },
       {
-        type: 'text',
-        content: '## Mensajes de Texto con Formato\n\nPuedes usar formato Markdown en tus mensajes de texto:'
+        type: "text",
+        content:
+          "## Mensajes de Texto con Formato\n\nPuedes usar formato Markdown en tus mensajes de texto:",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Texto con formato',
+        type: "code",
+        language: "javascript",
+        title: "Texto con formato",
         content: `const messageWithFormat = {
   receiver: '+573001234567',
   isGroup: false,
@@ -240,16 +257,17 @@ Lista:
 • Elemento 2
 • Elemento 3\`
   }
-}`
+}`,
       },
       {
-        type: 'text',
-        content: '## Enviar Imágenes\n\nPuedes enviar imágenes desde URLs públicas:'
+        type: "text",
+        content:
+          "## Enviar Imágenes\n\nPuedes enviar imágenes desde URLs públicas:",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Enviar imagen',
+        type: "code",
+        language: "javascript",
+        title: "Enviar imagen",
         content: `async function sendImage(sessionId, phoneNumber, imageUrl, caption) {
   const response = await fetch(\`\${API_URL}/chats/send?id=\${sessionId}\`, {
     method: 'POST',
@@ -273,16 +291,17 @@ await sendImage(
   '+573001234567',
   'https://example.com/imagen.jpg',
   'Esta es una imagen de ejemplo 📸'
-)`
+)`,
       },
       {
-        type: 'text',
-        content: '## Enviar Videos\n\nSimilar a las imágenes, puedes enviar videos:'
+        type: "text",
+        content:
+          "## Enviar Videos\n\nSimilar a las imágenes, puedes enviar videos:",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Enviar video',
+        type: "code",
+        language: "javascript",
+        title: "Enviar video",
         content: `async function sendVideo(sessionId, phoneNumber, videoUrl, caption) {
   const response = await fetch(\`\${API_URL}/chats/send?id=\${sessionId}\`, {
     method: 'POST',
@@ -298,16 +317,17 @@ await sendImage(
   })
   
   return await response.json()
-}`
+}`,
       },
       {
-        type: 'text',
-        content: '## Enviar Documentos\n\nPuedes compartir documentos PDF, Word, Excel, etc:'
+        type: "text",
+        content:
+          "## Enviar Documentos\n\nPuedes compartir documentos PDF, Word, Excel, etc:",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Enviar documento',
+        type: "code",
+        language: "javascript",
+        title: "Enviar documento",
         content: `async function sendDocument(sessionId, phoneNumber, documentUrl, fileName, mimeType) {
   const response = await fetch(\`\${API_URL}/chats/send?id=\${sessionId}\`, {
     method: 'POST',
@@ -334,16 +354,17 @@ await sendDocument(
   'https://example.com/documento.pdf',
   'Manual de Usuario.pdf',
   'application/pdf'
-)`
+)`,
       },
       {
-        type: 'text',
-        content: '## Enviar Ubicación\n\nComparte ubicaciones usando coordenadas:'
+        type: "text",
+        content:
+          "## Enviar Ubicación\n\nComparte ubicaciones usando coordenadas:",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Enviar ubicación',
+        type: "code",
+        language: "javascript",
+        title: "Enviar ubicación",
         content: `async function sendLocation(sessionId, phoneNumber, latitude, longitude, name) {
   const response = await fetch(\`\${API_URL}/chats/send?id=\${sessionId}\`, {
     method: 'POST',
@@ -371,40 +392,44 @@ await sendLocation(
   48.8584,
   2.2945,
   'Torre Eiffel, París'
-)`
+)`,
       },
       {
-        type: 'tip',
-        content: 'Asegúrate de que todas las URLs sean públicamente accesibles. Las URLs privadas o con autenticación no funcionarán.'
-      }
-    ]
+        type: "tip",
+        content:
+          "Asegúrate de que todas las URLs sean públicamente accesibles. Las URLs privadas o con autenticación no funcionarán.",
+      },
+    ],
   },
   {
-    id: 'webhooks-guide',
-    title: 'Configuración de Webhooks',
-    description: 'Aprende a recibir eventos de WhatsApp en tiempo real',
+    id: "webhooks-guide",
+    title: "Configuración de Webhooks",
+    description: "Aprende a recibir eventos de WhatsApp en tiempo real",
     icon: Zap,
-    category: 'tutorial',
-    difficulty: 'intermediate',
-    estimatedTime: '15 min',
-    tags: ['webhooks', 'eventos', 'tiempo-real'],
+    category: "tutorial",
+    difficulty: "intermediate",
+    estimatedTime: "15 min",
+    tags: ["webhooks", "eventos", "tiempo-real"],
     content: [
       {
-        type: 'text',
-        content: 'Los webhooks te permiten recibir notificaciones en tiempo real cuando ocurren eventos en tus sesiones de WhatsApp.'
+        type: "text",
+        content:
+          "Los webhooks te permiten recibir notificaciones en tiempo real cuando ocurren eventos en tus sesiones de WhatsApp.",
       },
       {
-        type: 'warning',
-        content: 'Tu servidor debe ser accesible públicamente y usar HTTPS para recibir webhooks de manera segura.'
+        type: "warning",
+        content:
+          "Tu servidor debe ser accesible públicamente y usar HTTPS para recibir webhooks de manera segura.",
       },
       {
-        type: 'text',
-        content: '## Configurar un Webhook\n\nPrimero, crea un webhook asociado a tu sesión:'
+        type: "text",
+        content:
+          "## Configurar un Webhook\n\nPrimero, crea un webhook asociado a tu sesión:",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Crear webhook',
+        type: "code",
+        language: "javascript",
+        title: "Crear webhook",
         content: `async function createWebhook(userId, sessionId, webhookUrl) {
   const response = await fetch(\`\${API_URL}/webhook/create\`, {
     method: 'POST',
@@ -433,16 +458,17 @@ await sendLocation(
   }
   
   throw new Error(data.message)
-}`
+}`,
       },
       {
-        type: 'text',
-        content: '## Crear el Endpoint Receptor\n\nImplementa un endpoint en tu servidor para recibir los eventos:'
+        type: "text",
+        content:
+          "## Crear el Endpoint Receptor\n\nImplementa un endpoint en tu servidor para recibir los eventos:",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Express.js Webhook Endpoint',
+        type: "code",
+        language: "javascript",
+        title: "Express.js Webhook Endpoint",
         content: `const express = require('express')
 const app = express()
 
@@ -516,16 +542,17 @@ function handleNewQR(data) {
 
 app.listen(3000, () => {
   console.log('Webhook server running on port 3000')
-})`
+})`,
       },
       {
-        type: 'text',
-        content: '## Configurar HTTPS con ngrok (Para desarrollo)\n\nPara pruebas locales, puedes usar ngrok:'
+        type: "text",
+        content:
+          "## Configurar HTTPS con ngrok (Para desarrollo)\n\nPara pruebas locales, puedes usar ngrok:",
       },
       {
-        type: 'code',
-        language: 'bash',
-        title: 'Configurar ngrok',
+        type: "code",
+        language: "bash",
+        title: "Configurar ngrok",
         content: `# Instalar ngrok
 npm install -g ngrok
 
@@ -533,20 +560,22 @@ npm install -g ngrok
 ngrok http 3000
 
 # Usar la URL HTTPS generada como webhookUrl
-# Ejemplo: https://abc123.ngrok.io/webhook`
+# Ejemplo: https://abc123.ngrok.io/webhook`,
       },
       {
-        type: 'tip',
-        content: 'En producción, usa un certificado SSL válido. Servicios como Let\'s Encrypt ofrecen certificados gratuitos.'
+        type: "tip",
+        content:
+          "En producción, usa un certificado SSL válido. Servicios como Let's Encrypt ofrecen certificados gratuitos.",
       },
       {
-        type: 'text',
-        content: '## Verificar y Gestionar Webhooks\n\nPuedes verificar el estado de tus webhooks:'
+        type: "text",
+        content:
+          "## Verificar y Gestionar Webhooks\n\nPuedes verificar el estado de tus webhooks:",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Gestionar webhooks',
+        type: "code",
+        language: "javascript",
+        title: "Gestionar webhooks",
         content: `// Obtener estadísticas del webhook
 async function getWebhookStats(userId) {
   const response = await fetch(\`\${API_URL}/webhook/stats/\${userId}\`)
@@ -575,45 +604,49 @@ async function markAsRead(userId, notificationId) {
   })
   
   return await response.json()
-}`
-      }
-    ]
+}`,
+      },
+    ],
   },
   {
-    id: 'api-reference',
-    title: 'Referencia Completa de API',
-    description: 'Documentación técnica detallada de todos los endpoints disponibles',
+    id: "api-reference",
+    title: "Referencia Completa de API",
+    description:
+      "Documentación técnica detallada de todos los endpoints disponibles",
     icon: Globe,
-    category: 'reference',
-    difficulty: 'advanced',
-    estimatedTime: '30 min',
-    tags: ['api', 'referencia', 'endpoints'],
+    category: "reference",
+    difficulty: "advanced",
+    estimatedTime: "30 min",
+    tags: ["api", "referencia", "endpoints"],
     content: [
       {
-        type: 'text',
-        content: 'Esta es la referencia completa de todos los endpoints disponibles en la API de Baileys.'
+        type: "text",
+        content:
+          "Esta es la referencia completa de todos los endpoints disponibles en la API de Baileys.",
       },
       {
-        type: 'text',
-        content: '## Autenticación\n\nTodos los endpoints (excepto webhooks) requieren autenticación mediante el header `x-access-token`:'
+        type: "text",
+        content:
+          "## Autenticación\n\nTodos los endpoints (excepto webhooks) requieren autenticación mediante el header `x-access-token`:",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Headers de autenticación',
+        type: "code",
+        language: "javascript",
+        title: "Headers de autenticación",
         content: `const headers = {
   'Content-Type': 'application/json',
   'x-access-token': 'tu-token-de-acceso'
-}`
+}`,
       },
       {
-        type: 'text',
-        content: '## Endpoints de Sesiones\n\n### POST /sessions/add\nCrea una nueva sesión de WhatsApp.'
+        type: "text",
+        content:
+          "## Endpoints de Sesiones\n\n### POST /sessions/add\nCrea una nueva sesión de WhatsApp.",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Crear sesión',
+        type: "code",
+        language: "javascript",
+        title: "Crear sesión",
         content: `// Request
 {
   "id": "nombre-de-la-sesion",
@@ -628,16 +661,17 @@ async function markAsRead(userId, notificationId) {
   "data": {
     "qr": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
   }
-}`
+}`,
       },
       {
-        type: 'text',
-        content: '### GET /sessions/list\nObtiene la lista de todas las sesiones.'
+        type: "text",
+        content:
+          "### GET /sessions/list\nObtiene la lista de todas las sesiones.",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Listar sesiones',
+        type: "code",
+        language: "javascript",
+        title: "Listar sesiones",
         content: `// Response
 {
   "success": true,
@@ -647,16 +681,17 @@ async function markAsRead(userId, notificationId) {
     "sesion-2",
     "sesion-3"
   ]
-}`
+}`,
       },
       {
-        type: 'text',
-        content: '### GET /sessions/status/:id\nObtiene el estado de una sesión específica.'
+        type: "text",
+        content:
+          "### GET /sessions/status/:id\nObtiene el estado de una sesión específica.",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Estado de sesión',
+        type: "code",
+        language: "javascript",
+        title: "Estado de sesión",
         content: `// Response
 {
   "success": true,
@@ -664,16 +699,17 @@ async function markAsRead(userId, notificationId) {
   "data": {
     "status": "authenticated" // connecting, connected, authenticated, disconnected
   }
-}`
+}`,
       },
       {
-        type: 'text',
-        content: '## Endpoints de Mensajería\n\n### POST /chats/send?id=sessionId\nEnvía un mensaje.'
+        type: "text",
+        content:
+          "## Endpoints de Mensajería\n\n### POST /chats/send?id=sessionId\nEnvía un mensaje.",
       },
       {
-        type: 'code',
-        language: 'javascript',
-        title: 'Enviar mensaje',
+        type: "code",
+        language: "javascript",
+        title: "Enviar mensaje",
         content: `// Request - Texto
 {
   "receiver": "+573001234567",
@@ -700,131 +736,155 @@ async function markAsRead(userId, notificationId) {
   "success": true,
   "message": "The message has been successfully sent.",
   "data": {}
-}`
+}`,
       },
       {
-        type: 'text',
-        content: '### GET /chats?id=sessionId\nObtiene la lista de chats.'
+        type: "text",
+        content: "### GET /chats?id=sessionId\nObtiene la lista de chats.",
       },
       {
-        type: 'text',
-        content: '### GET /chats/:jid?id=sessionId\nObtiene los mensajes de un chat específico.'
+        type: "text",
+        content:
+          "### GET /chats/:jid?id=sessionId\nObtiene los mensajes de un chat específico.",
       },
       {
-        type: 'text',
-        content: '## Códigos de Estado HTTP\n\nLa API utiliza códigos de estado HTTP estándar:'
+        type: "text",
+        content:
+          "## Códigos de Estado HTTP\n\nLa API utiliza códigos de estado HTTP estándar:",
       },
       {
-        type: 'code',
-        language: 'text',
-        title: 'Códigos de estado',
+        type: "code",
+        language: "text",
+        title: "Códigos de estado",
         content: `200 OK - Solicitud exitosa
 400 Bad Request - Error en los parámetros
 401 Unauthorized - Token inválido o faltante
 404 Not Found - Recurso no encontrado
 409 Conflict - Recurso ya existe
-500 Internal Server Error - Error del servidor`
+500 Internal Server Error - Error del servidor`,
       },
       {
-        type: 'text',
-        content: '## Límites de Rate Limiting\n\nLa API implementa límites para prevenir abuso:'
+        type: "text",
+        content:
+          "## Límites de Rate Limiting\n\nLa API implementa límites para prevenir abuso:",
       },
       {
-        type: 'code',
-        language: 'text',
-        title: 'Límites de la API',
+        type: "code",
+        language: "text",
+        title: "Límites de la API",
         content: `• 100 solicitudes por minuto por token
 • 1000 mensajes por hora por sesión
 • Tamaño máximo de archivo: 16MB
-• Timeout de request: 30 segundos`
-      }
-    ]
-  }
-]
+• Timeout de request: 30 segundos`,
+      },
+    ],
+  },
+];
 
 export default function DocsPage() {
-  const [selectedSection, setSelectedSection] = useState<DocSection>(docSections[0])
-  const [searchQuery, setSearchQuery] = useState('')
-  const [filteredSections, setFilteredSections] = useState<DocSection[]>(docSections)
-  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({})
+  const [selectedSection, setSelectedSection] = useState<DocSection>(
+    docSections[0]
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredSections, setFilteredSections] =
+    useState<DocSection[]>(docSections);
+  const [expandedSections, setExpandedSections] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   useEffect(() => {
     if (searchQuery) {
-      const filtered = docSections.filter(section =>
-        section.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        section.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        section.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        section.content.some(content => 
-          content.content.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      )
-      setFilteredSections(filtered)
+      const filtered = docSections.filter(
+        (section) =>
+          section.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          section.description
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          section.tags.some((tag) =>
+            tag.toLowerCase().includes(searchQuery.toLowerCase())
+          ) ||
+          section.content.some((content) =>
+            content.content.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+      );
+      setFilteredSections(filtered);
     } else {
-      setFilteredSections(docSections)
+      setFilteredSections(docSections);
     }
-  }, [searchQuery])
+  }, [searchQuery]);
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
+    navigator.clipboard.writeText(text);
     toast({
       title: "Código copiado!",
       description: "El código ha sido copiado al portapapeles",
-    })
-  }
+    });
+  };
 
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [sectionId]: !prev[sectionId]
-    }))
-  }
+      [sectionId]: !prev[sectionId],
+    }));
+  };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'guide':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-      case 'tutorial':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      case 'api':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-      case 'reference':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+      case "guide":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "tutorial":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "api":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "reference":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
-  }
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'beginner':
-        return 'text-green-600'
-      case 'intermediate':
-        return 'text-yellow-600'
-      case 'advanced':
-        return 'text-red-600'
+      case "beginner":
+        return "text-green-600";
+      case "intermediate":
+        return "text-yellow-600";
+      case "advanced":
+        return "text-red-600";
       default:
-        return 'text-gray-600'
+        return "text-gray-600";
     }
-  }
+  };
 
   const renderContent = (content: DocContent, index: number) => {
     switch (content.type) {
-      case 'text':
+      case "text":
         return (
           <div key={index} className="prose dark:prose-invert max-w-none">
-            <div dangerouslySetInnerHTML={{ 
-              __html: content.content
-                .replace(/\n/g, '<br>')
-                .replace(/## (.*)/g, '<h2 class="text-xl font-bold mt-6 mb-3">$1</h2>')
-                .replace(/### (.*)/g, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/`(.*?)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-1 rounded">$1</code>')
-            }} />
+            <div
+              dangerouslySetInnerHTML={{
+                __html: content.content
+                  .replace(/\n/g, "<br>")
+                  .replace(
+                    /## (.*)/g,
+                    '<h2 class="text-xl font-bold mt-6 mb-3">$1</h2>'
+                  )
+                  .replace(
+                    /### (.*)/g,
+                    '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>'
+                  )
+                  .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                  .replace(/\*(.*?)\*/g, "<em>$1</em>")
+                  .replace(
+                    /`(.*?)`/g,
+                    '<code class="bg-gray-100 dark:bg-gray-800 px-1 rounded">$1</code>'
+                  ),
+              }}
+            />
           </div>
-        )
-      
-      case 'code':
+        );
+
+      case "code":
         return (
           <Card key={index} className="mt-4">
             {content.title && (
@@ -841,37 +901,50 @@ export default function DocsPage() {
                 </CardTitle>
               </CardHeader>
             )}
-            <CardContent className={content.title ? 'pt-0' : ''}>
+            <CardContent className={content.title ? "pt-0" : ""}>
               <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
                 <code>{content.content}</code>
               </pre>
             </CardContent>
           </Card>
-        )
-      
-      case 'warning':
+        );
+
+      case "warning":
         return (
-          <div key={index} className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mt-4">
+          <div
+            key={index}
+            className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mt-4"
+          >
             <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-            <p className="text-red-800 dark:text-red-200 text-sm">{content.content}</p>
+            <p className="text-red-800 dark:text-red-200 text-sm">
+              {content.content}
+            </p>
           </div>
-        )
-      
-      case 'tip':
+        );
+
+      case "tip":
         return (
-          <div key={index} className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg mt-4">
+          <div
+            key={index}
+            className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg mt-4"
+          >
             <Lightbulb className="h-5 w-5 text-blue-600 mt-0.5" />
-            <p className="text-blue-800 dark:text-blue-200 text-sm">{content.content}</p>
+            <p className="text-blue-800 dark:text-blue-200 text-sm">
+              {content.content}
+            </p>
           </div>
-        )
-      
-      case 'example':
+        );
+
+      case "example":
         return (
-          <Card key={index} className="mt-4 border-green-200 dark:border-green-800">
+          <Card
+            key={index}
+            className="mt-4 border-green-200 dark:border-green-800"
+          >
             <CardHeader className="bg-green-50 dark:bg-green-900/20">
               <CardTitle className="text-sm text-green-800 dark:text-green-200 flex items-center">
                 <CheckCircle className="h-4 w-4 mr-2" />
-                {content.title || 'Ejemplo'}
+                {content.title || "Ejemplo"}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
@@ -880,12 +953,12 @@ export default function DocsPage() {
               </pre>
             </CardContent>
           </Card>
-        )
-      
+        );
+
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -899,7 +972,7 @@ export default function DocsPage() {
             Guías completas, tutoriales y referencia de la API de WhatsApp
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Button variant="outline" asChild>
             <a href="#" target="_blank">
@@ -907,7 +980,7 @@ export default function DocsPage() {
               GitHub
             </a>
           </Button>
-          
+
           <Button variant="outline" asChild>
             <a href="#" target="_blank">
               <FileText className="h-4 w-4 mr-2" />
@@ -941,25 +1014,35 @@ export default function DocsPage() {
                 {filteredSections.map((section) => (
                   <Button
                     key={section.id}
-                    variant={selectedSection.id === section.id ? 'default' : 'ghost'}
+                    variant={
+                      selectedSection.id === section.id ? "default" : "ghost"
+                    }
                     className="w-full justify-start p-3 h-auto"
                     onClick={() => setSelectedSection(section)}
                   >
                     <div className="flex items-start gap-3 w-full">
                       <section.icon className="h-5 w-5 mt-0.5" />
                       <div className="text-left flex-1">
-                        <div className="font-medium text-sm">{section.title}</div>
+                        <div className="font-medium text-sm">
+                          {section.title}
+                        </div>
                         <div className="text-xs text-muted-foreground mt-1">
                           {section.estimatedTime}
                         </div>
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${getCategoryColor(section.category)}`}
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${getCategoryColor(
+                              section.category
+                            )}`}
                           >
                             {section.category}
                           </Badge>
-                          <span className={`text-xs ${getDifficultyColor(section.difficulty)}`}>
+                          <span
+                            className={`text-xs ${getDifficultyColor(
+                              section.difficulty
+                            )}`}
+                          >
                             {section.difficulty}
                           </span>
                         </div>
@@ -979,11 +1062,13 @@ export default function DocsPage() {
               <div className="flex items-start gap-4">
                 <selectedSection.icon className="h-8 w-8 text-primary mt-1" />
                 <div className="flex-1">
-                  <CardTitle className="text-2xl">{selectedSection.title}</CardTitle>
+                  <CardTitle className="text-2xl">
+                    {selectedSection.title}
+                  </CardTitle>
                   <CardDescription className="mt-2 text-base">
                     {selectedSection.description}
                   </CardDescription>
-                  
+
                   <div className="flex items-center gap-4 mt-4">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
@@ -991,22 +1076,22 @@ export default function DocsPage() {
                         {selectedSection.estimatedTime}
                       </span>
                     </div>
-                    
-                    <Badge 
-                      variant="outline" 
+
+                    <Badge
+                      variant="outline"
                       className={getCategoryColor(selectedSection.category)}
                     >
                       {selectedSection.category}
                     </Badge>
-                    
-                    <Badge 
+
+                    <Badge
                       variant="outline"
                       className={getDifficultyColor(selectedSection.difficulty)}
                     >
                       {selectedSection.difficulty}
                     </Badge>
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-2 mt-3">
                     {selectedSection.tags.map((tag) => (
                       <Badge key={tag} variant="secondary" className="text-xs">
@@ -1017,10 +1102,10 @@ export default function DocsPage() {
                 </div>
               </div>
             </CardHeader>
-            
+
             <CardContent>
               <div className="space-y-6">
-                {selectedSection.content.map((content, index) => 
+                {selectedSection.content.map((content, index) =>
                   renderContent(content, index)
                 )}
               </div>
@@ -1029,5 +1114,5 @@ export default function DocsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

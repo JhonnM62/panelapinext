@@ -1,78 +1,114 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { useGeminiConfig, useDirectIA } from '@/hooks/useGeminiConfig';
-import { GeminiConfigData, ProcessIAResponse } from '@/lib/gemini-api';
-import { Loader2, Save, TestTube, Trash2, RefreshCw, MessageSquare, Zap } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { useGeminiConfig, useDirectIA } from "@/hooks/useGeminiConfig";
+import { GeminiConfigData, ProcessIAResponse } from "@/lib/gemini-api";
+import {
+  Loader2,
+  Save,
+  TestTube,
+  Trash2,
+  RefreshCw,
+  MessageSquare,
+  Zap,
+} from "lucide-react";
 
 interface GeminiConfigManagerProps {
   onConfigSaved?: (config: GeminiConfigData) => void;
   onConfigDeleted?: () => void;
 }
 
-const DEFAULT_CONFIG: Omit<GeminiConfigData, 'id' | 'fechaCreacion' | 'ultimaActualizacion'> = {
-  userbot: '',
-  apikey: '',
-  server: 'http://100.42.185.2:8015',
-  promt: 'Eres un asistente virtual útil y amigable. Responde de manera clara y concisa.',
-  pais: 'colombia',
-  idioma: 'es',
+const DEFAULT_CONFIG: Omit<
+  GeminiConfigData,
+  "id" | "fechaCreacion" | "ultimaActualizacion"
+> = {
+  userbot: "",
+  apikey: "",
+  server: "https://backend.autosystemprojects.site",
+  promt:
+    "Eres un asistente virtual útil y amigable. Responde de manera clara y concisa.",
+  pais: "colombia",
+  idioma: "es",
   numerodemensajes: 8,
   delay_seconds: 8,
   temperature: 0.0,
   topP: 0.9,
   maxOutputTokens: 512,
   pause_timeout_minutes: 30,
-  ai_model: 'gemini-2.5-flash',
+  ai_model: "gemini-2.5-flash",
   thinking_budget: -1,
-  activo: true
+  activo: true,
 };
 
 const COUNTRIES = [
-  { value: 'colombia', label: 'Colombia' },
-  { value: 'mexico', label: 'México' },
-  { value: 'argentina', label: 'Argentina' },
-  { value: 'chile', label: 'Chile' },
-  { value: 'peru', label: 'Perú' },
-  { value: 'españa', label: 'España' },
-  { value: 'usa', label: 'Estados Unidos' }
+  { value: "colombia", label: "Colombia" },
+  { value: "mexico", label: "México" },
+  { value: "argentina", label: "Argentina" },
+  { value: "chile", label: "Chile" },
+  { value: "peru", label: "Perú" },
+  { value: "españa", label: "España" },
+  { value: "usa", label: "Estados Unidos" },
 ];
 
 const LANGUAGES = [
-  { value: 'es', label: 'Español' },
-  { value: 'en', label: 'English' },
-  { value: 'pt', label: 'Português' }
+  { value: "es", label: "Español" },
+  { value: "en", label: "English" },
+  { value: "pt", label: "Português" },
 ];
 
 const AI_MODELS = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Rápido)' },
-  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Avanzado)' },
-  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (Estable)' }
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Rápido)" },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Avanzado)" },
+  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash (Estable)" },
 ];
 
 export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
   onConfigSaved,
-  onConfigDeleted
+  onConfigDeleted,
 }) => {
-  const { config, isLoading, error, saveConfig, updateConfig, deleteConfig, testConfig, refresh } = useGeminiConfig();
+  const {
+    config,
+    isLoading,
+    error,
+    saveConfig,
+    updateConfig,
+    deleteConfig,
+    testConfig,
+    refresh,
+  } = useGeminiConfig();
   const { isProcessing, processIADirect } = useDirectIA();
-  
-  const [formData, setFormData] = useState<Omit<GeminiConfigData, 'id' | 'fechaCreacion' | 'ultimaActualizacion'>>(DEFAULT_CONFIG);
-  const [testMessage, setTestMessage] = useState('Hola, ¿cómo estás?');
+
+  const [formData, setFormData] =
+    useState<
+      Omit<GeminiConfigData, "id" | "fechaCreacion" | "ultimaActualizacion">
+    >(DEFAULT_CONFIG);
+  const [testMessage, setTestMessage] = useState("Hola, ¿cómo estás?");
   const [testResult, setTestResult] = useState<ProcessIAResponse | null>(null);
   const [isTesting, setIsTesting] = useState(false);
-  const [activeTab, setActiveTab] = useState('config');
+  const [activeTab, setActiveTab] = useState("config");
 
   // Cargar configuración existente cuando se obtiene del servidor
   useEffect(() => {
@@ -92,22 +128,22 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
         pause_timeout_minutes: config.pause_timeout_minutes,
         ai_model: config.ai_model,
         thinking_budget: config.thinking_budget,
-        activo: config.activo
+        activo: config.activo,
       });
     }
   }, [config]);
 
   const handleInputChange = (field: keyof typeof formData, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleSave = async () => {
     try {
       let success = false;
-      
+
       if (config?.botId) {
         // Actualizar configuración existente
         success = await updateConfig(config.botId, formData);
@@ -115,21 +151,23 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
         // Crear nueva configuración
         success = await saveConfig(formData);
       }
-      
+
       if (success && onConfigSaved) {
         onConfigSaved(config!);
       }
     } catch (error) {
-      console.error('Error saving config:', error);
+      console.error("Error saving config:", error);
     }
   };
 
   const handleDelete = async () => {
     if (!config?.botId) return;
-    
-    const confirmed = window.confirm('¿Estás seguro de que quieres eliminar esta configuración?');
+
+    const confirmed = window.confirm(
+      "¿Estás seguro de que quieres eliminar esta configuración?"
+    );
     if (!confirmed) return;
-    
+
     const success = await deleteConfig(config.botId);
     if (success && onConfigDeleted) {
       onConfigDeleted();
@@ -139,23 +177,23 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
   const handleTest = async () => {
     setIsTesting(true);
     setTestResult(null);
-    
+
     try {
       const testConfigData: GeminiConfigData = {
         ...formData,
-        botId: config?.botId || 'test'
+        botId: config?.botId || "test",
       };
-      
+
       const result = await processIADirect({
         body: testMessage,
-        number: '123456789',
-        config: testConfigData
+        number: "123456789",
+        config: testConfigData,
       });
-      
+
       setTestResult(result);
-      setActiveTab('test');
+      setActiveTab("test");
     } catch (error) {
-      console.error('Error testing config:', error);
+      console.error("Error testing config:", error);
     } finally {
       setIsTesting(false);
     }
@@ -181,14 +219,14 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
             Configura tu asistente de inteligencia artificial
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {config && (
-            <Badge variant={config.activo ? 'default' : 'secondary'}>
-              {config.activo ? 'Activo' : 'Inactivo'}
+            <Badge variant={config.activo ? "default" : "secondary"}>
+              {config.activo ? "Activo" : "Inactivo"}
             </Badge>
           )}
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -228,18 +266,22 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                   <Input
                     id="userbot"
                     value={formData.userbot}
-                    onChange={(e) => handleInputChange('userbot', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("userbot", e.target.value)
+                    }
                     placeholder="mi-bot-ia"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="apikey">API Key de Gemini</Label>
                   <Input
                     id="apikey"
                     type="password"
                     value={formData.apikey}
-                    onChange={(e) => handleInputChange('apikey', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("apikey", e.target.value)
+                    }
                     placeholder="AIzaSy..."
                   />
                 </div>
@@ -250,7 +292,7 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                 <Textarea
                   id="promt"
                   value={formData.promt}
-                  onChange={(e) => handleInputChange('promt', e.target.value)}
+                  onChange={(e) => handleInputChange("promt", e.target.value)}
                   placeholder="Eres un asistente virtual..."
                   rows={4}
                 />
@@ -259,7 +301,10 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="pais">País</Label>
-                  <Select value={formData.pais} onValueChange={(value) => handleInputChange('pais', value)}>
+                  <Select
+                    value={formData.pais}
+                    onValueChange={(value) => handleInputChange("pais", value)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -272,10 +317,15 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="idioma">Idioma</Label>
-                  <Select value={formData.idioma} onValueChange={(value) => handleInputChange('idioma', value)}>
+                  <Select
+                    value={formData.idioma}
+                    onValueChange={(value) =>
+                      handleInputChange("idioma", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -288,10 +338,15 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="ai_model">Modelo de IA</Label>
-                  <Select value={formData.ai_model} onValueChange={(value) => handleInputChange('ai_model', value)}>
+                  <Select
+                    value={formData.ai_model}
+                    onValueChange={(value) =>
+                      handleInputChange("ai_model", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -310,7 +365,9 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                 <Switch
                   id="activo"
                   checked={formData.activo}
-                  onCheckedChange={(checked) => handleInputChange('activo', checked)}
+                  onCheckedChange={(checked) =>
+                    handleInputChange("activo", checked)
+                  }
                 />
                 <Label htmlFor="activo">Configuración activa</Label>
               </div>
@@ -329,7 +386,9 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="temperature">Temperature ({formData.temperature})</Label>
+                  <Label htmlFor="temperature">
+                    Temperature ({formData.temperature})
+                  </Label>
                   <Input
                     id="temperature"
                     type="number"
@@ -337,10 +396,15 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                     max="2"
                     step="0.1"
                     value={formData.temperature}
-                    onChange={(e) => handleInputChange('temperature', parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "temperature",
+                        parseFloat(e.target.value)
+                      )
+                    }
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="topP">Top P ({formData.topP})</Label>
                   <Input
@@ -350,59 +414,89 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                     max="1"
                     step="0.1"
                     value={formData.topP}
-                    onChange={(e) => handleInputChange('topP', parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange("topP", parseFloat(e.target.value))
+                    }
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="maxOutputTokens">Máximo Tokens de Respuesta</Label>
+                  <Label htmlFor="maxOutputTokens">
+                    Máximo Tokens de Respuesta
+                  </Label>
                   <Input
                     id="maxOutputTokens"
                     type="number"
                     min="1"
                     max="8192"
                     value={formData.maxOutputTokens}
-                    onChange={(e) => handleInputChange('maxOutputTokens', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "maxOutputTokens",
+                        parseInt(e.target.value)
+                      )
+                    }
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="numerodemensajes">Número de Mensajes de Contexto</Label>
+                  <Label htmlFor="numerodemensajes">
+                    Número de Mensajes de Contexto
+                  </Label>
                   <Input
                     id="numerodemensajes"
                     type="number"
                     min="1"
                     max="50"
                     value={formData.numerodemensajes}
-                    onChange={(e) => handleInputChange('numerodemensajes', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "numerodemensajes",
+                        parseInt(e.target.value)
+                      )
+                    }
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="delay_seconds">Delay entre Respuestas (segundos)</Label>
+                  <Label htmlFor="delay_seconds">
+                    Delay entre Respuestas (segundos)
+                  </Label>
                   <Input
                     id="delay_seconds"
                     type="number"
                     min="0"
                     max="60"
                     value={formData.delay_seconds}
-                    onChange={(e) => handleInputChange('delay_seconds', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "delay_seconds",
+                        parseInt(e.target.value)
+                      )
+                    }
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="pause_timeout_minutes">Timeout de Pausa (minutos)</Label>
+                  <Label htmlFor="pause_timeout_minutes">
+                    Timeout de Pausa (minutos)
+                  </Label>
                   <Input
                     id="pause_timeout_minutes"
                     type="number"
                     min="0"
                     max="1440"
                     value={formData.pause_timeout_minutes}
-                    onChange={(e) => handleInputChange('pause_timeout_minutes', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "pause_timeout_minutes",
+                        parseInt(e.target.value)
+                      )
+                    }
                   />
                 </div>
               </div>
@@ -412,8 +506,8 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                 <Input
                   id="server"
                   value={formData.server}
-                  onChange={(e) => handleInputChange('server', e.target.value)}
-                  placeholder="http://100.42.185.2:8015"
+                  onChange={(e) => handleInputChange("server", e.target.value)}
+                  placeholder="https://backend.autosystemprojects.site"
                 />
               </div>
             </CardContent>
@@ -425,7 +519,8 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
             <CardHeader>
               <CardTitle>Probar Configuración</CardTitle>
               <CardDescription>
-                Envía un mensaje de prueba para verificar que la configuración funciona
+                Envía un mensaje de prueba para verificar que la configuración
+                funciona
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -439,7 +534,7 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                   rows={3}
                 />
               </div>
-              
+
               <Button
                 onClick={handleTest}
                 disabled={isTesting || !formData.apikey || !testMessage.trim()}
@@ -462,11 +557,11 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                   <CardHeader>
                     <CardTitle className="text-sm">
                       Resultado de la Prueba
-                      <Badge 
-                        className="ml-2" 
-                        variant={testResult.success ? 'default' : 'destructive'}
+                      <Badge
+                        className="ml-2"
+                        variant={testResult.success ? "default" : "destructive"}
                       >
-                        {testResult.success ? 'Éxito' : 'Error'}
+                        {testResult.success ? "Éxito" : "Error"}
                       </Badge>
                     </CardTitle>
                   </CardHeader>
@@ -474,26 +569,36 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
                     {testResult.success ? (
                       <div className="space-y-3">
                         <div>
-                          <Label className="text-sm font-medium">Respuesta:</Label>
+                          <Label className="text-sm font-medium">
+                            Respuesta:
+                          </Label>
                           <div className="mt-1 p-3 bg-muted rounded-md">
                             {testResult.response}
                           </div>
                         </div>
-                        
+
                         {testResult.thinking && (
                           <div>
-                            <Label className="text-sm font-medium">Proceso de Pensamiento:</Label>
+                            <Label className="text-sm font-medium">
+                              Proceso de Pensamiento:
+                            </Label>
                             <div className="mt-1 p-3 bg-muted rounded-md text-sm">
                               {testResult.thinking}
                             </div>
                           </div>
                         )}
-                        
+
                         {testResult.usage && (
                           <div className="flex gap-4 text-sm text-muted-foreground">
-                            <span>Tokens usados: {testResult.usage.total_tokens}</span>
-                            <span>Prompt: {testResult.usage.prompt_tokens}</span>
-                            <span>Respuesta: {testResult.usage.completion_tokens}</span>
+                            <span>
+                              Tokens usados: {testResult.usage.total_tokens}
+                            </span>
+                            <span>
+                              Prompt: {testResult.usage.prompt_tokens}
+                            </span>
+                            <span>
+                              Respuesta: {testResult.usage.completion_tokens}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -526,7 +631,7 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
             </Button>
           )}
         </div>
-        
+
         <Button
           onClick={handleSave}
           disabled={isLoading || !formData.apikey || !formData.userbot}
@@ -539,7 +644,7 @@ export const GeminiConfigManager: React.FC<GeminiConfigManagerProps> = ({
           ) : (
             <>
               <Save className="h-4 w-4 mr-2" />
-              {config?.botId ? 'Actualizar' : 'Guardar'} Configuración
+              {config?.botId ? "Actualizar" : "Guardar"} Configuración
             </>
           )}
         </Button>

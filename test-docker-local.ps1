@@ -16,7 +16,7 @@ docker rm $CONTAINER_NAME 2>$null
 # Construir la imagen
 Write-Host "🔨 Construyendo imagen Docker..." -ForegroundColor Yellow
 docker build `
-  --build-arg NEXT_PUBLIC_API_URL="http://100.42.185.2:8015" `
+  --build-arg NEXT_PUBLIC_API_URL="https://backend.autosystemprojects.site" `
   -t $IMAGE_NAME .
 
 if ($LASTEXITCODE -ne 0) {
@@ -34,7 +34,7 @@ docker run -d `
   -e PORT=$PORT `
   -e HOSTNAME="0.0.0.0" `
   -e NODE_ENV=production `
-  -e NEXT_PUBLIC_API_URL="http://100.42.185.2:8015" `
+  -e NEXT_PUBLIC_API_URL="https://backend.autosystemprojects.site" `
   $IMAGE_NAME
 
 if ($LASTEXITCODE -ne 0) {

@@ -1,11 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['localhost', '100.42.185.2'],
+    domains: ["localhost", "100.42.185.2"],
   },
 
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://100.42.185.2:8015',
+    NEXT_PUBLIC_API_URL:
+      process.env.NEXT_PUBLIC_API_URL ||
+      "https://backend.autosystemprojects.site",
   },
 
   webpack: (config, { dev, isServer }) => {
@@ -36,7 +38,7 @@ const nextConfig = {
   //   ];
   // },
 
-  output: 'standalone',
+  output: "standalone",
   poweredByHeader: false,
   reactStrictMode: false, // Temporalmente desactivado para solucionar notificaciones duplicadas
 
@@ -47,6 +49,6 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
-}
+};
 
 module.exports = nextConfig;

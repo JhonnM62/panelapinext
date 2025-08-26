@@ -1,9 +1,10 @@
 import axios from "axios";
 
 // URLs de las APIs - Usando únicamente NEXT_PUBLIC_API_URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://100.42.185.2:8015";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "https://backend.autosystemprojects.site";
 const BAILEYS_API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://100.42.185.2:8015";
+  process.env.NEXT_PUBLIC_API_URL || "https://backend.autosystemprojects.site";
 
 // Chats endpoints (V2) - Exportación corregida
 export const chatsAPI = {
@@ -246,7 +247,7 @@ class SimpleBaileysAPI {
       try {
         console.log(`[DEBUG-ULTRA] Leyendo response text...`);
         if (!response) {
-          throw new Error('Response object is undefined');
+          throw new Error("Response object is undefined");
         }
         responseText = await response.text();
         console.log(
@@ -449,7 +450,9 @@ class SimpleBaileysAPI {
     try {
       // Corregido: El endpoint correcto es /chats/:jid no /chats/messages
       const response = await fetch(
-        `${this.baseURL}/chats/${encodeURIComponent(remoteJid)}?id=${sessionId}&limit=${limit}&isGroup=${isGroup}`,
+        `${this.baseURL}/chats/${encodeURIComponent(
+          remoteJid
+        )}?id=${sessionId}&limit=${limit}&isGroup=${isGroup}`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -1040,30 +1043,35 @@ export const authAPI = {
     paymentInfo?: any;
   }) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error('No hay token de autenticación');
+        throw new Error("No hay token de autenticación");
       }
 
-      const response = await fetch(`${API_URL}/api/v2/auth/update-after-payment`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          planId: data.planId,
-          transactionId: data.transactionId,
-          amount: data.amount,
-          orderID: data.orderID,
-          paymentInfo: data.paymentInfo
-        }),
-      });
+      const response = await fetch(
+        `${API_URL}/api/v2/auth/update-after-payment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            token,
+            planId: data.planId,
+            transactionId: data.transactionId,
+            amount: data.amount,
+            orderID: data.orderID,
+            paymentInfo: data.paymentInfo,
+          }),
+        }
+      );
 
       const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(responseData.message || "Failed to update user after payment");
+        throw new Error(
+          responseData.message || "Failed to update user after payment"
+        );
       }
 
       return {
@@ -2008,10 +2016,10 @@ export const botsAPI = {
   // Listar todos los bots del usuario
   listUserBots: async () => {
     try {
-      const response = await api.get('/api/v2/bots/user');
+      const response = await api.get("/api/v2/bots/user");
       return response.data;
     } catch (error) {
-      console.error('[BOTS API] Error listing bots:', error);
+      console.error("[BOTS API] Error listing bots:", error);
       throw error;
     }
   },
@@ -2019,10 +2027,10 @@ export const botsAPI = {
   // Obtener sesiones disponibles
   getAvailableSessions: async () => {
     try {
-      const response = await api.get('/api/v2/bots/sessions-available');
+      const response = await api.get("/api/v2/bots/sessions-available");
       return response.data;
     } catch (error) {
-      console.error('[BOTS API] Error getting available sessions:', error);
+      console.error("[BOTS API] Error getting available sessions:", error);
       throw error;
     }
   },
@@ -2036,10 +2044,10 @@ export const botsAPI = {
     configIA?: any;
   }) => {
     try {
-      const response = await api.post('/api/v2/bots/create', data);
+      const response = await api.post("/api/v2/bots/create", data);
       return response.data;
     } catch (error) {
-      console.error('[BOTS API] Error creating bot:', error);
+      console.error("[BOTS API] Error creating bot:", error);
       throw error;
     }
   },
@@ -2050,7 +2058,7 @@ export const botsAPI = {
       const response = await api.put(`/api/v2/bots/update/${botId}`, data);
       return response.data;
     } catch (error) {
-      console.error('[BOTS API] Error updating bot:', error);
+      console.error("[BOTS API] Error updating bot:", error);
       throw error;
     }
   },
@@ -2061,7 +2069,7 @@ export const botsAPI = {
       const response = await api.delete(`/api/v2/bots/delete/${botId}`);
       return response.data;
     } catch (error) {
-      console.error('[BOTS API] Error deleting bot:', error);
+      console.error("[BOTS API] Error deleting bot:", error);
       throw error;
     }
   },
@@ -2069,10 +2077,10 @@ export const botsAPI = {
   // Obtener estadísticas
   getStats: async () => {
     try {
-      const response = await api.get('/api/v2/bots/stats/user');
+      const response = await api.get("/api/v2/bots/stats/user");
       return response.data;
     } catch (error) {
-      console.error('[BOTS API] Error getting stats:', error);
+      console.error("[BOTS API] Error getting stats:", error);
       throw error;
     }
   },
@@ -2080,37 +2088,49 @@ export const botsAPI = {
   // Operaciones masivas
   bulkDelete: async (botIds: string[]) => {
     try {
-      const response = await api.delete('/api/v2/bots/bulk-delete', { data: { botIds } });
-      return response.data;
-    } catch (error) {
-      console.error('[BOTS API] Error bulk deleting:', error);
-      throw error;
-    }
-  },
-
-  bulkActivate: async (botIds: string[], accion: 'activar' | 'desactivar' | 'toggle') => {
-    try {
-      const response = await api.put('/api/v2/bots/bulk-activate', { botIds, accion });
-      return response.data;
-    } catch (error) {
-      console.error('[BOTS API] Error bulk activating:', error);
-      throw error;
-    }
-  },
-
-  duplicate: async (botIdOrigen: string, nombreNuevoBot: string, sesionId: string) => {
-    try {
-      const response = await api.post('/api/v2/bots/duplicate', {
-        botIdOrigen,
-        nombreNuevoBot,
-        sesionId
+      const response = await api.delete("/api/v2/bots/bulk-delete", {
+        data: { botIds },
       });
       return response.data;
     } catch (error) {
-      console.error('[BOTS API] Error duplicating bot:', error);
+      console.error("[BOTS API] Error bulk deleting:", error);
       throw error;
     }
-  }
+  },
+
+  bulkActivate: async (
+    botIds: string[],
+    accion: "activar" | "desactivar" | "toggle"
+  ) => {
+    try {
+      const response = await api.put("/api/v2/bots/bulk-activate", {
+        botIds,
+        accion,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("[BOTS API] Error bulk activating:", error);
+      throw error;
+    }
+  },
+
+  duplicate: async (
+    botIdOrigen: string,
+    nombreNuevoBot: string,
+    sesionId: string
+  ) => {
+    try {
+      const response = await api.post("/api/v2/bots/duplicate", {
+        botIdOrigen,
+        nombreNuevoBot,
+        sesionId,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("[BOTS API] Error duplicating bot:", error);
+      throw error;
+    }
+  },
 };
 
 // 🧠 API de Gemini (Configuración de IA)
@@ -2118,10 +2138,10 @@ export const geminiAPI = {
   // Guardar configuración
   saveConfig: async (config: any) => {
     try {
-      const response = await api.post('/api/v2/gemini/config/save', config);
+      const response = await api.post("/api/v2/gemini/config/save", config);
       return response.data;
     } catch (error) {
-      console.error('[GEMINI API] Error saving config:', error);
+      console.error("[GEMINI API] Error saving config:", error);
       throw error;
     }
   },
@@ -2129,10 +2149,10 @@ export const geminiAPI = {
   // Obtener configuración
   getConfig: async () => {
     try {
-      const response = await api.get('/api/v2/gemini/config');
+      const response = await api.get("/api/v2/gemini/config");
       return response.data;
     } catch (error) {
-      console.error('[GEMINI API] Error getting config:', error);
+      console.error("[GEMINI API] Error getting config:", error);
       throw error;
     }
   },
@@ -2140,10 +2160,10 @@ export const geminiAPI = {
   // Actualizar configuración
   updateConfig: async (config: any) => {
     try {
-      const response = await api.put('/api/v2/gemini/config/update', config);
+      const response = await api.put("/api/v2/gemini/config/update", config);
       return response.data;
     } catch (error) {
-      console.error('[GEMINI API] Error updating config:', error);
+      console.error("[GEMINI API] Error updating config:", error);
       throw error;
     }
   },
@@ -2151,10 +2171,10 @@ export const geminiAPI = {
   // Eliminar configuración
   deleteConfig: async () => {
     try {
-      const response = await api.delete('/api/v2/gemini/config/delete');
+      const response = await api.delete("/api/v2/gemini/config/delete");
       return response.data;
     } catch (error) {
-      console.error('[GEMINI API] Error deleting config:', error);
+      console.error("[GEMINI API] Error deleting config:", error);
       throw error;
     }
   },
@@ -2162,10 +2182,10 @@ export const geminiAPI = {
   // Procesar mensaje con IA
   process: async (data: any) => {
     try {
-      const response = await api.post('/api/v2/gemini/process', data);
+      const response = await api.post("/api/v2/gemini/process", data);
       return response.data;
     } catch (error) {
-      console.error('[GEMINI API] Error processing message:', error);
+      console.error("[GEMINI API] Error processing message:", error);
       throw error;
     }
   },
@@ -2173,13 +2193,13 @@ export const geminiAPI = {
   // Procesar mensaje directo (sin guardar config)
   processDirect: async (data: any) => {
     try {
-      const response = await api.post('/api/v2/gemini/process-direct', data);
+      const response = await api.post("/api/v2/gemini/process-direct", data);
       return response.data;
     } catch (error) {
-      console.error('[GEMINI API] Error processing direct:', error);
+      console.error("[GEMINI API] Error processing direct:", error);
       throw error;
     }
-  }
+  },
 };
 
 // Exportar instancia de Baileys API para uso directo

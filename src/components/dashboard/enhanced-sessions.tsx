@@ -1,33 +1,74 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { RefreshCw, CreditCard, Smartphone, Wifi, WifiOff, MessageSquare, Bell, Plus, BarChart3, Trash2, Link, CheckCircle, XCircle, AlertCircle, Activity, Lock, Clipboard, Key, Camera, Phone, Signal, Copy, Power, Globe, Shield, Users, Clock, TrendingUp, Zap } from '@/components/ui/icons'
-import { toast } from '@/components/ui/use-toast'
-import { useAuthStore } from '@/store/auth'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  RefreshCw,
+  CreditCard,
+  Smartphone,
+  Wifi,
+  WifiOff,
+  MessageSquare,
+  Bell,
+  Plus,
+  BarChart3,
+  Trash2,
+  Link,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Activity,
+  Lock,
+  Clipboard,
+  Key,
+  Camera,
+  Phone,
+  Signal,
+  Copy,
+  Power,
+  Globe,
+  Shield,
+  Users,
+  Clock,
+  TrendingUp,
+  Zap,
+} from "@/components/ui/icons";
+import { toast } from "@/components/ui/use-toast";
+import { useAuthStore } from "@/store/auth";
+import { useRouter } from "next/navigation";
 
 // Importar Skeleton
-import { SessionsSkeleton } from '@/components/skeletons'
+import { SessionsSkeleton } from "@/components/skeletons";
 
 // Importar APIs después de las otras importaciones
-import { sessionsAPI, webhooksAPI, utilsAPI, authAPI } from '@/lib/api'
+import { sessionsAPI, webhooksAPI, utilsAPI, authAPI } from "@/lib/api";
 
 // Importar componentes de analytics
-import { MetricCard, RealtimeStats } from '@/components/dashboard/analytics-charts'
-import { HealthMonitor } from '@/components/dashboard/health-monitor'
+import {
+  MetricCard,
+  RealtimeStats,
+} from "@/components/dashboard/analytics-charts";
+import { HealthMonitor } from "@/components/dashboard/health-monitor";
 
 // Configuración por defecto para APIs
 const defaultSettings = {
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://100.42.185.2:8015'
-  }
-}
+    baseUrl:
+      process.env.NEXT_PUBLIC_API_URL ||
+      "https://backend.autosystemprojects.site",
+  },
+};
 
 // Tipos locales para evitar dependencias
 interface SessionData {
@@ -40,7 +81,7 @@ interface SessionData {
   lastActivity?: string;
   qr?: string;
   code?: string;
-  typeAuth?: 'qr' | 'code';
+  typeAuth?: "qr" | "code";
 }
 
 interface WebhookStats {
@@ -52,49 +93,62 @@ interface WebhookStats {
 }
 
 interface Session extends SessionData {
-  webhookId?: string
-  webhookStats?: WebhookStats
-  lastActivity?: string
-  messageCount?: number
-  chatCount?: number
+  webhookId?: string;
+  webhookStats?: WebhookStats;
+  lastActivity?: string;
+  messageCount?: number;
+  chatCount?: number;
 }
 
 export default function EnhancedSessionsComponent() {
-  const router = useRouter()
-  const { user } = useAuthStore()
-  const [sessions, setSessions] = useState<Session[]>([])
-  const [loading, setLoading] = useState(true)
-  const [creating, setCreating] = useState(false)
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [refreshing, setRefreshing] = useState<string | null>(null)
-  
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [refreshing, setRefreshing] = useState<string | null>(null);
+
   // Form states
-  const [sessionName, setSessionName] = useState('')
-  const [authType, setAuthType] = useState<'qr' | 'code'>('qr')
-  const [phoneNumber, setPhoneNumber] = useState('')
-  const [webhookUrl, setWebhookUrl] = useState('')
-  
+  const [sessionName, setSessionName] = useState("");
+  const [authType, setAuthType] = useState<"qr" | "code">("qr");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+
   // Estados para código de verificación
-  const [verificationCode, setVerificationCode] = useState<string | null>(null)
-  const [verificationSessionId, setVerificationSessionId] = useState<string | null>(null)
-  const [verificationSessionName, setVerificationSessionName] = useState<string | null>(null)
-  const [verificationPhoneNumber, setVerificationPhoneNumber] = useState<string | null>(null)
-  const [codeExpiryTime, setCodeExpiryTime] = useState<number | null>(null)
-  const [timeRemaining, setTimeRemaining] = useState<number>(30)
-  const [requestingNewCode, setRequestingNewCode] = useState(false)
-  const [codeCopied, setCodeCopied] = useState(false)
-  const [modalSessionStatus, setModalSessionStatus] = useState<string>('connecting')
-  const [modalSessionAuthenticated, setModalSessionAuthenticated] = useState<boolean>(false)
-  
+  const [verificationCode, setVerificationCode] = useState<string | null>(null);
+  const [verificationSessionId, setVerificationSessionId] = useState<
+    string | null
+  >(null);
+  const [verificationSessionName, setVerificationSessionName] = useState<
+    string | null
+  >(null);
+  const [verificationPhoneNumber, setVerificationPhoneNumber] = useState<
+    string | null
+  >(null);
+  const [codeExpiryTime, setCodeExpiryTime] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(30);
+  const [requestingNewCode, setRequestingNewCode] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [modalSessionStatus, setModalSessionStatus] =
+    useState<string>("connecting");
+  const [modalSessionAuthenticated, setModalSessionAuthenticated] =
+    useState<boolean>(false);
+
   // Estados para selección múltiple y operaciones en lote
-  const [selectedSessions, setSelectedSessions] = useState<string[]>([])
-  const [selectAllMode, setSelectAllMode] = useState(false)
-  const [bulkDeleting, setBulkDeleting] = useState(false)
-  const [cleaningInactive, setCleaningInactive] = useState(false)
-  
+  const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
+  const [selectAllMode, setSelectAllMode] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [cleaningInactive, setCleaningInactive] = useState(false);
+
   // Estados para QR Code
-  const [qrCodeData, setQrCodeData] = useState<{sessionId: string, sessionName: string, qrCode: string, phoneNumber?: string} | null>(null)
-  const [qrPollingActive, setQrPollingActive] = useState<boolean>(false)
+  const [qrCodeData, setQrCodeData] = useState<{
+    sessionId: string;
+    sessionName: string;
+    qrCode: string;
+    phoneNumber?: string;
+  } | null>(null);
+  const [qrPollingActive, setQrPollingActive] = useState<boolean>(false);
 
   // Estados para métricas del dashboard
   const [dashboardStats, setDashboardStats] = useState({
@@ -107,104 +161,120 @@ export default function EnhancedSessionsComponent() {
     webhooksPerSecond: 0,
     cpuUsage: 25,
     memoryUsage: 45,
-    diskUsage: 30
-  })
+    diskUsage: 30,
+  });
 
   useEffect(() => {
-    loadSessions()
-    const interval = setInterval(loadSessions, 45000)
-    return () => clearInterval(interval)
-  }, [])
+    loadSessions();
+    const interval = setInterval(loadSessions, 45000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Función para cargar sesiones
   const loadSessions = async (forceRefresh = false) => {
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error('No hay token de autenticación disponible')
+        throw new Error("No hay token de autenticación disponible");
       }
 
       if (forceRefresh) {
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
 
-      const response = await sessionsAPI.listForUser(token)
-      
+      const response = await sessionsAPI.listForUser(token);
+
       if (response.success) {
-        const sessionsData = Array.isArray(response.data?.sesiones) ? response.data.sesiones : []
-        
+        const sessionsData = Array.isArray(response.data?.sesiones)
+          ? response.data.sesiones
+          : [];
+
         if (sessionsData.length === 0) {
-          setSessions([])
-          return
+          setSessions([]);
+          return;
         }
 
         const enhancedSessions = sessionsData.map((sessionData: any) => {
-          const sessionId = sessionData.id || sessionData.sesionId || sessionData.nombresesion
-          
+          const sessionId =
+            sessionData.id || sessionData.sesionId || sessionData.nombresesion;
+
           return {
             id: sessionId,
-            status: mapBackendStatus(sessionData.estadoSesion || sessionData.estado || 'disconnected'),
-            authenticated: sessionData.estadoSesion === 'authenticated' || sessionData.estado === 'authenticated' || sessionData.authenticated === true,
+            status: mapBackendStatus(
+              sessionData.estadoSesion || sessionData.estado || "disconnected"
+            ),
+            authenticated:
+              sessionData.estadoSesion === "authenticated" ||
+              sessionData.estado === "authenticated" ||
+              sessionData.authenticated === true,
             phoneNumber: sessionData.lineaWhatsApp || sessionData.phoneNumber,
             createdAt: sessionData.fechaCreacion || sessionData.createdAt,
             updatedAt: sessionData.fechaActualizacion || sessionData.updatedAt,
-            lastActivity: sessionData.fechaActualizacion || new Date().toISOString(),
+            lastActivity:
+              sessionData.fechaActualizacion || new Date().toISOString(),
             messageCount: Math.floor(Math.random() * 1000),
-            chatCount: Math.floor(Math.random() * 50)
-          }
-        })
+            chatCount: Math.floor(Math.random() * 50),
+          };
+        });
 
-        setSessions(enhancedSessions)
-        
+        setSessions(enhancedSessions);
+
         // Actualizar estadísticas del dashboard
-        setDashboardStats(prev => ({
+        setDashboardStats((prev) => ({
           ...prev,
           totalSessions: enhancedSessions.length,
-          connectedSessions: enhancedSessions.filter((s: any) => s.status === 'connected').length,
-          authenticatedSessions: enhancedSessions.filter((s: any) => s.authenticated).length,
-          activeConnections: enhancedSessions.filter((s: any) => s.status !== 'disconnected').length
-        }))
+          connectedSessions: enhancedSessions.filter(
+            (s: any) => s.status === "connected"
+          ).length,
+          authenticatedSessions: enhancedSessions.filter(
+            (s: any) => s.authenticated
+          ).length,
+          activeConnections: enhancedSessions.filter(
+            (s: any) => s.status !== "disconnected"
+          ).length,
+        }));
       } else {
-        setSessions([])
+        setSessions([]);
       }
     } catch (error) {
-      console.error('Error loading sessions:', error)
-      setSessions([])
+      console.error("Error loading sessions:", error);
+      setSessions([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Función para mapear estados del backend
   const mapBackendStatus = (backendStatus: string): string => {
     const statusMap: { [key: string]: string } = {
-      'conectando': 'connecting',
-      'connecting': 'connecting',
-      'conectado': 'connected',
-      'connected': 'connected',
-      'autenticado': 'authenticated',
-      'authenticated': 'authenticated',
-      'desconectado': 'disconnected',
-      'disconnected': 'disconnected',
-      'desconectando': 'disconnecting',
-      'disconnecting': 'disconnecting',
-      'eliminada': 'deleted',
-      'deleted': 'deleted',
-      'error': 'error'
-    }
-    
-    return statusMap[backendStatus.toLowerCase()] || backendStatus
-  }
+      conectando: "connecting",
+      connecting: "connecting",
+      conectado: "connected",
+      connected: "connected",
+      autenticado: "authenticated",
+      authenticated: "authenticated",
+      desconectado: "disconnected",
+      disconnected: "disconnected",
+      desconectando: "disconnecting",
+      disconnecting: "disconnecting",
+      eliminada: "deleted",
+      deleted: "deleted",
+      error: "error",
+    };
+
+    return statusMap[backendStatus.toLowerCase()] || backendStatus;
+  };
 
   // Función para crear sesión
   const createSession = async () => {
     if (user?.membershipExpired) {
       toast({
         title: "🔒 Funcionalidad Restringida",
-        description: "Tu membresía ha expirado. Actualiza tu plan para crear nuevas sesiones.",
+        description:
+          "Tu membresía ha expirado. Actualiza tu plan para crear nuevas sesiones.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (!sessionName.trim()) {
@@ -212,68 +282,75 @@ export default function EnhancedSessionsComponent() {
         title: "Error",
         description: "El nombre de la sesión es requerido",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setCreating(true)
+    setCreating(true);
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error('No hay token de autenticación disponible')
+        throw new Error("No hay token de autenticación disponible");
       }
 
-      const response = await fetch(`${defaultSettings.api.baseUrl}/api/v2/sesiones/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          token: token,
-          nombresesion: sessionName,
-          lineaWhatsApp: phoneNumber.trim() ? phoneNumber : undefined,
-          tipoAuth: authType,
-          crearWebhook: true
-        })
-      })
+      const response = await fetch(
+        `${defaultSettings.api.baseUrl}/api/v2/sesiones/create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            token: token,
+            nombresesion: sessionName,
+            lineaWhatsApp: phoneNumber.trim() ? phoneNumber : undefined,
+            tipoAuth: authType,
+            crearWebhook: true,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }))
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`)
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Error desconocido" }));
+        throw new Error(
+          errorData.message || `HTTP ${response.status}: ${response.statusText}`
+        );
       }
-      
-      const responseData = await response.json()
-      
+
+      const responseData = await response.json();
+
       if (responseData.success) {
         toast({
           title: "✅ Éxito",
           description: "Sesión creada exitosamente",
-        })
+        });
 
-        setSessionName('')
-        setPhoneNumber('')
-        setWebhookUrl('')
-        setShowCreateForm(false)
-        
+        setSessionName("");
+        setPhoneNumber("");
+        setWebhookUrl("");
+        setShowCreateForm(false);
+
         setTimeout(() => {
-          loadSessions(true)
-        }, 1000)
+          loadSessions(true);
+        }, 1000);
       } else {
-        throw new Error(responseData.message || 'Error creando sesión')
+        throw new Error(responseData.message || "Error creando sesión");
       }
-      
     } catch (error) {
-      console.error('Error creating session:', error)
+      console.error("Error creating session:", error);
       toast({
         title: "❌ Error",
-        description: error instanceof Error ? error.message : "No se pudo crear la sesión",
+        description:
+          error instanceof Error ? error.message : "No se pudo crear la sesión",
         variant: "destructive",
-      })
+      });
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
-  }
+  };
 
   // Función para eliminar sesión
   const deleteSession = async (sessionId: string) => {
@@ -282,106 +359,122 @@ export default function EnhancedSessionsComponent() {
         title: "🔒 Funcionalidad Restringida",
         description: "No puedes eliminar sesiones con membresía expirada.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
-      const response = await sessionsAPI.delete(sessionId)
-      
+      const response = await sessionsAPI.delete(sessionId);
+
       if (response.success) {
         toast({
           title: "✅ Éxito",
           description: `La sesión "${sessionId}" ha sido eliminada exitosamente.`,
-        })
-        loadSessions()
+        });
+        loadSessions();
       } else {
-        throw new Error(response.message || 'Error eliminando sesión')
+        throw new Error(response.message || "Error eliminando sesión");
       }
     } catch (error) {
-      console.error('Error deleting session:', error)
+      console.error("Error deleting session:", error);
       toast({
         title: "❌ Error",
-        description: error instanceof Error ? error.message : "No se pudo eliminar la sesión",
+        description:
+          error instanceof Error
+            ? error.message
+            : "No se pudo eliminar la sesión",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   // Función para refrescar sesión
   const refreshSession = async (sessionId: string) => {
-    setRefreshing(sessionId)
+    setRefreshing(sessionId);
     try {
-      const response = await sessionsAPI.status(sessionId)
+      const response = await sessionsAPI.status(sessionId);
       if (response.success) {
-        loadSessions()
+        loadSessions();
         toast({
           title: "Actualizado",
           description: "Estado de la sesión actualizado",
-        })
+        });
       }
     } catch (error) {
-      console.error('Error refreshing session:', error)
+      console.error("Error refreshing session:", error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado",
         variant: "destructive",
-      })
+      });
     } finally {
-      setRefreshing(null)
+      setRefreshing(null);
     }
-  }
+  };
 
   // Funciones para indicadores de estado
   const getStatusColor = (status: string, authenticated: boolean = false) => {
-    if (authenticated) return 'bg-green-500'
-    
+    if (authenticated) return "bg-green-500";
+
     switch (status) {
-      case 'authenticated': return 'bg-green-500'
-      case 'connected': return 'bg-blue-500'
-      case 'connecting': return 'bg-yellow-500 animate-pulse'
-      case 'disconnected':
-      case 'disconnecting': return 'bg-red-500'
-      case 'error': return 'bg-red-600'
-      default: return 'bg-gray-500'
+      case "authenticated":
+        return "bg-green-500";
+      case "connected":
+        return "bg-blue-500";
+      case "connecting":
+        return "bg-yellow-500 animate-pulse";
+      case "disconnected":
+      case "disconnecting":
+        return "bg-red-500";
+      case "error":
+        return "bg-red-600";
+      default:
+        return "bg-gray-500";
     }
-  }
+  };
 
   const getStatusIcon = (status: string, authenticated: boolean = false) => {
     if (authenticated) {
-      return <CheckCircle className="h-4 w-4 text-green-600" />
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
     }
-    
+
     switch (status) {
-      case 'authenticated':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
-      case 'connected':
-        return <Wifi className="h-4 w-4 text-blue-600" />
-      case 'connecting':
-        return <Activity className="h-4 w-4 text-yellow-600 animate-pulse" />
-      case 'disconnected':
-      case 'disconnecting':
-        return <WifiOff className="h-4 w-4 text-red-600" />
-      case 'error':
-        return <XCircle className="h-4 w-4 text-red-600" />
+      case "authenticated":
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case "connected":
+        return <Wifi className="h-4 w-4 text-blue-600" />;
+      case "connecting":
+        return <Activity className="h-4 w-4 text-yellow-600 animate-pulse" />;
+      case "disconnected":
+      case "disconnecting":
+        return <WifiOff className="h-4 w-4 text-red-600" />;
+      case "error":
+        return <XCircle className="h-4 w-4 text-red-600" />;
       default:
-        return <AlertCircle className="h-4 w-4 text-gray-600" />
+        return <AlertCircle className="h-4 w-4 text-gray-600" />;
     }
-  }
+  };
 
   const getStatusText = (status: string, authenticated: boolean = false) => {
-    if (authenticated) return 'Autenticado'
-    
+    if (authenticated) return "Autenticado";
+
     switch (status) {
-      case 'authenticated': return 'Autenticado'
-      case 'connected': return 'Conectado'
-      case 'connecting': return 'Conectando...'
-      case 'disconnected': return 'Desconectado'
-      case 'disconnecting': return 'Desconectando...'
-      case 'error': return 'Error'
-      default: return status
+      case "authenticated":
+        return "Autenticado";
+      case "connected":
+        return "Conectado";
+      case "connecting":
+        return "Conectando...";
+      case "disconnected":
+        return "Desconectado";
+      case "disconnecting":
+        return "Desconectando...";
+      case "error":
+        return "Error";
+      default:
+        return status;
     }
-  }
+  };
 
   return (
     <Card className="w-full">
@@ -397,10 +490,13 @@ export default function EnhancedSessionsComponent() {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button 
+            <Button
               onClick={() => {
-                console.log('Botón clickeado, showCreateForm actual:', showCreateForm)
-                setShowCreateForm(!showCreateForm)
+                console.log(
+                  "Botón clickeado, showCreateForm actual:",
+                  showCreateForm
+                );
+                setShowCreateForm(!showCreateForm);
               }}
               disabled={creating}
               className="bg-blue-600 hover:bg-blue-700"
@@ -452,14 +548,16 @@ export default function EnhancedSessionsComponent() {
           </div>
 
           {/* Estadísticas en Tiempo Real */}
-          <RealtimeStats stats={{
-            activeConnections: dashboardStats.activeConnections,
-            messagesPerSecond: dashboardStats.messagesPerSecond,
-            webhooksPerSecond: dashboardStats.webhooksPerSecond,
-            cpuUsage: dashboardStats.cpuUsage,
-            memoryUsage: dashboardStats.memoryUsage,
-            diskUsage: dashboardStats.diskUsage
-          }} />
+          <RealtimeStats
+            stats={{
+              activeConnections: dashboardStats.activeConnections,
+              messagesPerSecond: dashboardStats.messagesPerSecond,
+              webhooksPerSecond: dashboardStats.webhooksPerSecond,
+              cpuUsage: dashboardStats.cpuUsage,
+              memoryUsage: dashboardStats.memoryUsage,
+              diskUsage: dashboardStats.diskUsage,
+            }}
+          />
         </div>
         {showCreateForm && (
           <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
@@ -478,13 +576,19 @@ export default function EnhancedSessionsComponent() {
 
               <div>
                 <Label>Tipo de Autenticación</Label>
-                <Tabs value={authType} onValueChange={(value) => setAuthType(value as 'qr' | 'code')}>
+                <Tabs
+                  value={authType}
+                  onValueChange={(value) => setAuthType(value as "qr" | "code")}
+                >
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="qr" className="flex items-center gap-2">
                       <Camera className="h-4 w-4" />
                       Código QR
                     </TabsTrigger>
-                    <TabsTrigger value="code" className="flex items-center gap-2">
+                    <TabsTrigger
+                      value="code"
+                      className="flex items-center gap-2"
+                    >
                       <Key className="h-4 w-4" />
                       Código de Verificación
                     </TabsTrigger>
@@ -494,7 +598,8 @@ export default function EnhancedSessionsComponent() {
 
               <div>
                 <Label htmlFor="phoneNumber">
-                  Número de WhatsApp {authType === 'code' ? '(Requerido)' : '(Opcional)'}
+                  Número de WhatsApp{" "}
+                  {authType === "code" ? "(Requerido)" : "(Opcional)"}
                 </Label>
                 <Input
                   id="phoneNumber"
@@ -526,10 +631,10 @@ export default function EnhancedSessionsComponent() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setShowCreateForm(false)
-                    setSessionName('')
-                    setPhoneNumber('')
-                    setWebhookUrl('')
+                    setShowCreateForm(false);
+                    setSessionName("");
+                    setPhoneNumber("");
+                    setWebhookUrl("");
                   }}
                   disabled={creating}
                 >
@@ -561,12 +666,22 @@ export default function EnhancedSessionsComponent() {
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-semibold text-lg">{session.id}</h4>
                         <div className="flex items-center gap-2">
-                          <div className={`h-3 w-3 rounded-full ${getStatusColor(session.status, session.authenticated)}`} />
+                          <div
+                            className={`h-3 w-3 rounded-full ${getStatusColor(
+                              session.status,
+                              session.authenticated
+                            )}`}
+                          />
                           {getStatusIcon(session.status, session.authenticated)}
-                          <span className="text-sm">{getStatusText(session.status, session.authenticated)}</span>
+                          <span className="text-sm">
+                            {getStatusText(
+                              session.status,
+                              session.authenticated
+                            )}
+                          </span>
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
                         {session.phoneNumber && (
                           <div className="flex items-center gap-1">
@@ -576,7 +691,9 @@ export default function EnhancedSessionsComponent() {
                         )}
                         <div className="flex items-center gap-1">
                           <Activity className="h-3 w-3" />
-                          {session.lastActivity ? new Date(session.lastActivity).toLocaleString() : 'Sin actividad'}
+                          {session.lastActivity
+                            ? new Date(session.lastActivity).toLocaleString()
+                            : "Sin actividad"}
                         </div>
                         {session.messageCount !== undefined && (
                           <div className="flex items-center gap-1">
@@ -601,7 +718,11 @@ export default function EnhancedSessionsComponent() {
                       onClick={() => refreshSession(session.id)}
                       disabled={refreshing === session.id}
                     >
-                      <RefreshCw className={`h-4 w-4 ${refreshing === session.id ? 'animate-spin' : ''}`} />
+                      <RefreshCw
+                        className={`h-4 w-4 ${
+                          refreshing === session.id ? "animate-spin" : ""
+                        }`}
+                      />
                     </Button>
                     <Button
                       size="sm"
@@ -618,5 +739,5 @@ export default function EnhancedSessionsComponent() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

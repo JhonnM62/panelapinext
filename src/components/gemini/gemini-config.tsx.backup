@@ -110,7 +110,7 @@ export default function GeminiConfig({ userToken, onConfigSaved }: GeminiConfigP
       // Pre-llenar con valores predeterminados útiles
       updateField('userbot', 'MiBot_IA');
       updateField('promt', 'Eres un asistente virtual útil y amigable que responde preguntas de manera clara y concisa.');
-      updateField('server', 'http://100.42.185.2:8015');
+      updateField('server', 'https://backend.autosystemprojects.site');
       updateField('pais', 'colombia');
       updateField('idioma', 'es');
       updateField('numerodemensajes', 8);
@@ -574,7 +574,7 @@ export default function GeminiConfig({ userToken, onConfigSaved }: GeminiConfigP
                   <Label htmlFor="server">Servidor</Label>
                   <Input
                     id="server"
-                    placeholder="http://100.42.185.2:8015"
+                    placeholder="https://backend.autosystemprojects.site"
                     value={config?.server || ''}
                     onChange={(e) => updateField('server', e.target.value)}
                   />

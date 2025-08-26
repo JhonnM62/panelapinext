@@ -1,31 +1,31 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
-import { Slider } from '@/components/ui/slider'
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { useToast } from '@/components/ui/use-toast'
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Brain,
   Save,
@@ -45,257 +45,281 @@ import {
   Link,
   Phone,
   Bot,
-  Sparkles
-} from 'lucide-react'
-import { useAuthStore } from '@/store/auth'
-import { botsAPI, geminiAPI } from '@/lib/api'
+  Sparkles,
+} from "lucide-react";
+import { useAuthStore } from "@/store/auth";
+import { botsAPI, geminiAPI } from "@/lib/api";
 
 const aiModels = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Recomendado)' },
-  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-  { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-  { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
-]
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Recomendado)" },
+  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+  { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
+  { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
+];
 
 const countries = [
-  { value: 'colombia', label: 'Colombia' },
-  { value: 'mexico', label: 'México' },
-  { value: 'argentina', label: 'Argentina' },
-  { value: 'chile', label: 'Chile' },
-  { value: 'peru', label: 'Perú' },
-  { value: 'venezuela', label: 'Venezuela' },
-  { value: 'españa', label: 'España' },
-]
+  { value: "colombia", label: "Colombia" },
+  { value: "mexico", label: "México" },
+  { value: "argentina", label: "Argentina" },
+  { value: "chile", label: "Chile" },
+  { value: "peru", label: "Perú" },
+  { value: "venezuela", label: "Venezuela" },
+  { value: "españa", label: "España" },
+];
 
 const languages = [
-  { value: 'es', label: 'Español' },
-  { value: 'en', label: 'English' },
-  { value: 'pt', label: 'Português' },
-]
+  { value: "es", label: "Español" },
+  { value: "en", label: "English" },
+  { value: "pt", label: "Português" },
+];
 
 interface ChatBotFormProps {
-  onConfigSaved?: () => void
-  editingBot?: any // BotCreado para editar
+  onConfigSaved?: () => void;
+  editingBot?: any; // BotCreado para editar
 }
 
 interface SessionOption {
-  sesionId: string
-  numeroWhatsapp: string
-  estado: string
-  disponible: boolean
+  sesionId: string;
+  numeroWhatsapp: string;
+  estado: string;
+  disponible: boolean;
 }
 
-export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormProps) {
-  const { user } = useAuthStore()
-  const { toast } = useToast()
-  
+export default function ChatBotForm({
+  onConfigSaved,
+  editingBot,
+}: ChatBotFormProps) {
+  const { user } = useAuthStore();
+  const { toast } = useToast();
+
   // Estados del formulario
-  const [isLoading, setIsLoading] = useState(false)
-  const [isTesting, setIsTesting] = useState(false)
-  const [testMessage, setTestMessage] = useState('')
-  const [testResult, setTestResult] = useState<any>(null)
-  const [sessions, setSessions] = useState<SessionOption[]>([])
-  const [loadingSessions, setLoadingSessions] = useState(false)
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testMessage, setTestMessage] = useState("");
+  const [testResult, setTestResult] = useState<any>(null);
+  const [sessions, setSessions] = useState<SessionOption[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+
   // Estado del formulario adaptado al modelo creacionbots
   const getInitialFormData = () => {
     if (editingBot) {
-      const configIA = editingBot.configIA || {}
-      
+      const configIA = editingBot.configIA || {};
+
       // 🔧 DEBUG: Log del bot que se está editando
-      console.log('🔧 [FORM] Cargando bot para edición:', {
+      console.log("🔧 [FORM] Cargando bot para edición:", {
         botId: editingBot.id || editingBot._id,
         nombreBot: editingBot.nombreBot,
         sesionId: editingBot.sesionId || editingBot.sesion?.id,
         tieneConfigIA: !!editingBot.configIA,
-        configIAKeys: editingBot.configIA ? Object.keys(editingBot.configIA) : [],
-        apikey: editingBot.configIA?.apikey ? ('PRESENTE: ' + editingBot.configIA.apikey.slice(0, 10) + '...') : 'FALTANTE',
+        configIAKeys: editingBot.configIA
+          ? Object.keys(editingBot.configIA)
+          : [],
+        apikey: editingBot.configIA?.apikey
+          ? "PRESENTE: " + editingBot.configIA.apikey.slice(0, 10) + "..."
+          : "FALTANTE",
         activo: editingBot.configIA?.activo,
-        sesionCompleta: editingBot.sesion
+        sesionCompleta: editingBot.sesion,
       });
-      
+
       return {
         // Datos básicos - MAPEAR CORRECTAMENTE
-        nombreBot: editingBot.nombreBot || '',
-        descripcion: editingBot.descripcion || '',
-        tipoBot: editingBot.tipoBot || 'ia',
+        nombreBot: editingBot.nombreBot || "",
+        descripcion: editingBot.descripcion || "",
+        tipoBot: editingBot.tipoBot || "ia",
         // 🔧 MAPEO MEJORADO: Soportar múltiples fuentes de sesionId
-        sesionId: editingBot.sesionId || 
-                  editingBot.sesion?.id || 
-                  editingBot.sesion?.sesionId || 
-                  editingBot.sesion?._id || 
-                  (typeof editingBot.sesion === 'string' ? editingBot.sesion : '') || 
-                  '',
-        
+        sesionId:
+          editingBot.sesionId ||
+          editingBot.sesion?.id ||
+          editingBot.sesion?.sesionId ||
+          editingBot.sesion?._id ||
+          (typeof editingBot.sesion === "string" ? editingBot.sesion : "") ||
+          "",
+
         // configIA - todos los campos del modelo
-        userbot: configIA.userbot || editingBot.nombreBot || '',
-        apikey: configIA.apikey || '',
-        server: configIA.server || 'http://100.42.185.2:8015',
-        promt: configIA.promt || 'Eres un asistente virtual útil y amigable que responde preguntas de manera clara y concisa.',
-        pais: configIA.pais || 'colombia',
-        idioma: configIA.idioma || 'es',
+        userbot: configIA.userbot || editingBot.nombreBot || "",
+        apikey: configIA.apikey || "",
+        server: configIA.server || "https://backend.autosystemprojects.site",
+        promt:
+          configIA.promt ||
+          "Eres un asistente virtual útil y amigable que responde preguntas de manera clara y concisa.",
+        pais: configIA.pais || "colombia",
+        idioma: configIA.idioma || "es",
         numerodemensajes: configIA.numerodemensajes || 8,
         delay_seconds: configIA.delay_seconds || 8,
         temperature: configIA.temperature || 0.7,
         topP: configIA.topP || 0.9,
         maxOutputTokens: configIA.maxOutputTokens || 512,
         pause_timeout_minutes: configIA.pause_timeout_minutes || 30,
-        ai_model: configIA.ai_model || 'gemini-2.5-flash',
+        ai_model: configIA.ai_model || "gemini-2.5-flash",
         thinking_budget: configIA.thinking_budget || -1,
         activo: configIA.activo !== false,
-        
+
         // Configuración avanzada
         autoActivar: editingBot.configuracionAvanzada?.autoActivar !== false,
-        limiteConversacionesDiario: editingBot.configuracionAvanzada?.limiteConversacionesDiario || 1000,
-        
+        limiteConversacionesDiario:
+          editingBot.configuracionAvanzada?.limiteConversacionesDiario || 1000,
+
         // Tags
-        tags: editingBot.tags?.join(', ') || 'gemini, ia, chatbot',
-      }
+        tags: editingBot.tags?.join(", ") || "gemini, ia, chatbot",
+      };
     }
-    
+
     return {
       // Datos básicos
-      nombreBot: '',
-      descripcion: '',
-      tipoBot: 'ia',
-      sesionId: '',
-      
+      nombreBot: "",
+      descripcion: "",
+      tipoBot: "ia",
+      sesionId: "",
+
       // configIA
-      userbot: '',
-      apikey: '',
-      server: 'http://100.42.185.2:8015',
-      promt: 'Eres un asistente virtual útil y amigable que responde preguntas de manera clara y concisa.',
-      pais: 'colombia',
-      idioma: 'es',
+      userbot: "",
+      apikey: "",
+      server: "https://backend.autosystemprojects.site",
+      promt:
+        "Eres un asistente virtual útil y amigable que responde preguntas de manera clara y concisa.",
+      pais: "colombia",
+      idioma: "es",
       numerodemensajes: 8,
       delay_seconds: 8,
       temperature: 0.7,
       topP: 0.9,
       maxOutputTokens: 512,
       pause_timeout_minutes: 30,
-      ai_model: 'gemini-2.5-flash',
+      ai_model: "gemini-2.5-flash",
       thinking_budget: -1,
       activo: true,
-      
+
       // Configuración avanzada
       autoActivar: true,
       limiteConversacionesDiario: 1000,
-      
+
       // Tags
-      tags: 'gemini, ia, chatbot',
-    }
-  }
-  
-  const [formData, setFormData] = useState(getInitialFormData())
+      tags: "gemini, ia, chatbot",
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData());
 
   // 🔧 CORRECCIÓN: Actualizar formulario cuando cambia el bot editado
   useEffect(() => {
     if (editingBot) {
-      const newFormData = getInitialFormData()
-      console.log('🔧 [FORM] Actualizando formulario con datos del bot:', {
+      const newFormData = getInitialFormData();
+      console.log("🔧 [FORM] Actualizando formulario con datos del bot:", {
         botId: editingBot.id || editingBot._id,
         nombreBot: newFormData.nombreBot,
-        apikey: newFormData.apikey ? 'CARGADA (' + newFormData.apikey.slice(0, 10) + '...)' : 'VACIA',
+        apikey: newFormData.apikey
+          ? "CARGADA (" + newFormData.apikey.slice(0, 10) + "...)"
+          : "VACIA",
         sesionId: newFormData.sesionId,
         activo: newFormData.activo,
         datosOriginales: editingBot,
-        configIAOriginal: editingBot.configIA
-      })
-      setFormData(newFormData)
+        configIAOriginal: editingBot.configIA,
+      });
+      setFormData(newFormData);
     } else {
       // Si no hay bot editado, usar datos por defecto
-      const defaultFormData = getInitialFormData()
-      console.log('🔧 [FORM] Cargando datos por defecto (bot nuevo)');
-      setFormData(defaultFormData)
+      const defaultFormData = getInitialFormData();
+      console.log("🔧 [FORM] Cargando datos por defecto (bot nuevo)");
+      setFormData(defaultFormData);
     }
-  }, [editingBot])
+  }, [editingBot]);
 
   // Actualizar campo del formulario
   const updateField = (field: string, value: any) => {
-    console.log(`🔧 [FORM DEBUG] Actualizando campo '${field}':`, { valor: value, tipo: typeof value });
-    setFormData(prev => {
+    console.log(`🔧 [FORM DEBUG] Actualizando campo '${field}':`, {
+      valor: value,
+      tipo: typeof value,
+    });
+    setFormData((prev) => {
       const newData = { ...prev, [field]: value };
       console.log(`🔧 [FORM DEBUG] FormData actualizado:`, newData);
       return newData;
     });
-  }
+  };
 
   // Cargar sesiones disponibles
   useEffect(() => {
-    loadAvailableSessions()
-  }, [])
+    loadAvailableSessions();
+  }, []);
 
   const loadAvailableSessions = async () => {
-    setLoadingSessions(true)
+    setLoadingSessions(true);
     try {
-      const response = await botsAPI.getAvailableSessions()
-      
+      const response = await botsAPI.getAvailableSessions();
+
       if (response.success && response.data) {
         // Filtrar sesiones válidas
         const validSessions = (response.data || [])
-          .filter((sesion: any) => 
-            sesion && 
-            typeof sesion.sesionId === 'string' && 
-            sesion.sesionId.trim() !== '' &&
-            sesion.sesionId !== 'undefined' &&
-            sesion.sesionId !== 'null'
+          .filter(
+            (sesion: any) =>
+              sesion &&
+              typeof sesion.sesionId === "string" &&
+              sesion.sesionId.trim() !== "" &&
+              sesion.sesionId !== "undefined" &&
+              sesion.sesionId !== "null"
           )
           .map((sesion: any) => ({
             sesionId: sesion.sesionId.trim(),
-            numeroWhatsapp: sesion.numeroWhatsapp || 'Sin número',
-            estado: sesion.estado || 'desconocido',
-            disponible: Boolean(sesion.disponible)
-          }))
-        
-        setSessions(validSessions)
-        
+            numeroWhatsapp: sesion.numeroWhatsapp || "Sin número",
+            estado: sesion.estado || "desconocido",
+            disponible: Boolean(sesion.disponible),
+          }));
+
+        setSessions(validSessions);
+
         // Auto-seleccionar si hay solo una sesión disponible y no estamos editando
-        const availableSessions = validSessions.filter((s: SessionOption) => s.disponible)
-        if (availableSessions.length === 1 && !editingBot && !formData.sesionId) {
-          updateField('sesionId', availableSessions[0].sesionId)
+        const availableSessions = validSessions.filter(
+          (s: SessionOption) => s.disponible
+        );
+        if (
+          availableSessions.length === 1 &&
+          !editingBot &&
+          !formData.sesionId
+        ) {
+          updateField("sesionId", availableSessions[0].sesionId);
         }
       } else {
-        setSessions([])
+        setSessions([]);
       }
     } catch (error) {
-      console.error('Error cargando sesiones:', error)
+      console.error("Error cargando sesiones:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las sesiones disponibles',
-        variant: 'destructive'
-      })
+        title: "Error",
+        description: "No se pudieron cargar las sesiones disponibles",
+        variant: "destructive",
+      });
     } finally {
-      setLoadingSessions(false)
+      setLoadingSessions(false);
     }
-  }
+  };
 
   // Guardar configuración
   const handleSave = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       // Validaciones
       if (!formData.nombreBot.trim()) {
-        throw new Error('El nombre del bot es requerido')
+        throw new Error("El nombre del bot es requerido");
       }
       if (!formData.sesionId) {
-        throw new Error('Debes seleccionar una sesión de WhatsApp')
+        throw new Error("Debes seleccionar una sesión de WhatsApp");
       }
       if (!formData.apikey) {
-        throw new Error('La API Key de Gemini es requerida')
+        throw new Error("La API Key de Gemini es requerida");
       }
       if (!formData.promt.trim()) {
-        throw new Error('El prompt del bot es requerido')
+        throw new Error("El prompt del bot es requerido");
       }
 
       // 🔧 DEBUG: Imprimir formData antes de preparar datos
-      console.log('🔧 [FORM DEBUG] FormData completo antes de enviar:', {
+      console.log("🔧 [FORM DEBUG] FormData completo antes de enviar:", {
         nombreBot: formData.nombreBot,
         longitud: formData.nombreBot?.length,
         userbot: formData.userbot,
         userbotLength: formData.userbot?.length,
-        todoElFormData: formData
+        todoElFormData: formData,
       });
-      
+
       // Preparar datos según el modelo creacionbots
       const botData = {
         nombreBot: formData.nombreBot,
@@ -317,17 +341,17 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
           pause_timeout_minutes: formData.pause_timeout_minutes,
           ai_model: formData.ai_model,
           thinking_budget: formData.thinking_budget,
-          activo: formData.activo
-        }
-      }
-      
+          activo: formData.activo,
+        },
+      };
+
       // 🔧 DEBUG: Imprimir botData antes de enviar
-      console.log('🔧 [FORM DEBUG] BotData preparado para enviar:', {
+      console.log("🔧 [FORM DEBUG] BotData preparado para enviar:", {
         nombreBot: botData.nombreBot,
         nombreBotLength: botData.nombreBot?.length,
         userbot: botData.configIA?.userbot,
         userbotLength: botData.configIA?.userbot?.length,
-        todoBotData: botData
+        todoBotData: botData,
       });
 
       // Si estamos editando, agregar más campos
@@ -335,24 +359,30 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
         Object.assign(botData, {
           configuracionAvanzada: {
             autoActivar: formData.autoActivar,
-            limiteConversacionesDiario: formData.limiteConversacionesDiario
+            limiteConversacionesDiario: formData.limiteConversacionesDiario,
           },
-          tags: formData.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t)
-        })
+          tags: formData.tags
+            .split(",")
+            .map((t: string) => t.trim())
+            .filter((t: string) => t),
+        });
       }
 
-      let result
+      let result;
       if (editingBot) {
         // Actualizar bot existente
-        console.log('🔧 [FORM DEBUG] Actualizando bot existente ID:', editingBot.id || editingBot._id);
-        result = await botsAPI.update(editingBot.id || editingBot._id, botData)
+        console.log(
+          "🔧 [FORM DEBUG] Actualizando bot existente ID:",
+          editingBot.id || editingBot._id
+        );
+        result = await botsAPI.update(editingBot.id || editingBot._id, botData);
       } else {
         // Crear nuevo bot
-        console.log('🔧 [FORM DEBUG] Creando nuevo bot con datos:', botData);
-        result = await botsAPI.create(botData)
+        console.log("🔧 [FORM DEBUG] Creando nuevo bot con datos:", botData);
+        result = await botsAPI.create(botData);
       }
-      
-      console.log('🔧 [FORM DEBUG] Resultado de la API:', result);
+
+      console.log("🔧 [FORM DEBUG] Resultado de la API:", result);
 
       if (result.success) {
         // Guardar configuración en Gemini API también
@@ -373,68 +403,74 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
           thinking_budget: formData.thinking_budget,
           activo: formData.activo,
           sesionId: formData.sesionId,
-          phoneNumber: sessions.find(s => s.sesionId === formData.sesionId)?.numeroWhatsapp || ''
-        }
-        
+          phoneNumber:
+            sessions.find((s) => s.sesionId === formData.sesionId)
+              ?.numeroWhatsapp || "",
+        };
+
         try {
           if (editingBot) {
-            await geminiAPI.updateConfig(geminiConfig)
+            await geminiAPI.updateConfig(geminiConfig);
           } else {
-            await geminiAPI.saveConfig(geminiConfig)
+            await geminiAPI.saveConfig(geminiConfig);
           }
         } catch (error) {
-          console.error('Error guardando configuración en Gemini:', error)
+          console.error("Error guardando configuración en Gemini:", error);
           // No fallar todo si Gemini falla, el bot ya está creado
         }
-        
+
         toast({
-          title: editingBot ? 'Bot actualizado' : 'Bot creado',
-          description: `${formData.nombreBot} ha sido ${editingBot ? 'actualizado' : 'creado'} exitosamente`,
-        })
-        
+          title: editingBot ? "Bot actualizado" : "Bot creado",
+          description: `${formData.nombreBot} ha sido ${
+            editingBot ? "actualizado" : "creado"
+          } exitosamente`,
+        });
+
         if (onConfigSaved) {
-          onConfigSaved()
+          onConfigSaved();
         }
       } else {
-        throw new Error(result.message || 'Error al guardar el bot')
+        throw new Error(result.message || "Error al guardar el bot");
       }
     } catch (error: any) {
       toast({
-        title: 'Error al guardar',
-        description: error.message || 'No se pudo guardar la configuración',
-        variant: 'destructive'
-      })
+        title: "Error al guardar",
+        description: error.message || "No se pudo guardar la configuración",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Probar configuración
   const handleTest = async () => {
     if (!testMessage.trim()) {
       toast({
-        title: 'Error',
-        description: 'Escribe un mensaje de prueba',
-        variant: 'destructive'
-      })
-      return
+        title: "Error",
+        description: "Escribe un mensaje de prueba",
+        variant: "destructive",
+      });
+      return;
     }
 
     if (!formData.apikey || !formData.sesionId) {
       toast({
-        title: 'Error',
-        description: 'Debes configurar la API Key y sesión antes de probar',
-        variant: 'destructive'
-      })
-      return
+        title: "Error",
+        description: "Debes configurar la API Key y sesión antes de probar",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setIsTesting(true)
-    setTestResult(null)
-    
+    setIsTesting(true);
+    setTestResult(null);
+
     try {
       // Usar la API de Gemini para procesar directamente
-      const selectedSession = sessions.find(s => s.sesionId === formData.sesionId)
+      const selectedSession = sessions.find(
+        (s) => s.sesionId === formData.sesionId
+      );
       const result = await geminiAPI.processDirect({
         lineaWA: selectedSession?.numeroWhatsapp || formData.sesionId,
         mensaje_reciente: testMessage,
@@ -451,38 +487,41 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
         maxOutputTokens: formData.maxOutputTokens,
         pause_timeout_minutes: formData.pause_timeout_minutes,
         ai_model: formData.ai_model,
-        thinking_budget: formData.thinking_budget
-      })
-      
+        thinking_budget: formData.thinking_budget,
+      });
+
       if (result.success) {
         setTestResult({
           success: true,
-          response: result.data.response || result.data.answer || 'Respuesta procesada correctamente',
-          timestamp: new Date().toISOString()
-        })
-        
+          response:
+            result.data.response ||
+            result.data.answer ||
+            "Respuesta procesada correctamente",
+          timestamp: new Date().toISOString(),
+        });
+
         toast({
-          title: 'Prueba exitosa',
-          description: 'El bot respondió correctamente',
-        })
+          title: "Prueba exitosa",
+          description: "El bot respondió correctamente",
+        });
       } else {
-        throw new Error(result.message || 'Error al procesar mensaje')
+        throw new Error(result.message || "Error al procesar mensaje");
       }
     } catch (error: any) {
       setTestResult({
         success: false,
-        error: error.message || 'Error al probar la configuración'
-      })
-      
+        error: error.message || "Error al probar la configuración",
+      });
+
       toast({
-        title: 'Error en la prueba',
-        description: error.message || 'No se pudo conectar con el bot',
-        variant: 'destructive'
-      })
+        title: "Error en la prueba",
+        description: error.message || "No se pudo conectar con el bot",
+        variant: "destructive",
+      });
     } finally {
-      setIsTesting(false)
+      setIsTesting(false);
     }
-  }
+  };
 
   return (
     <Card className="w-full max-w-6xl mx-auto">
@@ -491,14 +530,14 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
           <div className="space-y-1">
             <CardTitle className="text-2xl flex items-center gap-2">
               <Brain className="h-6 w-6 text-blue-600" />
-              {editingBot ? 'Editar ChatBot' : 'Configurar Nuevo ChatBot'}
+              {editingBot ? "Editar ChatBot" : "Configurar Nuevo ChatBot"}
             </CardTitle>
             <CardDescription>
               Configura tu asistente inteligente con Gemini IA
             </CardDescription>
           </div>
-          <Badge variant={formData.activo ? 'default' : 'secondary'}>
-            {formData.activo ? 'Activo' : 'Inactivo'}
+          <Badge variant={formData.activo ? "default" : "secondary"}>
+            {formData.activo ? "Activo" : "Inactivo"}
           </Badge>
         </div>
       </CardHeader>
@@ -544,9 +583,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   id="nombreBot"
                   value={formData.nombreBot}
                   onChange={(e) => {
-                    updateField('nombreBot', e.target.value)
+                    updateField("nombreBot", e.target.value);
                     // SIEMPRE actualizar userbot con el nombre completo del bot
-                    updateField('userbot', e.target.value)
+                    updateField("userbot", e.target.value);
                   }}
                   placeholder="Ej: Asistente Virtual"
                 />
@@ -559,7 +598,7 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                 </Label>
                 <Select
                   value={formData.sesionId}
-                  onValueChange={(value) => updateField('sesionId', value)}
+                  onValueChange={(value) => updateField("sesionId", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una sesión" />
@@ -575,15 +614,15 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                       </SelectItem>
                     ) : (
                       sessions.map((session) => (
-                        <SelectItem 
-                          key={session.sesionId} 
+                        <SelectItem
+                          key={session.sesionId}
                           value={session.sesionId}
                           disabled={!session.disponible}
                         >
                           <div className="flex items-center gap-2">
                             <Phone className="h-3 w-3" />
                             {session.numeroWhatsapp} - {session.sesionId}
-                            {!session.disponible && ' (No disponible)'}
+                            {!session.disponible && " (No disponible)"}
                           </div>
                         </SelectItem>
                       ))
@@ -597,7 +636,7 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                 <Textarea
                   id="descripcion"
                   value={formData.descripcion}
-                  onChange={(e) => updateField('descripcion', e.target.value)}
+                  onChange={(e) => updateField("descripcion", e.target.value)}
                   placeholder="Describe el propósito y funciones del bot..."
                   rows={3}
                 />
@@ -608,7 +647,7 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                 <Input
                   id="tags"
                   value={formData.tags}
-                  onChange={(e) => updateField('tags', e.target.value)}
+                  onChange={(e) => updateField("tags", e.target.value)}
                   placeholder="gemini, ia, chatbot (separadas por comas)"
                 />
                 <p className="text-sm text-muted-foreground">
@@ -626,7 +665,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   </div>
                   <Switch
                     checked={formData.activo}
-                    onCheckedChange={(checked) => updateField('activo', checked)}
+                    onCheckedChange={(checked) =>
+                      updateField("activo", checked)
+                    }
                   />
                 </div>
               </div>
@@ -646,16 +687,16 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                     id="apikey"
                     type="text"
                     value={formData.apikey}
-                    onChange={(e) => updateField('apikey', e.target.value)}
+                    onChange={(e) => updateField("apikey", e.target.value)}
                     placeholder="Tu API Key de Google Gemini"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="ai_model">Modelo de IA</Label>
-                  <Select 
-                    value={formData.ai_model} 
-                    onValueChange={(value) => updateField('ai_model', value)}
+                  <Select
+                    value={formData.ai_model}
+                    onValueChange={(value) => updateField("ai_model", value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -672,7 +713,10 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
 
                 <div className="space-y-2">
                   <Label htmlFor="pais">País</Label>
-                  <Select value={formData.pais} onValueChange={(value) => updateField('pais', value)}>
+                  <Select
+                    value={formData.pais}
+                    onValueChange={(value) => updateField("pais", value)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -688,7 +732,10 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
 
                 <div className="space-y-2">
                   <Label htmlFor="idioma">Idioma</Label>
-                  <Select value={formData.idioma} onValueChange={(value) => updateField('idioma', value)}>
+                  <Select
+                    value={formData.idioma}
+                    onValueChange={(value) => updateField("idioma", value)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -711,12 +758,13 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                 <Textarea
                   id="promt"
                   value={formData.promt}
-                  onChange={(e) => updateField('promt', e.target.value)}
+                  onChange={(e) => updateField("promt", e.target.value)}
                   placeholder="Describe el comportamiento y personalidad del bot..."
                   rows={6}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Define cómo debe comportarse tu bot y qué tipo de respuestas debe dar
+                  Define cómo debe comportarse tu bot y qué tipo de respuestas
+                  debe dar
                 </p>
               </div>
 
@@ -726,7 +774,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   <div className="flex items-center gap-4">
                     <Slider
                       value={[formData.temperature]}
-                      onValueChange={([value]) => updateField('temperature', value)}
+                      onValueChange={([value]) =>
+                        updateField("temperature", value)
+                      }
                       min={0}
                       max={1}
                       step={0.1}
@@ -746,7 +796,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   <div className="flex items-center gap-4">
                     <Slider
                       value={[formData.maxOutputTokens]}
-                      onValueChange={([value]) => updateField('maxOutputTokens', value)}
+                      onValueChange={([value]) =>
+                        updateField("maxOutputTokens", value)
+                      }
                       min={128}
                       max={2048}
                       step={128}
@@ -772,9 +824,11 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                     </Label>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Select 
-                      value={formData.thinking_budget.toString()} 
-                      onValueChange={(value) => updateField('thinking_budget', parseInt(value))}
+                    <Select
+                      value={formData.thinking_budget.toString()}
+                      onValueChange={(value) =>
+                        updateField("thinking_budget", parseInt(value))
+                      }
                     >
                       <SelectTrigger className="border-blue-300 dark:border-blue-700">
                         <SelectValue />
@@ -783,35 +837,62 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                         <SelectItem value="-1">
                           <div className="flex items-center gap-2">
                             <Sparkles className="h-4 w-4 text-blue-600" />
-                            <span className="font-medium">Razonamiento Ilimitado</span>
-                            <Badge variant="default" className="ml-2">Recomendado</Badge>
+                            <span className="font-medium">
+                              Razonamiento Ilimitado
+                            </span>
+                            <Badge variant="default" className="ml-2">
+                              Recomendado
+                            </Badge>
                           </div>
                         </SelectItem>
                         <SelectItem value="0">
                           <div className="flex items-center gap-2">
                             <AlertCircle className="h-4 w-4 text-orange-600" />
-                            <span className="font-medium">Sin Razonamiento</span>
-                            <Badge variant="secondary" className="ml-2">Rápido</Badge>
+                            <span className="font-medium">
+                              Sin Razonamiento
+                            </span>
+                            <Badge variant="secondary" className="ml-2">
+                              Rápido
+                            </Badge>
                           </div>
                         </SelectItem>
-                        <SelectItem value="1000">1,000 tokens de razonamiento</SelectItem>
-                        <SelectItem value="5000">5,000 tokens de razonamiento</SelectItem>
-                        <SelectItem value="10000">10,000 tokens de razonamiento</SelectItem>
+                        <SelectItem value="1000">
+                          1,000 tokens de razonamiento
+                        </SelectItem>
+                        <SelectItem value="5000">
+                          5,000 tokens de razonamiento
+                        </SelectItem>
+                        <SelectItem value="10000">
+                          10,000 tokens de razonamiento
+                        </SelectItem>
                       </SelectContent>
                     </Select>
-                    
+
                     <Alert className="border-blue-200 dark:border-blue-800">
                       <Brain className="h-4 w-4" />
                       <AlertDescription>
-                        <strong>Importante:</strong> Este parámetro controla la capacidad de razonamiento del bot.
+                        <strong>Importante:</strong> Este parámetro controla la
+                        capacidad de razonamiento del bot.
                         <div className="mt-2 space-y-1">
                           <div className="flex items-start gap-2">
-                            <span className="text-green-600 dark:text-green-400">•</span>
-                            <span><strong>-1 (Ilimitado):</strong> El bot puede pensar todo lo necesario para dar respuestas más inteligentes y contextuales</span>
+                            <span className="text-green-600 dark:text-green-400">
+                              •
+                            </span>
+                            <span>
+                              <strong>-1 (Ilimitado):</strong> El bot puede
+                              pensar todo lo necesario para dar respuestas más
+                              inteligentes y contextuales
+                            </span>
                           </div>
                           <div className="flex items-start gap-2">
-                            <span className="text-orange-600 dark:text-orange-400">•</span>
-                            <span><strong>0 (Desactivado):</strong> Respuestas rápidas pero menos elaboradas, sin proceso de razonamiento</span>
+                            <span className="text-orange-600 dark:text-orange-400">
+                              •
+                            </span>
+                            <span>
+                              <strong>0 (Desactivado):</strong> Respuestas
+                              rápidas pero menos elaboradas, sin proceso de
+                              razonamiento
+                            </span>
                           </div>
                         </div>
                       </AlertDescription>
@@ -828,8 +909,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
               <Alert>
                 <Webhook className="h-4 w-4" />
                 <AlertDescription>
-                  La configuración del webhook permite que tu bot reciba mensajes en tiempo real de WhatsApp.
-                  El webhook se configurará automáticamente al crear el bot.
+                  La configuración del webhook permite que tu bot reciba
+                  mensajes en tiempo real de WhatsApp. El webhook se configurará
+                  automáticamente al crear el bot.
                 </AlertDescription>
               </Alert>
 
@@ -838,7 +920,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                 <div className="flex items-center gap-2">
                   <Input
                     id="webhookUrl"
-                    value={`${formData.server}/api/v2/webhook/${user?.id || user?._id || '[USER_ID]'}`}
+                    value={`${formData.server}/api/v2/webhook/${
+                      user?.id || user?._id || "[USER_ID]"
+                    }`}
                     disabled
                     className="flex-1"
                   />
@@ -865,7 +949,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm">Cambios de estado de mensajes</span>
+                    <span className="text-sm">
+                      Cambios de estado de mensajes
+                    </span>
                   </div>
                 </div>
               </div>
@@ -877,17 +963,26 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">ID de Sesión:</span>
                       <span className="text-sm text-muted-foreground">
-                        {formData.sesionId || 'No seleccionada'}
+                        {formData.sesionId || "No seleccionada"}
                       </span>
                     </div>
-                    {formData.sesionId && sessions.find(s => s.sesionId === formData.sesionId) && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Número WhatsApp:</span>
-                        <span className="text-sm text-muted-foreground">
-                          {sessions.find(s => s.sesionId === formData.sesionId)?.numeroWhatsapp}
-                        </span>
-                      </div>
-                    )}
+                    {formData.sesionId &&
+                      sessions.find(
+                        (s) => s.sesionId === formData.sesionId
+                      ) && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">
+                            Número WhatsApp:
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {
+                              sessions.find(
+                                (s) => s.sesionId === formData.sesionId
+                              )?.numeroWhatsapp
+                            }
+                          </span>
+                        </div>
+                      )}
                   </div>
                 </Card>
               </div>
@@ -908,7 +1003,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   <div className="flex items-center gap-4">
                     <Slider
                       value={[formData.numerodemensajes]}
-                      onValueChange={([value]) => updateField('numerodemensajes', value)}
+                      onValueChange={([value]) =>
+                        updateField("numerodemensajes", value)
+                      }
                       min={1}
                       max={20}
                       step={1}
@@ -928,7 +1025,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   <div className="flex items-center gap-4">
                     <Slider
                       value={[formData.pause_timeout_minutes]}
-                      onValueChange={([value]) => updateField('pause_timeout_minutes', value)}
+                      onValueChange={([value]) =>
+                        updateField("pause_timeout_minutes", value)
+                      }
                       min={5}
                       max={120}
                       step={5}
@@ -955,7 +1054,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   <div className="flex items-center gap-4">
                     <Slider
                       value={[formData.delay_seconds]}
-                      onValueChange={([value]) => updateField('delay_seconds', value)}
+                      onValueChange={([value]) =>
+                        updateField("delay_seconds", value)
+                      }
                       min={0}
                       max={30}
                       step={1}
@@ -975,7 +1076,12 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   <Input
                     type="number"
                     value={formData.limiteConversacionesDiario}
-                    onChange={(e) => updateField('limiteConversacionesDiario', parseInt(e.target.value) || 1000)}
+                    onChange={(e) =>
+                      updateField(
+                        "limiteConversacionesDiario",
+                        parseInt(e.target.value) || 1000
+                      )
+                    }
                     min={1}
                     max={10000}
                   />
@@ -1005,7 +1111,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   </div>
                   <Switch
                     checked={formData.autoActivar}
-                    onCheckedChange={(checked) => updateField('autoActivar', checked)}
+                    onCheckedChange={(checked) =>
+                      updateField("autoActivar", checked)
+                    }
                   />
                 </div>
 
@@ -1016,11 +1124,7 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                       Permite que el bot mejore con el tiempo (experimental)
                     </p>
                   </div>
-                  <Switch
-                    checked={false}
-                    disabled
-                    onCheckedChange={() => {}}
-                  />
+                  <Switch checked={false} disabled onCheckedChange={() => {}} />
                 </div>
               </div>
 
@@ -1032,7 +1136,7 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   <div className="flex items-center gap-4">
                     <Slider
                       value={[formData.topP]}
-                      onValueChange={([value]) => updateField('topP', value)}
+                      onValueChange={([value]) => updateField("topP", value)}
                       min={0}
                       max={1}
                       step={0.1}
@@ -1046,8 +1150,6 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                     Diversidad de vocabulario
                   </p>
                 </div>
-
-
               </div>
             </div>
           </TabsContent>
@@ -1058,7 +1160,8 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Prueba tu configuración antes de guardar. Asegúrate de haber configurado la API Key y seleccionado una sesión.
+                  Prueba tu configuración antes de guardar. Asegúrate de haber
+                  configurado la API Key y seleccionado una sesión.
                 </AlertDescription>
               </Alert>
 
@@ -1092,7 +1195,11 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
               </Button>
 
               {testResult && (
-                <Card className={testResult.success ? 'border-green-200' : 'border-red-200'}>
+                <Card
+                  className={
+                    testResult.success ? "border-green-200" : "border-red-200"
+                  }
+                >
                   <CardHeader>
                     <CardTitle className="text-sm flex items-center gap-2">
                       {testResult.success ? (
@@ -1110,7 +1217,9 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm">
-                      {testResult.success ? testResult.response : testResult.error}
+                      {testResult.success
+                        ? testResult.response
+                        : testResult.error}
                     </p>
                     {testResult.timestamp && (
                       <p className="text-xs text-muted-foreground mt-2">
@@ -1131,12 +1240,12 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
           <Button
             variant="outline"
             onClick={() => {
-              const initialData = getInitialFormData()
-              setFormData(initialData)
+              const initialData = getInitialFormData();
+              setFormData(initialData);
               toast({
-                title: 'Formulario reiniciado',
-                description: 'Se han restaurado los valores predeterminados',
-              })
+                title: "Formulario reiniciado",
+                description: "Se han restaurado los valores predeterminados",
+              });
             }}
           >
             <Trash2 className="h-4 w-4 mr-2" />
@@ -1145,7 +1254,12 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
 
           <Button
             onClick={handleSave}
-            disabled={isLoading || !formData.apikey || !formData.sesionId || !formData.nombreBot}
+            disabled={
+              isLoading ||
+              !formData.apikey ||
+              !formData.sesionId ||
+              !formData.nombreBot
+            }
           >
             {isLoading ? (
               <>
@@ -1155,12 +1269,12 @@ export default function ChatBotForm({ onConfigSaved, editingBot }: ChatBotFormPr
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                {editingBot ? 'Actualizar Bot' : 'Crear Bot'}
+                {editingBot ? "Actualizar Bot" : "Crear Bot"}
               </>
             )}
           </Button>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

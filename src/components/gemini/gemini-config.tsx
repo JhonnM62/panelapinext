@@ -138,7 +138,7 @@ export default function GeminiConfig({
         "promt",
         "Eres un asistente virtual útil y amigable que responde preguntas de manera clara y concisa."
       );
-      updateField("server", "http://100.42.185.2:8015");
+      updateField("server", "https://backend.autosystemprojects.site");
       updateField("pais", "colombia");
       updateField("idioma", "es");
       updateField("numerodemensajes", 8);
@@ -198,9 +198,12 @@ export default function GeminiConfig({
               authenticated: statusResponse.success
                 ? statusResponse.data.authenticated || false
                 : false,
-              phone: statusResponse.success && statusResponse.data && 'lineaWhatsApp' in statusResponse.data
-                ? statusResponse.data.lineaWhatsApp
-                : null,
+              phone:
+                statusResponse.success &&
+                statusResponse.data &&
+                "lineaWhatsApp" in statusResponse.data
+                  ? statusResponse.data.lineaWhatsApp
+                  : null,
             };
           } catch (error) {
             console.error(`Error obteniendo status para ${sessionId}:`, error);
@@ -410,57 +413,57 @@ export default function GeminiConfig({
   const handleDelete = async () => {
     // 🔧 CONFIRMACIÓN antes de eliminar
     const confirmDelete = window.confirm(
-      "¿ÂEstás seguro de que quieres eliminar completamente la configuración del bot? \n\n🗑️ Esta acción:"
-      + "\n• Eliminará el bot de la base de datos"
-      + "\n• Limpiará toda la configuración local"
-      + "\n• Dejará de procesar mensajes automáticamente"
-      + "\n\n⚠️ Esta acción NO se puede deshacer."
+      "¿ÂEstás seguro de que quieres eliminar completamente la configuración del bot? \n\n🗑️ Esta acción:" +
+        "\n• Eliminará el bot de la base de datos" +
+        "\n• Limpiará toda la configuración local" +
+        "\n• Dejará de procesar mensajes automáticamente" +
+        "\n\n⚠️ Esta acción NO se puede deshacer."
     );
-    
+
     if (!confirmDelete) {
       return;
     }
-    
+
     try {
-      console.log('🗑️ [DELETE] Iniciando eliminación completa del bot:', {
+      console.log("🗑️ [DELETE] Iniciando eliminación completa del bot:", {
         sesionId: config?.sesionId,
         botId: config?.botId,
-        nombreBot: config?.userbot
+        nombreBot: config?.userbot,
       });
-      
+
       // 🔧 Usar la nueva función mejorada con parámetros
       await deleteConfig(userToken, {
         botId: config?.botId,
-        sesionId: config?.sesionId
+        sesionId: config?.sesionId,
       });
-      
-      console.log('🗑️ [DELETE] Bot eliminado exitosamente');
-      
+
+      console.log("🗑️ [DELETE] Bot eliminado exitosamente");
+
       // 🔧 Reiniciar completamente la UI
       setSelectedSessionId("");
       setSelectedWebhookId("");
       setSessions([]);
       setWebhooks([]);
       setIsInitialized(false);
-      
+
       toast({
         title: "🗑️ Bot eliminado completamente",
-        description: 
+        description:
           "El bot y toda su configuración han sido eliminados permanentemente. " +
           "La página se recargará para limpiar completamente la interfaz.",
-        duration: 5000
+        duration: 5000,
       });
-      
+
       // 🔧 Recargar la página después de un momento para asegurar limpieza completa
       setTimeout(() => {
         window.location.reload();
       }, 2000);
-      
     } catch (error) {
-      console.error('🗑️ [DELETE] Error eliminando bot:', error);
+      console.error("🗑️ [DELETE] Error eliminando bot:", error);
       toast({
         title: "Error al eliminar el bot",
-        description: "No se pudo eliminar completamente la configuración. Inténtalo de nuevo.",
+        description:
+          "No se pudo eliminar completamente la configuración. Inténtalo de nuevo.",
         variant: "destructive",
       });
     }
@@ -722,7 +725,7 @@ export default function GeminiConfig({
                   <Label htmlFor="server">Servidor</Label>
                   <Input
                     id="server"
-                    placeholder="http://100.42.185.2:8015"
+                    placeholder="https://backend.autosystemprojects.site"
                     value={config?.server || ""}
                     onChange={(e) => updateField("server", e.target.value)}
                   />
@@ -811,7 +814,8 @@ export default function GeminiConfig({
                         Procesamiento Automático de Mensajes
                       </h3>
                       <p className="text-sm text-green-800 dark:text-green-200">
-                        Cuando está activo, el bot procesará automáticamente todos los mensajes entrantes de WhatsApp usando IA.
+                        Cuando está activo, el bot procesará automáticamente
+                        todos los mensajes entrantes de WhatsApp usando IA.
                       </p>
                     </div>
                   </div>
@@ -819,10 +823,13 @@ export default function GeminiConfig({
               </Card>
 
               {/* 🆕 NUEVO: Usar componente AutomationToggle mejorado */}
-              <AutomationToggle 
+              <AutomationToggle
                 userToken={userToken}
                 onStateChange={(isActive) => {
-                  console.log('🤖 [GEMINI CONFIG] Estado de automatización cambiado:', isActive);
+                  console.log(
+                    "🤖 [GEMINI CONFIG] Estado de automatización cambiado:",
+                    isActive
+                  );
                 }}
               />
             </TabsContent>
@@ -941,9 +948,9 @@ export default function GeminiConfig({
                           placeholder={
                             loadingWebhooks
                               ? "Cargando webhooks..."
-                              : webhooks.length > 0 
-                                ? "Selecciona un webhook" 
-                                : "Auto-detección automática"
+                              : webhooks.length > 0
+                              ? "Selecciona un webhook"
+                              : "Auto-detección automática"
                           }
                         />
                       </SelectTrigger>
@@ -1426,13 +1433,16 @@ export default function GeminiConfig({
           userToken={userToken}
           enabled={true}
           onProcessingStart={(message) => {
-            console.log('🤖 [AutoProcessor] Procesando mensaje:', message.key?.id);
+            console.log(
+              "🤖 [AutoProcessor] Procesando mensaje:",
+              message.key?.id
+            );
           }}
           onProcessingComplete={(result) => {
-            console.log('🤖 [AutoProcessor] ✅ Mensaje procesado:', result);
+            console.log("🤖 [AutoProcessor] ✅ Mensaje procesado:", result);
           }}
           onError={(error) => {
-            console.error('🤖 [AutoProcessor] ❌ Error:', error);
+            console.error("🤖 [AutoProcessor] ❌ Error:", error);
           }}
         />
       )}

@@ -1,16 +1,28 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
-import { 
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import {
   Play,
   Copy,
   Save,
@@ -34,413 +46,423 @@ import {
   Edit3,
   Globe,
   Key,
-  Lock
-} from 'lucide-react'
-import { toast } from '@/components/ui/use-toast'
+  Lock,
+} from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 interface APIEndpoint {
-  id: string
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
-  path: string
-  title: string
-  description: string
-  category: string
-  requiresAuth: boolean
+  id: string;
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  path: string;
+  title: string;
+  description: string;
+  category: string;
+  requiresAuth: boolean;
   parameters: {
-    name: string
-    type: 'string' | 'number' | 'boolean' | 'object' | 'array'
-    required: boolean
-    description: string
-    example?: any
-    enum?: string[]
-  }[]
+    name: string;
+    type: "string" | "number" | "boolean" | "object" | "array";
+    required: boolean;
+    description: string;
+    example?: any;
+    enum?: string[];
+  }[];
   bodySchema?: {
     [key: string]: {
-      type: string
-      required: boolean
-      description: string
-      example?: any
-    }
-  }
+      type: string;
+      required: boolean;
+      description: string;
+      example?: any;
+    };
+  };
   responses: {
     [statusCode: string]: {
-      description: string
-      example: any
-    }
-  }
+      description: string;
+      example: any;
+    };
+  };
 }
 
 interface RequestHistory {
-  id: string
-  timestamp: string
-  method: string
-  url: string
-  status?: number
-  duration?: number
-  success: boolean
-  endpoint: string
+  id: string;
+  timestamp: string;
+  method: string;
+  url: string;
+  status?: number;
+  duration?: number;
+  success: boolean;
+  endpoint: string;
 }
 
 interface SavedRequest {
-  id: string
-  name: string
-  endpoint: APIEndpoint
-  parameters: { [key: string]: any }
-  body: string
-  headers: { [key: string]: string }
-  createdAt: string
+  id: string;
+  name: string;
+  endpoint: APIEndpoint;
+  parameters: { [key: string]: any };
+  body: string;
+  headers: { [key: string]: string };
+  createdAt: string;
 }
 
-const API_BASE_URL = 'http://100.42.185.2:8015'
+const API_BASE_URL = "https://backend.autosystemprojects.site";
 
 const endpoints: APIEndpoint[] = [
   {
-    id: 'sessions-list',
-    method: 'GET',
-    path: '/sessions/list',
-    title: 'Listar Sesiones',
-    description: 'Obtiene la lista de todas las sesiones activas',
-    category: 'Sesiones',
+    id: "sessions-list",
+    method: "GET",
+    path: "/sessions/list",
+    title: "Listar Sesiones",
+    description: "Obtiene la lista de todas las sesiones activas",
+    category: "Sesiones",
     requiresAuth: true,
     parameters: [],
     responses: {
-      '200': {
-        description: 'Lista de sesiones obtenida exitosamente',
+      "200": {
+        description: "Lista de sesiones obtenida exitosamente",
         example: {
           success: true,
-          message: 'Session list',
-          data: ['session-1', 'session-2']
-        }
-      }
-    }
+          message: "Session list",
+          data: ["session-1", "session-2"],
+        },
+      },
+    },
   },
   {
-    id: 'sessions-create',
-    method: 'POST',
-    path: '/sessions/add',
-    title: 'Crear Sesión',
-    description: 'Crea una nueva sesión de WhatsApp',
-    category: 'Sesiones',
+    id: "sessions-create",
+    method: "POST",
+    path: "/sessions/add",
+    title: "Crear Sesión",
+    description: "Crea una nueva sesión de WhatsApp",
+    category: "Sesiones",
     requiresAuth: true,
     parameters: [],
     bodySchema: {
       id: {
-        type: 'string',
+        type: "string",
         required: true,
-        description: 'ID único para la sesión',
-        example: 'mi-sesion-bot'
+        description: "ID único para la sesión",
+        example: "mi-sesion-bot",
       },
       token: {
-        type: 'string',
+        type: "string",
         required: true,
-        description: 'Token de autenticación',
-        example: 'your-auth-token'
+        description: "Token de autenticación",
+        example: "your-auth-token",
       },
       typeAuth: {
-        type: 'string',
+        type: "string",
         required: false,
-        description: 'Tipo de autenticación: qr o code',
-        example: 'qr'
+        description: "Tipo de autenticación: qr o code",
+        example: "qr",
       },
       phoneNumber: {
-        type: 'string',
+        type: "string",
         required: false,
-        description: 'Número de teléfono para autenticación por código',
-        example: '+573001234567'
-      }
+        description: "Número de teléfono para autenticación por código",
+        example: "+573001234567",
+      },
     },
     responses: {
-      '200': {
-        description: 'Sesión creada exitosamente',
+      "200": {
+        description: "Sesión creada exitosamente",
         example: {
           success: true,
-          message: 'QR code received, please scan the QR code.',
+          message: "QR code received, please scan the QR code.",
           data: {
-            qr: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'
-          }
-        }
+            qr: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+          },
+        },
       },
-      '409': {
-        description: 'La sesión ya existe',
+      "409": {
+        description: "La sesión ya existe",
         example: {
           success: false,
-          message: 'Session already exists, please use another id.',
-          data: {}
-        }
-      }
-    }
+          message: "Session already exists, please use another id.",
+          data: {},
+        },
+      },
+    },
   },
   {
-    id: 'sessions-status',
-    method: 'GET',
-    path: '/sessions/status/:id',
-    title: 'Estado de Sesión',
-    description: 'Obtiene el estado actual de una sesión',
-    category: 'Sesiones',
+    id: "sessions-status",
+    method: "GET",
+    path: "/sessions/status/:id",
+    title: "Estado de Sesión",
+    description: "Obtiene el estado actual de una sesión",
+    category: "Sesiones",
     requiresAuth: true,
     parameters: [
       {
-        name: 'id',
-        type: 'string',
+        name: "id",
+        type: "string",
         required: true,
-        description: 'ID de la sesión',
-        example: 'mi-sesion-bot'
-      }
+        description: "ID de la sesión",
+        example: "mi-sesion-bot",
+      },
     ],
     responses: {
-      '200': {
-        description: 'Estado obtenido exitosamente',
+      "200": {
+        description: "Estado obtenido exitosamente",
         example: {
           success: true,
-          message: '',
+          message: "",
           data: {
-            status: 'authenticated'
-          }
-        }
-      }
-    }
+            status: "authenticated",
+          },
+        },
+      },
+    },
   },
   {
-    id: 'chats-send',
-    method: 'POST',
-    path: '/chats/send',
-    title: 'Enviar Mensaje',
-    description: 'Envía un mensaje de texto, imagen, video, etc.',
-    category: 'Mensajes',
+    id: "chats-send",
+    method: "POST",
+    path: "/chats/send",
+    title: "Enviar Mensaje",
+    description: "Envía un mensaje de texto, imagen, video, etc.",
+    category: "Mensajes",
     requiresAuth: true,
     parameters: [
       {
-        name: 'id',
-        type: 'string',
+        name: "id",
+        type: "string",
         required: true,
-        description: 'ID de la sesión',
-        example: 'mi-sesion-bot'
-      }
+        description: "ID de la sesión",
+        example: "mi-sesion-bot",
+      },
     ],
     bodySchema: {
       receiver: {
-        type: 'string',
+        type: "string",
         required: true,
-        description: 'Número de teléfono del destinatario',
-        example: '+573001234567'
+        description: "Número de teléfono del destinatario",
+        example: "+573001234567",
       },
       isGroup: {
-        type: 'boolean',
+        type: "boolean",
         required: false,
-        description: 'Si es un mensaje a grupo',
-        example: false
+        description: "Si es un mensaje a grupo",
+        example: false,
       },
       message: {
-        type: 'object',
+        type: "object",
         required: true,
-        description: 'Contenido del mensaje',
+        description: "Contenido del mensaje",
         example: {
-          text: 'Hola, ¿cómo estás?'
-        }
-      }
+          text: "Hola, ¿cómo estás?",
+        },
+      },
     },
     responses: {
-      '200': {
-        description: 'Mensaje enviado exitosamente',
+      "200": {
+        description: "Mensaje enviado exitosamente",
         example: {
           success: true,
-          message: 'The message has been successfully sent.',
-          data: {}
-        }
-      }
-    }
+          message: "The message has been successfully sent.",
+          data: {},
+        },
+      },
+    },
   },
   {
-    id: 'groups-create',
-    method: 'POST',
-    path: '/groups/create',
-    title: 'Crear Grupo',
-    description: 'Crea un nuevo grupo de WhatsApp',
-    category: 'Grupos',
+    id: "groups-create",
+    method: "POST",
+    path: "/groups/create",
+    title: "Crear Grupo",
+    description: "Crea un nuevo grupo de WhatsApp",
+    category: "Grupos",
     requiresAuth: true,
     parameters: [
       {
-        name: 'id',
-        type: 'string',
+        name: "id",
+        type: "string",
         required: true,
-        description: 'ID de la sesión',
-        example: 'mi-sesion-bot'
-      }
+        description: "ID de la sesión",
+        example: "mi-sesion-bot",
+      },
     ],
     bodySchema: {
       groupName: {
-        type: 'string',
+        type: "string",
         required: true,
-        description: 'Nombre del grupo',
-        example: 'Mi Grupo de Prueba'
+        description: "Nombre del grupo",
+        example: "Mi Grupo de Prueba",
       },
       participants: {
-        type: 'array',
+        type: "array",
         required: true,
-        description: 'Lista de participantes (números de teléfono)',
-        example: ['+573001234567', '+573007654321']
-      }
+        description: "Lista de participantes (números de teléfono)",
+        example: ["+573001234567", "+573007654321"],
+      },
     },
     responses: {
-      '200': {
-        description: 'Grupo creado exitosamente',
+      "200": {
+        description: "Grupo creado exitosamente",
         example: {
           success: true,
-          message: 'Group created successfully',
+          message: "Group created successfully",
           data: {
-            groupId: '120363027219123456@g.us'
-          }
-        }
-      }
-    }
+            groupId: "120363027219123456@g.us",
+          },
+        },
+      },
+    },
   },
   {
-    id: 'webhook-create',
-    method: 'POST',
-    path: '/webhook/create',
-    title: 'Crear Webhook',
-    description: 'Configura un webhook para recibir eventos',
-    category: 'Webhooks',
+    id: "webhook-create",
+    method: "POST",
+    path: "/webhook/create",
+    title: "Crear Webhook",
+    description: "Configura un webhook para recibir eventos",
+    category: "Webhooks",
     requiresAuth: false,
     parameters: [],
     bodySchema: {
       userId: {
-        type: 'string',
+        type: "string",
         required: true,
-        description: 'ID del usuario',
-        example: 'user-123'
+        description: "ID del usuario",
+        example: "user-123",
       },
       sessionId: {
-        type: 'string',
+        type: "string",
         required: true,
-        description: 'ID de la sesión',
-        example: 'mi-sesion-bot'
+        description: "ID de la sesión",
+        example: "mi-sesion-bot",
       },
       events: {
-        type: 'array',
+        type: "array",
         required: true,
-        description: 'Lista de eventos a escuchar',
-        example: ['message.new', 'session.status']
+        description: "Lista de eventos a escuchar",
+        example: ["message.new", "session.status"],
       },
       webhookUrl: {
-        type: 'string',
+        type: "string",
         required: false,
-        description: 'URL del webhook (opcional)',
-        example: 'https://miapp.com/webhook'
-      }
+        description: "URL del webhook (opcional)",
+        example: "https://miapp.com/webhook",
+      },
     },
     responses: {
-      '200': {
-        description: 'Webhook creado exitosamente',
+      "200": {
+        description: "Webhook creado exitosamente",
         example: {
           success: true,
-          message: 'Webhook created successfully',
+          message: "Webhook created successfully",
           data: {
-            webhookId: 'webhook-123',
-            webhookUrl: 'https://miapp.com/webhook'
-          }
-        }
-      }
-    }
-  }
-]
+            webhookId: "webhook-123",
+            webhookUrl: "https://miapp.com/webhook",
+          },
+        },
+      },
+    },
+  },
+];
 
 export default function APIPlaygroundPage() {
-  const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint>(endpoints[0])
-  const [parameters, setParameters] = useState<{ [key: string]: any }>({})
-  const [requestBody, setRequestBody] = useState('')
-  const [customHeaders, setCustomHeaders] = useState<{ [key: string]: string }>({
-    'Content-Type': 'application/json'
-  })
-  const [authToken, setAuthToken] = useState('')
-  const [showToken, setShowToken] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [response, setResponse] = useState<any>(null)
-  const [responseTime, setResponseTime] = useState<number>(0)
-  const [requestHistory, setRequestHistory] = useState<RequestHistory[]>([])
-  const [savedRequests, setSavedRequests] = useState<SavedRequest[]>([])
-  const [activeTab, setActiveTab] = useState('request')
+  const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint>(
+    endpoints[0]
+  );
+  const [parameters, setParameters] = useState<{ [key: string]: any }>({});
+  const [requestBody, setRequestBody] = useState("");
+  const [customHeaders, setCustomHeaders] = useState<{ [key: string]: string }>(
+    {
+      "Content-Type": "application/json",
+    }
+  );
+  const [authToken, setAuthToken] = useState("");
+  const [showToken, setShowToken] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [response, setResponse] = useState<any>(null);
+  const [responseTime, setResponseTime] = useState<number>(0);
+  const [requestHistory, setRequestHistory] = useState<RequestHistory[]>([]);
+  const [savedRequests, setSavedRequests] = useState<SavedRequest[]>([]);
+  const [activeTab, setActiveTab] = useState("request");
 
   // Cargar datos guardados al inicializar
   useEffect(() => {
-    const savedToken = localStorage.getItem('api_playground_token')
-    const savedHistory = localStorage.getItem('api_playground_history')
-    const savedReqs = localStorage.getItem('api_playground_saved')
-    
-    if (savedToken) setAuthToken(savedToken)
-    if (savedHistory) setRequestHistory(JSON.parse(savedHistory))
-    if (savedReqs) setSavedRequests(JSON.parse(savedReqs))
-  }, [])
+    const savedToken = localStorage.getItem("api_playground_token");
+    const savedHistory = localStorage.getItem("api_playground_history");
+    const savedReqs = localStorage.getItem("api_playground_saved");
+
+    if (savedToken) setAuthToken(savedToken);
+    if (savedHistory) setRequestHistory(JSON.parse(savedHistory));
+    if (savedReqs) setSavedRequests(JSON.parse(savedReqs));
+  }, []);
 
   // Guardar token cuando cambie
   useEffect(() => {
     if (authToken) {
-      localStorage.setItem('api_playground_token', authToken)
+      localStorage.setItem("api_playground_token", authToken);
     }
-  }, [authToken])
+  }, [authToken]);
 
   // Construir URL completa
   const buildUrl = () => {
-    let url = `${API_BASE_URL}${selectedEndpoint.path}`
-    
+    let url = `${API_BASE_URL}${selectedEndpoint.path}`;
+
     // Reemplazar parámetros de ruta
-    selectedEndpoint.parameters.forEach(param => {
+    selectedEndpoint.parameters.forEach((param) => {
       if (parameters[param.name]) {
-        url = url.replace(`:${param.name}`, parameters[param.name])
+        url = url.replace(`:${param.name}`, parameters[param.name]);
       }
-    })
-    
+    });
+
     // Agregar query parameters para GET
-    if (selectedEndpoint.method === 'GET' && Object.keys(parameters).length > 0) {
-      const queryParams = new URLSearchParams()
+    if (
+      selectedEndpoint.method === "GET" &&
+      Object.keys(parameters).length > 0
+    ) {
+      const queryParams = new URLSearchParams();
       Object.entries(parameters).forEach(([key, value]) => {
-        if (value) queryParams.append(key, value)
-      })
+        if (value) queryParams.append(key, value);
+      });
       if (queryParams.toString()) {
-        url += `?${queryParams.toString()}`
+        url += `?${queryParams.toString()}`;
       }
     }
-    
-    return url
-  }
+
+    return url;
+  };
 
   // Ejecutar request
   const executeRequest = async () => {
-    setIsLoading(true)
-    const startTime = Date.now()
-    
+    setIsLoading(true);
+    const startTime = Date.now();
+
     try {
-      const url = buildUrl()
-      const headers: { [key: string]: string } = { ...customHeaders }
-      
+      const url = buildUrl();
+      const headers: { [key: string]: string } = { ...customHeaders };
+
       // Agregar token de autenticación si es requerido
       if (selectedEndpoint.requiresAuth && authToken) {
-        headers['x-access-token'] = authToken
+        headers["x-access-token"] = authToken;
       }
-      
+
       const requestOptions: RequestInit = {
         method: selectedEndpoint.method,
-        headers
-      }
-      
+        headers,
+      };
+
       // Agregar body para métodos que lo permiten
-      if (['POST', 'PUT', 'PATCH'].includes(selectedEndpoint.method) && requestBody) {
-        requestOptions.body = requestBody
+      if (
+        ["POST", "PUT", "PATCH"].includes(selectedEndpoint.method) &&
+        requestBody
+      ) {
+        requestOptions.body = requestBody;
       }
-      
-      const response = await fetch(url, requestOptions)
-      const responseData = await response.json()
-      const endTime = Date.now()
-      const duration = endTime - startTime
-      
+
+      const response = await fetch(url, requestOptions);
+      const responseData = await response.json();
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
       setResponse({
         status: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries(response.headers.entries()),
-        data: responseData
-      })
-      setResponseTime(duration)
-      
+        data: responseData,
+      });
+      setResponseTime(duration);
+
       // Agregar al historial
       const historyEntry: RequestHistory = {
         id: Date.now().toString(),
@@ -450,39 +472,42 @@ export default function APIPlaygroundPage() {
         status: response.status,
         duration,
         success: response.ok,
-        endpoint: selectedEndpoint.title
-      }
-      
-      const newHistory = [historyEntry, ...requestHistory.slice(0, 49)]
-      setRequestHistory(newHistory)
-      localStorage.setItem('api_playground_history', JSON.stringify(newHistory))
-      
+        endpoint: selectedEndpoint.title,
+      };
+
+      const newHistory = [historyEntry, ...requestHistory.slice(0, 49)];
+      setRequestHistory(newHistory);
+      localStorage.setItem(
+        "api_playground_history",
+        JSON.stringify(newHistory)
+      );
+
       toast({
         title: response.ok ? "Request exitoso" : "Request falló",
         description: `${selectedEndpoint.method} ${url} - ${response.status} (${duration}ms)`,
-        variant: response.ok ? "default" : "destructive"
-      })
-      
+        variant: response.ok ? "default" : "destructive",
+      });
     } catch (error) {
-      const endTime = Date.now()
-      const duration = endTime - startTime
-      
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
       setResponse({
         status: 0,
-        statusText: 'Network Error',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
-      setResponseTime(duration)
-      
+        statusText: "Network Error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      setResponseTime(duration);
+
       toast({
         title: "Error de red",
-        description: error instanceof Error ? error.message : 'Error desconocido',
-        variant: "destructive"
-      })
+        description:
+          error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Guardar request
   const saveRequest = () => {
@@ -493,121 +518,126 @@ export default function APIPlaygroundPage() {
       parameters,
       body: requestBody,
       headers: customHeaders,
-      createdAt: new Date().toISOString()
-    }
-    
-    const newSaved = [savedRequest, ...savedRequests]
-    setSavedRequests(newSaved)
-    localStorage.setItem('api_playground_saved', JSON.stringify(newSaved))
-    
+      createdAt: new Date().toISOString(),
+    };
+
+    const newSaved = [savedRequest, ...savedRequests];
+    setSavedRequests(newSaved);
+    localStorage.setItem("api_playground_saved", JSON.stringify(newSaved));
+
     toast({
       title: "Request guardado",
-      description: "El request ha sido guardado en favoritos"
-    })
-  }
+      description: "El request ha sido guardado en favoritos",
+    });
+  };
 
   // Cargar request guardado
   const loadSavedRequest = (saved: SavedRequest) => {
-    setSelectedEndpoint(saved.endpoint)
-    setParameters(saved.parameters)
-    setRequestBody(saved.body)
-    setCustomHeaders(saved.headers)
-    
+    setSelectedEndpoint(saved.endpoint);
+    setParameters(saved.parameters);
+    setRequestBody(saved.body);
+    setCustomHeaders(saved.headers);
+
     toast({
       title: "Request cargado",
-      description: `Se ha cargado "${saved.name}"`
-    })
-  }
+      description: `Se ha cargado "${saved.name}"`,
+    });
+  };
 
   // Generar código de ejemplo
-  const generateCodeExample = (language: 'javascript' | 'python' | 'curl') => {
-    const url = buildUrl()
-    const headers = { ...customHeaders }
+  const generateCodeExample = (language: "javascript" | "python" | "curl") => {
+    const url = buildUrl();
+    const headers = { ...customHeaders };
     if (selectedEndpoint.requiresAuth && authToken) {
-      headers['x-access-token'] = authToken
+      headers["x-access-token"] = authToken;
     }
-    
+
     switch (language) {
-      case 'javascript':
+      case "javascript":
         return `// JavaScript/Node.js
 const response = await fetch('${url}', {
   method: '${selectedEndpoint.method}',
   headers: ${JSON.stringify(headers, null, 2)},${
-    ['POST', 'PUT', 'PATCH'].includes(selectedEndpoint.method) && requestBody
-      ? `\n  body: ${JSON.stringify(requestBody)}`
-      : ''
-  }
+          ["POST", "PUT", "PATCH"].includes(selectedEndpoint.method) &&
+          requestBody
+            ? `\n  body: ${JSON.stringify(requestBody)}`
+            : ""
+        }
 })
 
 const data = await response.json()
-console.log(data)`
+console.log(data)`;
 
-      case 'python':
+      case "python":
         return `# Python
 import requests
 
 response = requests.${selectedEndpoint.method.toLowerCase()}(
     '${url}',
     headers=${JSON.stringify(headers, null, 2).replace(/"/g, "'")},${
-    ['POST', 'PUT', 'PATCH'].includes(selectedEndpoint.method) && requestBody
-      ? `\n    json=${requestBody}`
-      : ''
-  }
+          ["POST", "PUT", "PATCH"].includes(selectedEndpoint.method) &&
+          requestBody
+            ? `\n    json=${requestBody}`
+            : ""
+        }
 )
 
 data = response.json()
-print(data)`
+print(data)`;
 
-      case 'curl':
+      case "curl":
         return `# cURL
 curl -X ${selectedEndpoint.method} \\
-  '${url}' \\${Object.entries(headers).map(([key, value]) => `\n  -H '${key}: ${value}' \\`).join('')}${
-    ['POST', 'PUT', 'PATCH'].includes(selectedEndpoint.method) && requestBody
-      ? `\n  -d '${requestBody}'`
-      : ''
-  }`
+  '${url}' \\${Object.entries(headers)
+          .map(([key, value]) => `\n  -H '${key}: ${value}' \\`)
+          .join("")}${
+          ["POST", "PUT", "PATCH"].includes(selectedEndpoint.method) &&
+          requestBody
+            ? `\n  -d '${requestBody}'`
+            : ""
+        }`;
 
       default:
-        return ''
+        return "";
     }
-  }
+  };
 
   // Copiar código
   const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code)
+    navigator.clipboard.writeText(code);
     toast({
       title: "Código copiado",
-      description: "El código ha sido copiado al portapapeles"
-    })
-  }
+      description: "El código ha sido copiado al portapapeles",
+    });
+  };
 
   // Rellenar con datos de ejemplo
   const fillExampleData = () => {
-    const newParams: { [key: string]: any } = {}
-    
-    selectedEndpoint.parameters.forEach(param => {
+    const newParams: { [key: string]: any } = {};
+
+    selectedEndpoint.parameters.forEach((param) => {
       if (param.example !== undefined) {
-        newParams[param.name] = param.example
+        newParams[param.name] = param.example;
       }
-    })
-    
-    setParameters(newParams)
-    
+    });
+
+    setParameters(newParams);
+
     if (selectedEndpoint.bodySchema) {
-      const exampleBody: { [key: string]: any } = {}
+      const exampleBody: { [key: string]: any } = {};
       Object.entries(selectedEndpoint.bodySchema).forEach(([key, schema]) => {
         if (schema.example !== undefined) {
-          exampleBody[key] = schema.example
+          exampleBody[key] = schema.example;
         }
-      })
-      setRequestBody(JSON.stringify(exampleBody, null, 2))
+      });
+      setRequestBody(JSON.stringify(exampleBody, null, 2));
     }
-    
+
     toast({
       title: "Datos de ejemplo cargados",
-      description: "Se han cargado los datos de ejemplo para este endpoint"
-    })
-  }
+      description: "Se han cargado los datos de ejemplo para este endpoint",
+    });
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -618,16 +648,17 @@ curl -X ${selectedEndpoint.method} \\
             API Playground
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-2">
-            Prueba y experimenta con los endpoints de la API de WhatsApp en tiempo real
+            Prueba y experimenta con los endpoints de la API de WhatsApp en
+            tiempo real
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={fillExampleData}>
             <Zap className="h-4 w-4 mr-2" />
             Cargar Ejemplos
           </Button>
-          
+
           <Button variant="outline" onClick={saveRequest}>
             <Star className="h-4 w-4 mr-2" />
             Guardar Request
@@ -647,19 +678,29 @@ curl -X ${selectedEndpoint.method} \\
                 {endpoints.map((endpoint) => (
                   <Button
                     key={endpoint.id}
-                    variant={selectedEndpoint.id === endpoint.id ? 'default' : 'outline'}
+                    variant={
+                      selectedEndpoint.id === endpoint.id
+                        ? "default"
+                        : "outline"
+                    }
                     className="w-full justify-start"
                     onClick={() => {
-                      setSelectedEndpoint(endpoint)
-                      setParameters({})
-                      setRequestBody('')
-                      setResponse(null)
+                      setSelectedEndpoint(endpoint);
+                      setParameters({});
+                      setRequestBody("");
+                      setResponse(null);
                     }}
                   >
-                    <Badge 
-                      variant={endpoint.method === 'GET' ? 'secondary' : 
-                               endpoint.method === 'POST' ? 'default' : 
-                               endpoint.method === 'DELETE' ? 'destructive' : 'outline'}
+                    <Badge
+                      variant={
+                        endpoint.method === "GET"
+                          ? "secondary"
+                          : endpoint.method === "POST"
+                          ? "default"
+                          : endpoint.method === "DELETE"
+                          ? "destructive"
+                          : "outline"
+                      }
                       className="mr-2 text-xs"
                     >
                       {endpoint.method}
@@ -686,7 +727,7 @@ curl -X ${selectedEndpoint.method} \\
                   <div className="relative">
                     <Input
                       id="authToken"
-                      type={showToken ? 'text' : 'password'}
+                      type={showToken ? "text" : "password"}
                       value={authToken}
                       onChange={(e) => setAuthToken(e.target.value)}
                       placeholder="Ingresa tu token..."
@@ -697,11 +738,15 @@ curl -X ${selectedEndpoint.method} \\
                       className="absolute right-1 top-1 h-6 w-6 p-0"
                       onClick={() => setShowToken(!showToken)}
                     >
-                      {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showToken ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
-                
+
                 {selectedEndpoint.requiresAuth && !authToken && (
                   <div className="flex items-center gap-2 text-yellow-600 text-sm">
                     <Lock className="h-4 w-4" />
@@ -721,10 +766,16 @@ curl -X ${selectedEndpoint.method} \\
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center">
-                    <Badge 
-                      variant={selectedEndpoint.method === 'GET' ? 'secondary' : 
-                               selectedEndpoint.method === 'POST' ? 'default' : 
-                               selectedEndpoint.method === 'DELETE' ? 'destructive' : 'outline'}
+                    <Badge
+                      variant={
+                        selectedEndpoint.method === "GET"
+                          ? "secondary"
+                          : selectedEndpoint.method === "POST"
+                          ? "default"
+                          : selectedEndpoint.method === "DELETE"
+                          ? "destructive"
+                          : "outline"
+                      }
                       className="mr-2"
                     >
                       {selectedEndpoint.method}
@@ -735,7 +786,7 @@ curl -X ${selectedEndpoint.method} \\
                     {selectedEndpoint.description}
                   </CardDescription>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">{selectedEndpoint.category}</Badge>
                   {selectedEndpoint.requiresAuth && (
@@ -750,7 +801,8 @@ curl -X ${selectedEndpoint.method} \\
             <CardContent>
               <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
                 <code className="text-sm">
-                  {selectedEndpoint.method} {API_BASE_URL}{selectedEndpoint.path}
+                  {selectedEndpoint.method} {API_BASE_URL}
+                  {selectedEndpoint.path}
                 </code>
               </div>
             </CardContent>
@@ -780,20 +832,31 @@ curl -X ${selectedEndpoint.method} \\
                           <div className="flex items-center gap-2">
                             <Label htmlFor={param.name}>{param.name}</Label>
                             {param.required && (
-                              <Badge variant="destructive" className="text-xs">Required</Badge>
+                              <Badge variant="destructive" className="text-xs">
+                                Required
+                              </Badge>
                             )}
-                            <Badge variant="outline" className="text-xs">{param.type}</Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {param.type}
+                            </Badge>
                           </div>
                           <Input
                             id={param.name}
-                            value={parameters[param.name] || ''}
-                            onChange={(e) => setParameters(prev => ({
-                              ...prev,
-                              [param.name]: e.target.value
-                            }))}
-                            placeholder={param.example?.toString() || `Enter ${param.name}...`}
+                            value={parameters[param.name] || ""}
+                            onChange={(e) =>
+                              setParameters((prev) => ({
+                                ...prev,
+                                [param.name]: e.target.value,
+                              }))
+                            }
+                            placeholder={
+                              param.example?.toString() ||
+                              `Enter ${param.name}...`
+                            }
                           />
-                          <p className="text-sm text-muted-foreground">{param.description}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {param.description}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -816,20 +879,24 @@ curl -X ${selectedEndpoint.method} \\
                         rows={10}
                         className="font-mono text-sm"
                       />
-                      
+
                       {/* Body Schema Info */}
                       <div className="space-y-2">
                         <Label>Schema:</Label>
                         <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                          {Object.entries(selectedEndpoint.bodySchema).map(([key, schema]) => (
-                            <div key={key} className="text-sm mb-2">
-                              <code className="font-mono">{key}</code>
-                              <span className="text-muted-foreground ml-2">
-                                ({schema.type}) - {schema.description}
-                                {schema.required && <span className="text-red-500"> *</span>}
-                              </span>
-                            </div>
-                          ))}
+                          {Object.entries(selectedEndpoint.bodySchema).map(
+                            ([key, schema]) => (
+                              <div key={key} className="text-sm mb-2">
+                                <code className="font-mono">{key}</code>
+                                <span className="text-muted-foreground ml-2">
+                                  ({schema.type}) - {schema.description}
+                                  {schema.required && (
+                                    <span className="text-red-500"> *</span>
+                                  )}
+                                </span>
+                              </div>
+                            )
+                          )}
                         </div>
                       </div>
                     </div>
@@ -847,7 +914,7 @@ curl -X ${selectedEndpoint.method} \\
                     value={JSON.stringify(customHeaders, null, 2)}
                     onChange={(e) => {
                       try {
-                        setCustomHeaders(JSON.parse(e.target.value))
+                        setCustomHeaders(JSON.parse(e.target.value));
                       } catch (error) {
                         // Invalid JSON, don't update
                       }
@@ -861,8 +928,8 @@ curl -X ${selectedEndpoint.method} \\
 
               {/* Execute Button */}
               <div className="flex gap-2">
-                <Button 
-                  onClick={executeRequest} 
+                <Button
+                  onClick={executeRequest}
                   disabled={isLoading}
                   className="flex-1"
                   size="lg"
@@ -872,9 +939,9 @@ curl -X ${selectedEndpoint.method} \\
                   ) : (
                     <Play className="h-5 w-5 mr-2" />
                   )}
-                  {isLoading ? 'Ejecutando...' : 'Ejecutar Request'}
+                  {isLoading ? "Ejecutando..." : "Ejecutar Request"}
                 </Button>
-                
+
                 <Button variant="outline" onClick={() => setResponse(null)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -901,17 +968,21 @@ curl -X ${selectedEndpoint.method} \\
                       <div className="grid grid-cols-3 gap-4">
                         <div>
                           <Label>Status Code</Label>
-                          <p className={`text-lg font-mono ${
-                            response.status >= 200 && response.status < 300 
-                              ? 'text-green-600' 
-                              : 'text-red-600'
-                          }`}>
+                          <p
+                            className={`text-lg font-mono ${
+                              response.status >= 200 && response.status < 300
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
                             {response.status}
                           </p>
                         </div>
                         <div>
                           <Label>Status Text</Label>
-                          <p className="text-lg font-mono">{response.statusText}</p>
+                          <p className="text-lg font-mono">
+                            {response.statusText}
+                          </p>
                         </div>
                         <div>
                           <Label>Response Time</Label>
@@ -928,7 +999,9 @@ curl -X ${selectedEndpoint.method} \\
                   {response.headers && (
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">Response Headers</CardTitle>
+                        <CardTitle className="text-lg">
+                          Response Headers
+                        </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg text-sm overflow-x-auto">
@@ -946,7 +1019,15 @@ curl -X ${selectedEndpoint.method} \\
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => copyCode(JSON.stringify(response.data || response.error, null, 2))}
+                          onClick={() =>
+                            copyCode(
+                              JSON.stringify(
+                                response.data || response.error,
+                                null,
+                                2
+                              )
+                            )
+                          }
                         >
                           <Copy className="h-4 w-4 mr-2" />
                           Copy
@@ -955,7 +1036,11 @@ curl -X ${selectedEndpoint.method} \\
                     </CardHeader>
                     <CardContent>
                       <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg text-sm overflow-x-auto">
-                        {JSON.stringify(response.data || response.error, null, 2)}
+                        {JSON.stringify(
+                          response.data || response.error,
+                          null,
+                          2
+                        )}
                       </pre>
                     </CardContent>
                   </Card>
@@ -978,15 +1063,19 @@ curl -X ${selectedEndpoint.method} \\
             {/* Code Tab */}
             <TabsContent value="code" className="space-y-4">
               <div className="space-y-4">
-                {['javascript', 'python', 'curl'].map((lang) => (
+                {["javascript", "python", "curl"].map((lang) => (
                   <Card key={lang}>
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg capitalize">{lang}</CardTitle>
+                        <CardTitle className="text-lg capitalize">
+                          {lang}
+                        </CardTitle>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => copyCode(generateCodeExample(lang as any))}
+                          onClick={() =>
+                            copyCode(generateCodeExample(lang as any))
+                          }
                         >
                           <Copy className="h-4 w-4 mr-2" />
                           Copy
@@ -1018,10 +1107,16 @@ curl -X ${selectedEndpoint.method} \\
                           <div key={entry.id} className="p-3 border rounded-lg">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <Badge variant={entry.success ? 'default' : 'destructive'}>
+                                <Badge
+                                  variant={
+                                    entry.success ? "default" : "destructive"
+                                  }
+                                >
                                   {entry.method}
                                 </Badge>
-                                <span className="text-sm font-medium">{entry.endpoint}</span>
+                                <span className="text-sm font-medium">
+                                  {entry.endpoint}
+                                </span>
                               </div>
                               <span className="text-xs text-muted-foreground">
                                 {new Date(entry.timestamp).toLocaleTimeString()}
@@ -1029,7 +1124,7 @@ curl -X ${selectedEndpoint.method} \\
                             </div>
                             <div className="flex items-center justify-between text-sm">
                               <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                                {entry.status || 'Error'}
+                                {entry.status || "Error"}
                               </code>
                               {entry.duration && (
                                 <span className="text-muted-foreground">
@@ -1043,7 +1138,9 @@ curl -X ${selectedEndpoint.method} \\
                     ) : (
                       <div className="text-center py-8">
                         <History className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">No hay historial</p>
+                        <p className="text-sm text-gray-500">
+                          No hay historial
+                        </p>
                       </div>
                     )}
                   </CardContent>
@@ -1060,7 +1157,9 @@ curl -X ${selectedEndpoint.method} \\
                         {savedRequests.map((saved) => (
                           <div key={saved.id} className="p-3 border rounded-lg">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium">{saved.name}</span>
+                              <span className="text-sm font-medium">
+                                {saved.name}
+                              </span>
                               <div className="flex gap-1">
                                 <Button
                                   variant="ghost"
@@ -1074,9 +1173,14 @@ curl -X ${selectedEndpoint.method} \\
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    const newSaved = savedRequests.filter(s => s.id !== saved.id)
-                                    setSavedRequests(newSaved)
-                                    localStorage.setItem('api_playground_saved', JSON.stringify(newSaved))
+                                    const newSaved = savedRequests.filter(
+                                      (s) => s.id !== saved.id
+                                    );
+                                    setSavedRequests(newSaved);
+                                    localStorage.setItem(
+                                      "api_playground_saved",
+                                      JSON.stringify(newSaved)
+                                    );
                                   }}
                                   className="h-6 w-6 p-0"
                                 >
@@ -1093,7 +1197,9 @@ curl -X ${selectedEndpoint.method} \\
                     ) : (
                       <div className="text-center py-8">
                         <Star className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">No hay requests guardados</p>
+                        <p className="text-sm text-gray-500">
+                          No hay requests guardados
+                        </p>
                       </div>
                     )}
                   </CardContent>
@@ -1104,5 +1210,5 @@ curl -X ${selectedEndpoint.method} \\
         </div>
       </div>
     </div>
-  )
+  );
 }

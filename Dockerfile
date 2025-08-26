@@ -22,7 +22,7 @@ COPY . .
 
 # Variables de entorno para la compilación
 # Estas se pueden sobrescribir en tiempo de build
-ARG NEXT_PUBLIC_API_URL=http://100.42.185.2:8015
+ARG NEXT_PUBLIC_API_URL=https://backend.autosystemprojects.site
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Deshabilitar telemetría de Next.js

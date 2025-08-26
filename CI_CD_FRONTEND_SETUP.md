@@ -3,6 +3,7 @@
 ## 📋 Resumen de la Configuración
 
 Se ha configurado un pipeline completo de CI/CD para el frontend de Next.js que:
+
 - ✅ Construye la aplicación con optimizaciones de producción
 - ✅ Crea una imagen Docker multi-stage optimizada
 - ✅ Despliega automáticamente al servidor en el puerto **8016**
@@ -11,11 +12,13 @@ Se ha configurado un pipeline completo de CI/CD para el frontend de Next.js que:
 ## 🔧 Archivos Creados
 
 1. **`Dockerfile`** - Imagen Docker multi-stage con:
+
    - Etapa de dependencias
    - Etapa de compilación
    - Etapa de producción (imagen final optimizada)
 
 2. **`.github/workflows/publish.yml`** - Pipeline de GitHub Actions
+
    - Build y push de imagen a GitHub Container Registry
    - Despliegue automático vía SSH
 
@@ -31,13 +34,13 @@ Se ha configurado un pipeline completo de CI/CD para el frontend de Next.js que:
 
 Asegúrate de tener configurados estos secrets en tu repositorio de GitHub:
 
-| Secret | Descripción | Valor |
-|--------|-------------|-------|
-| `FRONT_TOKEN` | Token de acceso para GitHub Container Registry | Ya configurado (antes era TOKEN_EXAMPLE) |
-| `AUTH_SERVER` | Servidor SSH para deployment | Ya configurado |
-| `AUTH_PASS` | Contraseña SSH | Ya configurado |
-| `ENV_FILE_CONTENT` | Contenido del archivo .env | Ya configurado |
-| `NEXT_PUBLIC_API_URL` | URL del backend (opcional) | `http://100.42.185.2:8015` |
+| Secret                | Descripción                                    | Valor                                     |
+| --------------------- | ---------------------------------------------- | ----------------------------------------- |
+| `FRONT_TOKEN`         | Token de acceso para GitHub Container Registry | Ya configurado (antes era TOKEN_EXAMPLE)  |
+| `AUTH_SERVER`         | Servidor SSH para deployment                   | Ya configurado                            |
+| `AUTH_PASS`           | Contraseña SSH                                 | Ya configurado                            |
+| `ENV_FILE_CONTENT`    | Contenido del archivo .env                     | Ya configurado                            |
+| `NEXT_PUBLIC_API_URL` | URL del backend (opcional)                     | `https://backend.autosystemprojects.site` |
 
 ### Configurar el Token de GitHub
 
@@ -57,11 +60,13 @@ Si aún no tienes el `FRONT_TOKEN` configurado:
 ### 1. Prueba Local (Recomendado)
 
 **Windows (PowerShell):**
+
 ```powershell
 .\test-docker-local.ps1
 ```
 
 **Linux/Mac:**
+
 ```bash
 chmod +x test-docker-local.sh
 ./test-docker-local.sh
@@ -148,11 +153,13 @@ curl http://100.42.185.2:8016/api/health
 ### El contenedor no inicia
 
 1. Verificar logs:
+
 ```bash
 docker logs appboots-frontend
 ```
 
 2. Verificar variables de entorno:
+
 ```bash
 docker exec appboots-frontend env
 ```
@@ -161,6 +168,7 @@ docker exec appboots-frontend env
 
 1. Verificar que todas las dependencias estén en `package.json`
 2. Limpiar caché local:
+
 ```bash
 rm -rf .next node_modules
 npm install
@@ -170,6 +178,7 @@ npm run build
 ### Puerto ocupado
 
 Si el puerto 8016 está ocupado:
+
 ```bash
 # Linux/Mac
 lsof -i :8016
@@ -204,12 +213,12 @@ docker run -d \
 
 El frontend utiliza estas variables:
 
-| Variable | Descripción | Valor por Defecto |
-|----------|-------------|-------------------|
-| `PORT` | Puerto del servidor | `8016` |
-| `HOSTNAME` | Host de binding | `0.0.0.0` |
-| `NODE_ENV` | Entorno | `production` |
-| `NEXT_PUBLIC_API_URL` | URL del backend | `http://100.42.185.2:8015` |
+| Variable              | Descripción         | Valor por Defecto                         |
+| --------------------- | ------------------- | ----------------------------------------- |
+| `PORT`                | Puerto del servidor | `8016`                                    |
+| `HOSTNAME`            | Host de binding     | `0.0.0.0`                                 |
+| `NODE_ENV`            | Entorno             | `production`                              |
+| `NEXT_PUBLIC_API_URL` | URL del backend     | `https://backend.autosystemprojects.site` |
 
 ## ✅ Checklist de Verificación
 

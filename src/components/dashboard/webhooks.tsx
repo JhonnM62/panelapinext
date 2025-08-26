@@ -63,7 +63,7 @@ import { toast } from "@/components/ui/use-toast";
 import { sessionsAPI, authAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import { useRouter } from "next/navigation";
-import { WebhooksSkeleton } from '@/components/skeletons';
+import { WebhooksSkeleton } from "@/components/skeletons";
 
 interface NotificationItem {
   id: string;
@@ -122,7 +122,8 @@ const globalWebSocketManager = (() => {
   let instance: WebSocket | null = null;
   let connectionPromise: Promise<WebSocket> | null = null;
   let connectionAttempt = false;
-  let subscribers: Set<(ws: WebSocket | null, connected: boolean) => void> = new Set();
+  let subscribers: Set<(ws: WebSocket | null, connected: boolean) => void> =
+    new Set();
   let lastConnectionUrl: string | null = null;
   let isConnecting = false;
   let connectionInProgress = false;
@@ -130,22 +131,24 @@ const globalWebSocketManager = (() => {
   let globalConnectionLock = false; // 🚀 FINAL: Lock global de conexión
   let forcedSingletonMode = true; // 🚀 FINAL: Modo singleton forzado
   let connectionId: string | null = null; // 🚀 FINAL: ID único de conexión
-  
+
   const cleanup = () => {
-    console.log(`[WS SINGLETON] 🧹 FINAL CLEANUP iniciado (ID: ${connectionId})`);
-    
+    console.log(
+      `[WS SINGLETON] 🧹 FINAL CLEANUP iniciado (ID: ${connectionId})`
+    );
+
     if (instance) {
-      console.log('[WS SINGLETON] 🧹 Cerrando instancia WebSocket existente');
+      console.log("[WS SINGLETON] 🧹 Cerrando instancia WebSocket existente");
       instance.onopen = null;
       instance.onmessage = null;
       instance.onclose = null;
       instance.onerror = null;
       if (instance.readyState !== WebSocket.CLOSED) {
-        instance.close(1000, 'Final cleanup');
+        instance.close(1000, "Final cleanup");
       }
       instance = null;
     }
-    
+
     // 🚀 FINAL: Limpiar TODOS los flags y locks
     connectionPromise = null;
     connectionAttempt = false;
@@ -155,23 +158,25 @@ const globalWebSocketManager = (() => {
     lastConnectionUrl = null;
     lastConnectionTime = 0;
     connectionId = null;
-    
-    console.log('[WS SINGLETON] 🧹 Notificando a subscribers del cleanup');
-    subscribers.forEach(cb => {
+
+    console.log("[WS SINGLETON] 🧹 Notificando a subscribers del cleanup");
+    subscribers.forEach((cb) => {
       try {
         cb(null, false);
       } catch (error) {
-        console.warn('[WS SINGLETON] Error en subscriber callback:', error);
+        console.warn("[WS SINGLETON] Error en subscriber callback:", error);
       }
     });
-    
-    console.log('[WS SINGLETON] ✅ FINAL CLEANUP completado');
+
+    console.log("[WS SINGLETON] ✅ FINAL CLEANUP completado");
   };
-  
+
   return {
     getInstance: () => instance,
     isConnected: () => instance?.readyState === WebSocket.OPEN,
-    subscribe: (callback: (ws: WebSocket | null, connected: boolean) => void) => {
+    subscribe: (
+      callback: (ws: WebSocket | null, connected: boolean) => void
+    ) => {
       subscribers.add(callback);
       // Immediately notify current state
       callback(instance, instance?.readyState === WebSocket.OPEN || false);
@@ -179,72 +184,91 @@ const globalWebSocketManager = (() => {
     },
     connect: async (url: string): Promise<WebSocket> => {
       const now = Date.now();
-      
+
       // 🚀 FINAL: Lock global absoluto
       if (globalConnectionLock) {
-        console.log('[WS SINGLETON] 🔒 FINAL LOCK: Conexión bloqueada por lock global');
+        console.log(
+          "[WS SINGLETON] 🔒 FINAL LOCK: Conexión bloqueada por lock global"
+        );
         if (instance && instance.readyState === WebSocket.OPEN) {
           return instance;
         }
-        throw new Error('Lock global activo - solo 1 conexión permitida');
+        throw new Error("Lock global activo - solo 1 conexión permitida");
       }
-      
+
       // 🚀 FINAL: Verificación de singleton forzado
-      if (forcedSingletonMode && instance && instance.readyState === WebSocket.OPEN) {
-        console.log('[WS SINGLETON] 🎯 FINAL: Modo singleton - reutilizando conexión única');
+      if (
+        forcedSingletonMode &&
+        instance &&
+        instance.readyState === WebSocket.OPEN
+      ) {
+        console.log(
+          "[WS SINGLETON] 🎯 FINAL: Modo singleton - reutilizando conexión única"
+        );
         return instance;
       }
-      
+
       // 🚀 FINAL: Rate limiting agresivo (3 segundos)
       if (now - lastConnectionTime < 3000) {
-        console.log('[WS SINGLETON] ⏱️ FINAL BLOCK: Rate limiting agresivo activo');
+        console.log(
+          "[WS SINGLETON] ⏱️ FINAL BLOCK: Rate limiting agresivo activo"
+        );
         if (instance && instance.readyState === WebSocket.OPEN) {
           return instance;
         }
-        throw new Error('Rate limiting agresivo activo');
+        throw new Error("Rate limiting agresivo activo");
       }
-      
+
       // 🚀 FINAL: Triple verificación de estado
       if (isConnecting || connectionInProgress || globalConnectionLock) {
-        console.log('[WS SINGLETON] 🛑 FINAL BLOCK: Triple verificación falló', {
-          isConnecting, connectionInProgress, globalConnectionLock
-        });
+        console.log(
+          "[WS SINGLETON] 🛑 FINAL BLOCK: Triple verificación falló",
+          {
+            isConnecting,
+            connectionInProgress,
+            globalConnectionLock,
+          }
+        );
         if (connectionPromise) return connectionPromise;
-        throw new Error('Múltiples flags de bloqueo activos');
+        throw new Error("Múltiples flags de bloqueo activos");
       }
-      
+
       // 🚀 FINAL: Forzar cierre de conexión existente
       if (instance) {
-        console.log('[WS SINGLETON] 💥 FINAL: Forzando cierre de conexión existente');
-        instance.close(1000, 'Forced singleton cleanup');
+        console.log(
+          "[WS SINGLETON] 💥 FINAL: Forzando cierre de conexión existente"
+        );
+        instance.close(1000, "Forced singleton cleanup");
         instance = null;
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
-      
+
       // 🚀 FINAL: Activar TODOS los locks
       isConnecting = true;
       connectionInProgress = true;
       globalConnectionLock = true;
       lastConnectionTime = now;
       connectionId = `conn_${now}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // 🚀 FINAL: Crear conexión única absoluta
-      console.log(`[WS SINGLETON] 🎯 FINAL: Creando conexión ÚNICA (ID: ${connectionId})...`);
+      console.log(
+        `[WS SINGLETON] 🎯 FINAL: Creando conexión ÚNICA (ID: ${connectionId})...`
+      );
       connectionPromise = new Promise((resolve, reject) => {
         try {
           const ws = new WebSocket(url);
-          
+
           const connectionTimeout = setTimeout(() => {
-            console.log('[WS SINGLETON] ⏰ FINAL: Timeout de conexión');
+            console.log("[WS SINGLETON] ⏰ FINAL: Timeout de conexión");
             isConnecting = false;
             connectionInProgress = false;
             globalConnectionLock = false;
-            reject(new Error('Connection timeout'));
+            reject(new Error("Connection timeout"));
             if (ws.readyState !== WebSocket.CLOSED) {
               ws.close();
             }
           }, 5000);
-          
+
           ws.onopen = () => {
             clearTimeout(connectionTimeout);
             instance = ws;
@@ -253,69 +277,91 @@ const globalWebSocketManager = (() => {
             connectionInProgress = false;
             // 🚀 FINAL: Mantener globalConnectionLock para prevenir otras conexiones
             lastConnectionUrl = url;
-            console.log(`[WS SINGLETON] 🎯 FINAL: Conexión ÚNICA establecida (ID: ${connectionId})`);
-            
+            console.log(
+              `[WS SINGLETON] 🎯 FINAL: Conexión ÚNICA establecida (ID: ${connectionId})`
+            );
+
             // 🚀 FINAL: Enviar identificador único al backend
             setTimeout(() => {
               if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                  type: 'set_connection_id',
-                  connectionId: connectionId,
-                  timestamp: Date.now()
-                }));
+                ws.send(
+                  JSON.stringify({
+                    type: "set_connection_id",
+                    connectionId: connectionId,
+                    timestamp: Date.now(),
+                  })
+                );
               }
             }, 100);
-            
-            subscribers.forEach(cb => {
+
+            subscribers.forEach((cb) => {
               try {
                 cb(ws, true);
               } catch (error) {
-                console.warn('[WS SINGLETON] Error en subscriber onopen:', error);
+                console.warn(
+                  "[WS SINGLETON] Error en subscriber onopen:",
+                  error
+                );
               }
             });
             resolve(ws);
           };
-          
+
           ws.onerror = (error) => {
-            console.error(`[WS SINGLETON] ❌ FINAL: Error de conexión (ID: ${connectionId}):`, error);
+            console.error(
+              `[WS SINGLETON] ❌ FINAL: Error de conexión (ID: ${connectionId}):`,
+              error
+            );
             clearTimeout(connectionTimeout);
             connectionPromise = null;
             isConnecting = false;
             connectionInProgress = false;
             globalConnectionLock = false;
-            
-            subscribers.forEach(cb => {
+
+            subscribers.forEach((cb) => {
               try {
                 cb(null, false);
               } catch (cbError) {
-                console.warn('[WS SINGLETON] Error en subscriber onerror:', cbError);
+                console.warn(
+                  "[WS SINGLETON] Error en subscriber onerror:",
+                  cbError
+                );
               }
             });
             reject(error);
           };
-          
+
           ws.onclose = (event) => {
-            console.log(`[WS SINGLETON] 🔴 FINAL: Conexión cerrada (ID: ${connectionId})`, {
-              code: event.code, reason: event.reason
-            });
+            console.log(
+              `[WS SINGLETON] 🔴 FINAL: Conexión cerrada (ID: ${connectionId})`,
+              {
+                code: event.code,
+                reason: event.reason,
+              }
+            );
             instance = null;
             connectionPromise = null;
             isConnecting = false;
             connectionInProgress = false;
             globalConnectionLock = false;
             connectionId = null;
-            
-            subscribers.forEach(cb => {
+
+            subscribers.forEach((cb) => {
               try {
                 cb(null, false);
               } catch (cbError) {
-                console.warn('[WS SINGLETON] Error en subscriber onclose:', cbError);
+                console.warn(
+                  "[WS SINGLETON] Error en subscriber onclose:",
+                  cbError
+                );
               }
             });
           };
-          
         } catch (error) {
-          console.error(`[WS SINGLETON] ❌ FINAL: Excepción en creación (ID: ${connectionId}):`, error);
+          console.error(
+            `[WS SINGLETON] ❌ FINAL: Excepción en creación (ID: ${connectionId}):`,
+            error
+          );
           connectionPromise = null;
           isConnecting = false;
           connectionInProgress = false;
@@ -324,10 +370,10 @@ const globalWebSocketManager = (() => {
           reject(error);
         }
       });
-      
+
       return connectionPromise;
     },
-    cleanup
+    cleanup,
   };
 })();
 
@@ -346,7 +392,9 @@ export default function WebhooksComponent() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editingEvents, setEditingEvents] = useState(false);
-  const [tempSelectedEvents, setTempSelectedEvents] = useState<string[]>(["ALL"]);
+  const [tempSelectedEvents, setTempSelectedEvents] = useState<string[]>([
+    "ALL",
+  ]);
   const [deleting, setDeleting] = useState(false);
   const [testing, setTesting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -364,7 +412,9 @@ export default function WebhooksComponent() {
   // Webhook configuration
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [clientWebhookUrl, setClientWebhookUrl] = useState("");
-  const [selectedEvents, setSelectedEvents] = useState<string[]>(["MESSAGES_UPSERT"]);
+  const [selectedEvents, setSelectedEvents] = useState<string[]>([
+    "MESSAGES_UPSERT",
+  ]);
   const [webhookActive, setWebhookActive] = useState(true);
 
   // Test webhook
@@ -398,7 +448,7 @@ export default function WebhooksComponent() {
 
     const initializeData = async () => {
       await loadInitialData();
-      
+
       // Verificar webhooks órfanos después de cargar sesiones
       setTimeout(() => {
         if (sessions.length > 0) {
@@ -406,9 +456,9 @@ export default function WebhooksComponent() {
         }
       }, 2000);
     };
-    
+
     initializeData();
-    
+
     // 🔧 SUSCRIBIRSE AL SINGLETON
     const unsubscribe = globalWebSocketManager.subscribe((ws, connected) => {
       setWs(ws);
@@ -431,56 +481,77 @@ export default function WebhooksComponent() {
   // 🔧 ULTRA MEJORADO: Conexión WebSocket con máxima protección contra duplicados
   useEffect(() => {
     if (!selectedSessionId || !sessions.length || !user?.nombrebot) {
-      console.log('[WS SINGLETON] ⚠️ ULTRA: Condiciones no cumplidas para conexión', {
-        selectedSessionId: !!selectedSessionId,
-        sessionsLength: sessions.length,
-        userNombrebot: !!user?.nombrebot
-      });
+      console.log(
+        "[WS SINGLETON] ⚠️ ULTRA: Condiciones no cumplidas para conexión",
+        {
+          selectedSessionId: !!selectedSessionId,
+          sessionsLength: sessions.length,
+          userNombrebot: !!user?.nombrebot,
+        }
+      );
       return;
     }
-    
-    console.log(`[WS SINGLETON] 🔄 ULTRA: Solicitud de conexión para sesión: ${selectedSessionId}`);
-    
+
+    console.log(
+      `[WS SINGLETON] 🔄 ULTRA: Solicitud de conexión para sesión: ${selectedSessionId}`
+    );
+
     // 🆕 ULTRA: Verificación triple - instancia, estado y handlers
     const existingWs = globalWebSocketManager.getInstance();
     if (existingWs && existingWs.readyState === WebSocket.OPEN) {
-      console.log('[WS SINGLETON] ⚠️ ULTRA: Conexión ya activa, verificando handlers');
-      
+      console.log(
+        "[WS SINGLETON] ⚠️ ULTRA: Conexión ya activa, verificando handlers"
+      );
+
       // Solo configurar handlers si no existen
-      if (!existingWs.onmessage || existingWs.onmessage.toString().indexOf('authenticate') === -1) {
-        console.log('[WS SINGLETON] 🔧 ULTRA: Configurando handlers en conexión existente');
+      if (
+        !existingWs.onmessage ||
+        existingWs.onmessage.toString().indexOf("authenticate") === -1
+      ) {
+        console.log(
+          "[WS SINGLETON] 🔧 ULTRA: Configurando handlers en conexión existente"
+        );
         setupWebSocketHandlers(existingWs);
       } else {
-        console.log('[WS SINGLETON] ✅ ULTRA: Handlers ya configurados, no hay nada que hacer');
+        console.log(
+          "[WS SINGLETON] ✅ ULTRA: Handlers ya configurados, no hay nada que hacer"
+        );
       }
       return;
     }
-    
+
     // 🆕 ULTRA: ID único por efecto para prevenir overlapping
-    const effectId = `effect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const effectId = `effect_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
     console.log(`[WS SINGLETON] 🆔 ULTRA: Effect ID: ${effectId}`);
-    
+
     // 🆕 ULTRA: Debounce más largo + verificación final
     const debounceId = setTimeout(() => {
       // Triple verificación antes de conectar
-      if (selectedSessionId && 
-          user?.nombrebot && 
-          !globalWebSocketManager.isConnected() &&
-          !globalWebSocketManager.getInstance()) {
+      if (
+        selectedSessionId &&
+        user?.nombrebot &&
+        !globalWebSocketManager.isConnected() &&
+        !globalWebSocketManager.getInstance()
+      ) {
         console.log(`[WS SINGLETON] 🚀 ULTRA: Iniciando conexión ${effectId}`);
-        connectWebSocket().catch(error => {
-          console.error(`[WS SINGLETON] ❌ ULTRA: Error en conexión ${effectId}:`, error);
+        connectWebSocket().catch((error) => {
+          console.error(
+            `[WS SINGLETON] ❌ ULTRA: Error en conexión ${effectId}:`,
+            error
+          );
         });
       } else {
         console.log(`[WS SINGLETON] 🚫 ULTRA: Conexión cancelada ${effectId}`, {
           selectedSessionId: !!selectedSessionId,
           userNombrebot: !!user?.nombrebot,
           isConnected: globalWebSocketManager.isConnected(),
-          hasInstance: !!globalWebSocketManager.getInstance()
+          hasInstance: !!globalWebSocketManager.getInstance(),
         });
       }
     }, 1500); // Aumentado a 1.5 segundos
-    
+
     return () => {
       console.log(`[WS SINGLETON] 🧹 ULTRA: Limpiando effect ${effectId}`);
       clearTimeout(debounceId);
@@ -504,11 +575,14 @@ export default function WebhooksComponent() {
         // Ejecutar siempre, incluso si no hay sesiones
         console.log("🧹 [WEBHOOK CLEANUP] Limpieza automática periódica...");
         cleanupOrphanedNotifications(sessions);
-        
+
         // 🔧 NUEVA: Limpiar cache de IDs periódicamente
         const now = Date.now();
-        if (now - lastProcessedTime.current > 300000) { // 5 minutos
-          console.log("🧹 [WEBHOOK CLEANUP] Limpiando cache de IDs por timeout");
+        if (now - lastProcessedTime.current > 300000) {
+          // 5 minutos
+          console.log(
+            "🧹 [WEBHOOK CLEANUP] Limpiando cache de IDs por timeout"
+          );
           processedNotificationIds.current.clear();
           lastProcessedTime.current = now;
         }
@@ -519,27 +593,29 @@ export default function WebhooksComponent() {
   }, [sessions, notifications]);
 
   const cleanup = () => {
-    console.log('[WS SINGLETON] 🧹 Ejecutando cleanup completo...');
-    
+    console.log("[WS SINGLETON] 🧹 Ejecutando cleanup completo...");
+
     // 🔧 MEJORADO: Limpiar TODOS los timeouts pendientes
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
-      console.log('[WS SINGLETON] 🔥 Timeout de reconexión cancelado');
+      console.log("[WS SINGLETON] 🔥 Timeout de reconexión cancelado");
     }
-    
+
     // 🔧 NUEVA: Limpiar cache de notificaciones
     if (processedNotificationIds.current.size > 0) {
-      console.log('[WS SINGLETON] 🧹 Limpiando cache de notificaciones procesadas');
+      console.log(
+        "[WS SINGLETON] 🧹 Limpiando cache de notificaciones procesadas"
+      );
       processedNotificationIds.current.clear();
       lastProcessedTime.current = 0;
     }
-    
+
     // 🔧 NUEVA: Limpiar estado de WebSocket local
     setWsConnected(false);
     setWs(null);
-    
-    console.log('[WS SINGLETON] ✅ Cleanup completado');
+
+    console.log("[WS SINGLETON] ✅ Cleanup completado");
   };
 
   const loadInitialData = async () => {
@@ -568,7 +644,7 @@ export default function WebhooksComponent() {
         setSessions([]);
         return [];
       }
-      
+
       const response = await sessionsAPI.listForUser(token);
       console.log(
         "🚀 [WEBHOOK SESSIONS] Response from sessionsAPI.listForUser():",
@@ -580,7 +656,9 @@ export default function WebhooksComponent() {
 
         // 🔧 CORRECCIÓN: listForUser devuelve objetos de sesión, no solo IDs
         // Extraer los IDs de las sesiones para obtener el status
-        const sessionIds = response.data.map((sesion: any) => sesion._id || sesion.id);
+        const sessionIds = response.data.map(
+          (sesion: any) => sesion._id || sesion.id
+        );
         console.log("🚀 [WEBHOOK SESSIONS] Session IDs extraídos:", sessionIds);
 
         // Convert session IDs to session objects with status
@@ -597,8 +675,10 @@ export default function WebhooksComponent() {
             );
 
             // 🔧 CORRECCIÓN: Obtener información adicional de la sesión desde response.data
-            const sesionInfo = response.data.find((s: any) => (s._id || s.id) === sessionId);
-            
+            const sesionInfo = response.data.find(
+              (s: any) => (s._id || s.id) === sessionId
+            );
+
             return {
               id: sessionId,
               status: statusResponse.success
@@ -621,12 +701,16 @@ export default function WebhooksComponent() {
                 ? (statusResponse.data as any)?.webhookUrl
                 : null,
               // 🔧 CORRECCIÓN: Usar información de la sesión desde la BD
-              nombresesion: sesionInfo?.nombresesion || (statusResponse.success
-                ? (statusResponse.data as any)?.nombresesion
-                : null),
-              phoneNumber: sesionInfo?.lineaWhatsApp || (statusResponse.success
-                ? (statusResponse.data as any)?.phoneNumber
-                : null),
+              nombresesion:
+                sesionInfo?.nombresesion ||
+                (statusResponse.success
+                  ? (statusResponse.data as any)?.nombresesion
+                  : null),
+              phoneNumber:
+                sesionInfo?.lineaWhatsApp ||
+                (statusResponse.success
+                  ? (statusResponse.data as any)?.phoneNumber
+                  : null),
             };
           } catch (error) {
             console.error(
@@ -634,8 +718,10 @@ export default function WebhooksComponent() {
               error
             );
             // 🔧 CORRECCIÓN: Obtener información de la sesión incluso en caso de error
-            const sesionInfo = response.data.find((s: any) => (s._id || s.id) === sessionId);
-            
+            const sesionInfo = response.data.find(
+              (s: any) => (s._id || s.id) === sessionId
+            );
+
             return {
               id: sessionId,
               status: "error",
@@ -768,7 +854,7 @@ export default function WebhooksComponent() {
               );
 
               const statsResponse = await fetch(
-                `http://100.42.185.2:8015/webhook/stats/${userId}`,
+                `https://backend.autosystemprojects.site/webhook/stats/${userId}`,
                 {
                   method: "GET",
                   headers: {
@@ -849,7 +935,9 @@ export default function WebhooksComponent() {
                     "🔍 [WEBHOOKS] Sincronizando con sesión simulada..."
                   );
                   // 🔧 NO auto-sincronizar - el usuario debe crear el webhook explícitamente
-                console.log("⚠️ [WEBHOOKS] Webhook encontrado pero no cargaremos automáticamente");
+                  console.log(
+                    "⚠️ [WEBHOOKS] Webhook encontrado pero no cargaremos automáticamente"
+                  );
                 } else {
                   console.log(
                     "🔍 [WEBHOOKS] No hay webhook activo en stats directas"
@@ -883,7 +971,7 @@ export default function WebhooksComponent() {
       if (!webhookStats?.webhookActive) {
         try {
           const statsResponse = await fetch(
-            `http://100.42.185.2:8015/webhook/stats/${userId}`,
+            `https://backend.autosystemprojects.site/webhook/stats/${userId}`,
             {
               method: "GET",
               headers: {
@@ -977,7 +1065,9 @@ export default function WebhooksComponent() {
                 };
 
                 // 🔧 NO auto-sincronizar - el usuario debe crear el webhook explícitamente
-                console.log("⚠️ [WEBHOOKS] Webhook en fallback encontrado pero no cargaremos automáticamente");
+                console.log(
+                  "⚠️ [WEBHOOKS] Webhook en fallback encontrado pero no cargaremos automáticamente"
+                );
               } else {
                 console.log("🔍 [WEBHOOKS] No hay webhook activo en stats");
               }
@@ -991,7 +1081,7 @@ export default function WebhooksComponent() {
       // Load notifications
       try {
         const notificationsResponse = await fetch(
-          `http://100.42.185.2:8015/webhook/notifications/${userId}?limit=50&offset=0`,
+          `https://backend.autosystemprojects.site/webhook/notifications/${userId}?limit=50&offset=0`,
           {
             method: "GET",
             headers: {
@@ -1054,40 +1144,56 @@ export default function WebhooksComponent() {
   // 🔧 NUEVA FUNCION: Limpiar notificaciones de sesiones eliminadas
   const connectWebSocket = async () => {
     if (!user?.nombrebot || !selectedSessionId) {
-      console.log('[WS SINGLETON] ⚠️ No hay nombrebot o sesión, omitiendo conexión');
+      console.log(
+        "[WS SINGLETON] ⚠️ No hay nombrebot o sesión, omitiendo conexión"
+      );
       return;
     }
 
     // 🔧 NUEVA: Verificar que no hay conexión activa antes de intentar
     if (globalWebSocketManager.isConnected()) {
-      console.log('[WS SINGLETON] ⚠️ Ya hay conexión activa, omitiendo nueva conexión');
+      console.log(
+        "[WS SINGLETON] ⚠️ Ya hay conexión activa, omitiendo nueva conexión"
+      );
       return;
     }
 
     try {
-      console.log('[WS SINGLETON] 🔌 Solicitando conexión WebSocket...');
+      console.log("[WS SINGLETON] 🔌 Solicitando conexión WebSocket...");
       await globalWebSocketManager.connect("ws://100.42.185.2:8015/ws");
     } catch (error) {
-      console.error('[WS SINGLETON] ❌ Error conectando:', error);
+      console.error("[WS SINGLETON] ❌ Error conectando:", error);
       setWsConnected(false);
       setWs(null);
-      
+
       // 🔧 MEJORADO: Auto-reconnect con verificaciones adicionales
-      if (user?.nombrebot && selectedSessionId && !globalWebSocketManager.isConnected()) {
+      if (
+        user?.nombrebot &&
+        selectedSessionId &&
+        !globalWebSocketManager.isConnected()
+      ) {
         // 🔧 NUEVA: Limpiar timeout previo antes de crear nuevo
         if (reconnectTimeoutRef.current) {
-          console.log('[WS SINGLETON] 🧹 Limpiando timeout de reconexión previo');
+          console.log(
+            "[WS SINGLETON] 🧹 Limpiando timeout de reconexión previo"
+          );
           clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = null;
         }
-        
-        console.log('[WS SINGLETON] 🔄 Reintentando en 5s...');
+
+        console.log("[WS SINGLETON] 🔄 Reintentando en 5s...");
         reconnectTimeoutRef.current = setTimeout(() => {
           // 🔧 NUEVA: Verificar condiciones antes de reconectar
-          if (user?.nombrebot && selectedSessionId && !globalWebSocketManager.isConnected()) {
+          if (
+            user?.nombrebot &&
+            selectedSessionId &&
+            !globalWebSocketManager.isConnected()
+          ) {
             connectWebSocket();
           } else {
-            console.log('[WS SINGLETON] 🚫 Cancelando reconexión - condiciones no cumplidas');
+            console.log(
+              "[WS SINGLETON] 🚫 Cancelando reconexión - condiciones no cumplidas"
+            );
           }
         }, 5000);
       }
@@ -1096,34 +1202,38 @@ export default function WebhooksComponent() {
 
   const setupWebSocketHandlers = (ws: WebSocket) => {
     if (!ws || !user?.nombrebot) return;
-    
+
     // 🔧 NUEVA: Verificar si ya tiene handlers configurados
-    if (ws.onmessage && ws.onmessage.toString().includes('authenticate')) {
-      console.log('[WS SINGLETON] ⚠️ Handlers ya configurados, omitiendo configuración');
+    if (ws.onmessage && ws.onmessage.toString().includes("authenticate")) {
+      console.log(
+        "[WS SINGLETON] ⚠️ Handlers ya configurados, omitiendo configuración"
+      );
       return;
     }
-    
-    console.log('[WS SINGLETON] ⚙️ Configurando handlers para WebSocket');
-    
+
+    console.log("[WS SINGLETON] ⚙️ Configurando handlers para WebSocket");
+
     // 🔧 MEJORADA: Limpiar handlers existentes de manera más robusta
     ws.onmessage = null;
     ws.onerror = null;
-    
+
     // Autenticar
-    const sessionUserId = selectedSessionId ? 
-      sessions.find(s => s.id === selectedSessionId)?.nombresesion || user.nombrebot :
-      user.nombrebot;
-      
+    const sessionUserId = selectedSessionId
+      ? sessions.find((s) => s.id === selectedSessionId)?.nombresesion ||
+        user.nombrebot
+      : user.nombrebot;
+
     console.log(`[WS SINGLETON] 🔑 Autenticando con userId: ${sessionUserId}`);
-    
-    ws.send(JSON.stringify({
-      type: "authenticate",
-      userId: sessionUserId,
-    }));
-    
+
+    ws.send(
+      JSON.stringify({
+        type: "authenticate",
+        userId: sessionUserId,
+      })
+    );
+
     // 🔧 NUEVA: Configurar handler único sin preservar anteriores
     ws.onmessage = (event) => {
-      
       try {
         const message = JSON.parse(event.data);
         console.log("[WS SINGLETON] 📨 Mensaje recibido:", message.type);
@@ -1137,7 +1247,11 @@ export default function WebhooksComponent() {
           case "notification":
             if (message.data) {
               const formattedNotification: NotificationItem = {
-                id: message.data.id || `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                id:
+                  message.data.id ||
+                  `notif_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`,
                 sessionId: message.data.sessionId || "",
                 eventType: message.data.eventType || "UNKNOWN",
                 eventData: message.data.data || message.data.eventData || {},
@@ -1145,20 +1259,25 @@ export default function WebhooksComponent() {
                 read: message.data.read || false,
                 source: "whatsapp" as const,
               };
-              console.log("[WS SINGLETON] 📬 Nueva notificación:", formattedNotification);
+              console.log(
+                "[WS SINGLETON] 📬 Nueva notificación:",
+                formattedNotification
+              );
               handleNewNotification(formattedNotification);
             }
             break;
 
           case "notifications":
-            const notificationsData = Array.isArray(message.data) ? message.data : [];
+            const notificationsData = Array.isArray(message.data)
+              ? message.data
+              : [];
             setNotifications(notificationsData);
             break;
 
           case "notificationMarkedAsRead":
-            setNotifications(prev => {
+            setNotifications((prev) => {
               const prevArray = Array.isArray(prev) ? prev : [];
-              return prevArray.map(n => 
+              return prevArray.map((n) =>
                 n.id === message.notificationId ? { ...n, read: true } : n
               );
             });
@@ -1166,11 +1285,14 @@ export default function WebhooksComponent() {
 
           case "error":
             // 🔧 CORREGIDO: Solo mensaje informativo del servidor, no error crítico
-            console.warn("[WS SINGLETON] ℹ️ Mensaje del servidor:", message.message || message.error || 'Sin detalles');
+            console.warn(
+              "[WS SINGLETON] ℹ️ Mensaje del servidor:",
+              message.message || message.error || "Sin detalles"
+            );
             break;
-            
+
           case "ping":
-          case "pong": 
+          case "pong":
           case "heartbeat":
             // Ignorar mensajes de keep-alive silenciosamente
             console.log("[WS SINGLETON] 💓 Keep-alive recibido");
@@ -1178,12 +1300,23 @@ export default function WebhooksComponent() {
 
           default:
             // 🔧 MEJORADO: Log informativo en lugar de error
-            console.log("[WS SINGLETON] 📋 Mensaje no manejado (tipo:", message.type || 'undefined', "):", message);
-            
+            console.log(
+              "[WS SINGLETON] 📋 Mensaje no manejado (tipo:",
+              message.type || "undefined",
+              "):",
+              message
+            );
+
             // Si es evento de WhatsApp, procesarlo
-            if (message.type && typeof message.type === "string" && message.type.includes("_")) {
+            if (
+              message.type &&
+              typeof message.type === "string" &&
+              message.type.includes("_")
+            ) {
               const eventNotification: NotificationItem = {
-                id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                id: `event_${Date.now()}_${Math.random()
+                  .toString(36)
+                  .substr(2, 9)}`,
                 sessionId: sessionUserId,
                 eventType: message.type,
                 eventData: message.data || message,
@@ -1191,7 +1324,10 @@ export default function WebhooksComponent() {
                 read: false,
                 source: "whatsapp" as const,
               };
-              console.log('[WS SINGLETON] 🎯 Procesando como evento WhatsApp:', eventNotification.eventType);
+              console.log(
+                "[WS SINGLETON] 🎯 Procesando como evento WhatsApp:",
+                eventNotification.eventType
+              );
               handleNewNotification(eventNotification);
             }
         }
@@ -1293,15 +1429,13 @@ export default function WebhooksComponent() {
     }
   };
 
-
-
   const handleNewNotification = (notification: NotificationItem) => {
     const now = Date.now();
     console.log("[WEBHOOK WS] 📬 Procesando nueva notificación:", {
       id: notification.id,
       eventType: notification.eventType,
       timestamp: notification.timestamp,
-      cacheSize: processedNotificationIds.current.size
+      cacheSize: processedNotificationIds.current.size,
     });
 
     // 🔧 VALIDACION: Verificar que la notificación tiene los campos requeridos
@@ -1334,9 +1468,14 @@ export default function WebhooksComponent() {
 
     // 🔧 NUEVA: Limpiar cache si excede 100 elementos
     if (processedNotificationIds.current.size > 100) {
-      const oldestIds = Array.from(processedNotificationIds.current).slice(0, 50);
-      oldestIds.forEach(id => processedNotificationIds.current.delete(id));
-      console.log("[WEBHOOK WS] 🧹 Cache de IDs reducido de 100+ a 50 elementos");
+      const oldestIds = Array.from(processedNotificationIds.current).slice(
+        0,
+        50
+      );
+      oldestIds.forEach((id) => processedNotificationIds.current.delete(id));
+      console.log(
+        "[WEBHOOK WS] 🧹 Cache de IDs reducido de 100+ a 50 elementos"
+      );
     }
 
     setNotifications((prev) => {
@@ -1347,7 +1486,7 @@ export default function WebhooksComponent() {
       const existingIndex = prevArray.findIndex(
         (n) => n.id === notification.id
       );
-      
+
       if (existingIndex >= 0) {
         console.log(
           "[WEBHOOK WS] 🔄 Actualizando notificación existente:",
@@ -1390,7 +1529,7 @@ export default function WebhooksComponent() {
     // Show toast for new notifications (solo si no está marcada como leída)
     if (!notification.read) {
       // 🎯 FILTRO: Solo mostrar toasts para mensajes entrantes
-      if (notification.eventType === 'MESSAGES_UPSERT') {
+      if (notification.eventType === "MESSAGES_UPSERT") {
         toast({
           title: "📨 Nuevo Mensaje",
           description: `Mensaje entrante en sesión ${
@@ -1416,8 +1555,10 @@ export default function WebhooksComponent() {
   // 🔧 NUEVA FUNCION: Cargar solo webhooks existentes explícitos (NO auto-crear)
   const cargarWebhooksExistentes = async (sesiones: any[]) => {
     try {
-      console.log("🔍 [WEBHOOK LOAD] Cargando webhooks existentes explícitos...");
-      
+      console.log(
+        "🔍 [WEBHOOK LOAD] Cargando webhooks existentes explícitos..."
+      );
+
       // Solo buscar webhooks que fueron creados explícitamente por el usuario
       const userId = user?.nombrebot || user?.email || user?.id;
       if (!userId) {
@@ -1427,7 +1568,7 @@ export default function WebhooksComponent() {
 
       try {
         const statsResponse = await fetch(
-          `http://100.42.185.2:8015/webhook/stats/${userId}`,
+          `https://backend.autosystemprojects.site/webhook/stats/${userId}`,
           {
             method: "GET",
             headers: {
@@ -1438,51 +1579,69 @@ export default function WebhooksComponent() {
 
         if (statsResponse.ok) {
           const statsResult = await statsResponse.json();
-          
+
           // Solo configurar si existe webhook Y fue creado explícitamente
           if (
-            statsResult.success && 
+            statsResult.success &&
             statsResult.data &&
             statsResult.data.configExists &&
             statsResult.data.webhookActive &&
             statsResult.data.createdExplicitly !== false // Solo cargar si fue creado explícitamente
           ) {
-            console.log("✅ [WEBHOOK LOAD] Webhook explícito encontrado:", statsResult.data);
-            
+            console.log(
+              "✅ [WEBHOOK LOAD] Webhook explícito encontrado:",
+              statsResult.data
+            );
+
             // Verificar que la sesión asociada existe
             const webhookSessionExists = sesiones.some(
               (s) => s.id === statsResult.data.sessionId
             );
-            
+
             if (webhookSessionExists) {
               const webhookConfigData = {
                 userId: userId,
                 sessionId: statsResult.data.sessionId,
-                webhookId: statsResult.data.webhookId || `webhook_${userId}_${Date.now()}`,
+                webhookId:
+                  statsResult.data.webhookId ||
+                  `webhook_${userId}_${Date.now()}`,
                 webhookUrl: statsResult.data.webhookUrl || "",
                 clientWebhookUrl: statsResult.data.clientWebhookUrl || "",
                 events: statsResult.data.events || ["ALL"],
                 active: true,
-                createdAt: statsResult.data.createdAt || new Date().toISOString(),
+                createdAt:
+                  statsResult.data.createdAt || new Date().toISOString(),
                 deliverySettings: statsResult.data.deliverySettings,
               };
-              
-              console.log("✅ [WEBHOOK LOAD] Configurando webhook existente:", webhookConfigData);
+
+              console.log(
+                "✅ [WEBHOOK LOAD] Configurando webhook existente:",
+                webhookConfigData
+              );
               setWebhookConfig(webhookConfigData);
               setSelectedSessionId(statsResult.data.sessionId);
               setSelectedEvents(webhookConfigData.events);
               setTempSelectedEvents(webhookConfigData.events);
             } else {
-              console.log("⚠️ [WEBHOOK LOAD] Sesión del webhook no existe, ignorando");
+              console.log(
+                "⚠️ [WEBHOOK LOAD] Sesión del webhook no existe, ignorando"
+              );
             }
           } else {
-            console.log("🔍 [WEBHOOK LOAD] No hay webhook explícito configurado");
+            console.log(
+              "🔍 [WEBHOOK LOAD] No hay webhook explícito configurado"
+            );
           }
         } else {
-          console.log("🔍 [WEBHOOK LOAD] No se pudieron obtener stats de webhook");
+          console.log(
+            "🔍 [WEBHOOK LOAD] No se pudieron obtener stats de webhook"
+          );
         }
       } catch (error) {
-        console.warn("🔍 [WEBHOOK LOAD] Error obteniendo webhook existente:", error);
+        console.warn(
+          "🔍 [WEBHOOK LOAD] Error obteniendo webhook existente:",
+          error
+        );
       }
     } catch (error) {
       console.error("❌ [WEBHOOK LOAD] Error en carga de webhooks:", error);
@@ -1527,9 +1686,10 @@ export default function WebhooksComponent() {
           );
 
           // 🔧 VALIDACIÓN CRITICA: Verificar que el webhook sea para la sesión actual
-          const webhookSessionId = sesion.webhook?.sessionId || sesion.sesionId || sesion.id;
+          const webhookSessionId =
+            sesion.webhook?.sessionId || sesion.sesionId || sesion.id;
           const currentSessionId = sesion.id || sesion.sesionId;
-          
+
           if (webhookSessionId !== currentSessionId) {
             console.warn(
               `⚠️ [WEBHOOK SYNC] DISCREPANCIA DE SESION DETECTADA:
@@ -1537,13 +1697,15 @@ export default function WebhooksComponent() {
               - Sesión actual: ${currentSessionId}
               - Creando nuevo webhook para sesión actual...`
             );
-            
+
             // 🔧 SOLUCIÓN: Crear nuevo webhook para la sesión actual
             try {
-              console.log(`🔄 [WEBHOOK SYNC] Creando webhook corregido para sesión ${currentSessionId}`);
-              
+              console.log(
+                `🔄 [WEBHOOK SYNC] Creando webhook corregido para sesión ${currentSessionId}`
+              );
+
               const createResponse = await fetch(
-                `http://100.42.185.2:8015/webhook/create`,
+                `https://backend.autosystemprojects.site/webhook/create`,
                 {
                   method: "POST",
                   headers: {
@@ -1553,34 +1715,44 @@ export default function WebhooksComponent() {
                     userId: user?.nombrebot || user?.email,
                     sessionId: currentSessionId,
                     events: ["ALL"],
-                    webhookUrl: null
-                  })
+                    webhookUrl: null,
+                  }),
                 }
               );
-              
+
               if (createResponse.ok) {
                 const createResult = await createResponse.json();
-                console.log(`✅ [WEBHOOK SYNC] Nuevo webhook creado exitosamente:`, createResult.data);
-                
+                console.log(
+                  `✅ [WEBHOOK SYNC] Nuevo webhook creado exitosamente:`,
+                  createResult.data
+                );
+
                 // Configurar el nuevo webhook
                 setWebhookConfig({
                   userId: createResult.data.userId,
                   sessionId: createResult.data.sessionId,
-                  webhookId: createResult.data.id || createResult.data.webhookId,
+                  webhookId:
+                    createResult.data.id || createResult.data.webhookId,
                   webhookUrl: createResult.data.webhookUrl,
                   clientWebhookUrl: createResult.data.clientWebhookUrl || "",
                   events: createResult.data.events || ["ALL"],
                   active: createResult.data.active,
-                  createdAt: createResult.data.createdAt || new Date().toISOString(),
+                  createdAt:
+                    createResult.data.createdAt || new Date().toISOString(),
                 });
-                
+
                 webhookEncontrado = true;
                 continue; // Continuar con el siguiente elemento del bucle
               } else {
-                console.warn(`⚠️ [WEBHOOK SYNC] Error creando webhook: ${createResponse.status}`);
+                console.warn(
+                  `⚠️ [WEBHOOK SYNC] Error creando webhook: ${createResponse.status}`
+                );
               }
             } catch (createError) {
-              console.error(`❗ [WEBHOOK SYNC] Error creando webhook corregido:`, createError);
+              console.error(
+                `❗ [WEBHOOK SYNC] Error creando webhook corregido:`,
+                createError
+              );
             }
           }
 
@@ -1618,7 +1790,7 @@ export default function WebhooksComponent() {
             );
 
             const response = await fetch(
-              `http://100.42.185.2:8015/webhook/stats/${sessionUserId}`,
+              `https://backend.autosystemprojects.site/webhook/stats/${sessionUserId}`,
               {
                 method: "GET",
                 headers: {
@@ -1684,7 +1856,7 @@ export default function WebhooksComponent() {
               webhookUrl:
                 sesion.webhook?.url ||
                 sesion.webhookUrl ||
-                `http://100.42.185.2:8015/webhook/webhook_${user?.nombrebot}_fallback`, // 🔧 Nunca null
+                `https://backend.autosystemprojects.site/webhook/webhook_${user?.nombrebot}_fallback`, // 🔧 Nunca null
               events: ["ALL"],
               active: true,
               createdAt: new Date().toISOString(),
@@ -1799,15 +1971,17 @@ export default function WebhooksComponent() {
     setCreating(true);
     try {
       // 🔧 SOLUCION: Usar userId correcto basado en la sesión
-      const sessionUserId = sessions.find(s => s.id === selectedSessionId)?.nombresesion || user.nombrebot;
-      
+      const sessionUserId =
+        sessions.find((s) => s.id === selectedSessionId)?.nombresesion ||
+        user.nombrebot;
+
       const requestBody = {
         userId: sessionUserId,
         sessionId: selectedSessionId,
         events: selectedEvents,
         webhookUrl: clientWebhookUrl || null,
       };
-      
+
       console.log(
         "🚀 [WEBHOOK CREATE] 🔑 Usando userId de sesión:",
         sessionUserId
@@ -1818,7 +1992,7 @@ export default function WebhooksComponent() {
         JSON.stringify(requestBody, null, 2)
       );
 
-      const url = "http://100.42.185.2:8015/webhook/create";
+      const url = "https://backend.autosystemprojects.site/webhook/create";
       console.log("🚀 [WEBHOOK CREATE] Enviando POST a:", url);
 
       const response = await fetch(url, {
@@ -1963,12 +2137,12 @@ export default function WebhooksComponent() {
     try {
       console.log(
         "[WEBHOOK TEST] Sending to:",
-        `http://100.42.185.2:8015/webhook/${webhookConfig.webhookId}`
+        `https://backend.autosystemprojects.site/webhook/${webhookConfig.webhookId}`
       );
       console.log("[WEBHOOK TEST] Payload:", payload);
 
       const response = await fetch(
-        `http://100.42.185.2:8015/webhook/${webhookConfig.webhookId}`,
+        `https://backend.autosystemprojects.site/webhook/${webhookConfig.webhookId}`,
         {
           method: "POST",
           headers: {
@@ -2028,11 +2202,14 @@ export default function WebhooksComponent() {
       );
 
       // 🔧 SOLUCIÓN: Usar userId correcto basado en la sesión
-      const sessionUserId = selectedSessionId ? 
-        sessions.find(s => s.id === selectedSessionId)?.nombresesion || user.nombrebot :
-        user.nombrebot;
-        
-      console.log(`[WEBHOOKS] 🔑 Usando userId para markAsRead: ${sessionUserId}`);
+      const sessionUserId = selectedSessionId
+        ? sessions.find((s) => s.id === selectedSessionId)?.nombresesion ||
+          user.nombrebot
+        : user.nombrebot;
+
+      console.log(
+        `[WEBHOOKS] 🔑 Usando userId para markAsRead: ${sessionUserId}`
+      );
 
       // 🔧 VALIDACIÓN: Verificar que la notificación existe en el estado actual
       const notificationsArray = Array.isArray(notifications)
@@ -2092,7 +2269,7 @@ export default function WebhooksComponent() {
       }
 
       const response = await fetch(
-        `http://100.42.185.2:8015/webhook/notifications/${sessionUserId}/${notificationId}/read`,
+        `https://backend.autosystemprojects.site/webhook/notifications/${sessionUserId}/${notificationId}/read`,
         {
           method: "PUT",
           headers: {
@@ -2309,12 +2486,15 @@ export default function WebhooksComponent() {
   const requestNewNotifications = () => {
     if (ws && user?.nombrebot) {
       // 🔧 SOLUCION: Usar userId correcto basado en la sesión
-      const sessionUserId = selectedSessionId ? 
-        sessions.find(s => s.id === selectedSessionId)?.nombresesion || user.nombrebot :
-        user.nombrebot;
-        
-      console.log(`[WEBHOOK WS] 📨 Solicitando notificaciones para userId: ${sessionUserId}`);
-      
+      const sessionUserId = selectedSessionId
+        ? sessions.find((s) => s.id === selectedSessionId)?.nombresesion ||
+          user.nombrebot
+        : user.nombrebot;
+
+      console.log(
+        `[WEBHOOK WS] 📨 Solicitando notificaciones para userId: ${sessionUserId}`
+      );
+
       ws.send(
         JSON.stringify({
           type: "getNotifications",
@@ -2341,7 +2521,7 @@ export default function WebhooksComponent() {
 
   const saveEventsChanges = async () => {
     if (!webhookConfig) return;
-    
+
     setEditing(true);
     try {
       const requestBody = {
@@ -2352,7 +2532,7 @@ export default function WebhooksComponent() {
       };
 
       const response = await fetch(
-        `http://100.42.185.2:8015/webhook/${webhookConfig.webhookId}/update`,
+        `https://backend.autosystemprojects.site/webhook/${webhookConfig.webhookId}/update`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -2369,12 +2549,12 @@ export default function WebhooksComponent() {
         });
         setSelectedEvents([...tempSelectedEvents]);
         setEditingEvents(false);
-        
+
         toast({
           title: "✅ Eventos Actualizados",
           description: "Configuración de eventos guardada exitosamente",
         });
-        
+
         // Recargar datos
         const reloadedSessions = await loadSessions();
         await loadWebhookData(reloadedSessions);
@@ -2459,7 +2639,7 @@ export default function WebhooksComponent() {
       );
 
       // 🔧 SOLUCION: URL corregida para endpoint de actualización
-      const url = `http://100.42.185.2:8015/webhook/${webhookConfig.webhookId}/update`;
+      const url = `https://backend.autosystemprojects.site/webhook/${webhookConfig.webhookId}/update`;
       console.log("😀 [WEBHOOK EDIT] Enviando PUT a:", url);
 
       const response = await fetch(url, {
@@ -2556,7 +2736,7 @@ export default function WebhooksComponent() {
       console.log("🗑️ [WEBHOOK DELETE] Iniciando eliminación de webhook...");
       console.log("🗑️ [WEBHOOK DELETE] Webhook ID:", webhookConfig?.webhookId);
 
-      const url = `http://100.42.185.2:8015/webhook/${webhookConfig?.webhookId}/delete`;
+      const url = `https://backend.autosystemprojects.site/webhook/${webhookConfig?.webhookId}/delete`;
       console.log("🗑️ [WEBHOOK DELETE] Enviando DELETE a:", url);
 
       const response = await fetch(url, {
@@ -2621,62 +2801,70 @@ export default function WebhooksComponent() {
   // 🔧 NUEVA FUNCIÓN: Limpiar webhooks órfanos
   const cleanupOrphanedWebhooks = async () => {
     if (!user?.nombrebot) return;
-    
+
     try {
-      console.log('🧹 [WEBHOOK CLEANUP] Verificando webhooks órfanos...');
-      
+      console.log("🧹 [WEBHOOK CLEANUP] Verificando webhooks órfanos...");
+
       const userId = user.nombrebot;
-      const availableSessionIds = sessions.map(s => s.id);
-      
+      const availableSessionIds = sessions.map((s) => s.id);
+
       // Verificar si hay webhook configurado
       const statsResponse = await fetch(
-        `http://100.42.185.2:8015/webhook/stats/${userId}`,
+        `https://backend.autosystemprojects.site/webhook/stats/${userId}`,
         {
           method: "GET",
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
         }
       );
-      
+
       if (statsResponse.ok) {
         const statsResult = await statsResponse.json();
-        
+
         if (statsResult.success && statsResult.data?.configExists) {
           const webhookSessionId = statsResult.data.sessionId;
-          
+
           if (!availableSessionIds.includes(webhookSessionId)) {
-            console.log('🧹 [WEBHOOK CLEANUP] ⚠️ WEBHOOK ÓRFANO DETECTADO:', {
+            console.log("🧹 [WEBHOOK CLEANUP] ⚠️ WEBHOOK ÓRFANO DETECTADO:", {
               webhookSessionId,
               availableSessions: availableSessionIds,
-              webhookActive: statsResult.data.webhookActive
+              webhookActive: statsResult.data.webhookActive,
             });
-            
+
             // Notificar al usuario sin ser intrusivo
             toast({
               title: "⚠️ Configuración de Webhook",
               description: `Webhook configurado para sesión ${webhookSessionId} que ya no existe. Considera crear uno nuevo.`,
               variant: "default", // No destructive, solo informativo
-              duration: 6000
+              duration: 6000,
             });
-            
+
             // Actualizar stats para reflejar estado órfano
-            setWebhookStats(prev => prev ? {
-              ...prev,
-              webhookActive: false,
-              orphaned: true,
-              orphanedSessionId: webhookSessionId
-            } : null);
-            
+            setWebhookStats((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    webhookActive: false,
+                    orphaned: true,
+                    orphanedSessionId: webhookSessionId,
+                  }
+                : null
+            );
+
             // Limpiar configuración local del webhook órfano
             setWebhookConfig(null);
-            
-            console.log('🧹 [WEBHOOK CLEANUP] Estado actualizado - webhook marcado como órfano');
+
+            console.log(
+              "🧹 [WEBHOOK CLEANUP] Estado actualizado - webhook marcado como órfano"
+            );
           } else {
-            console.log('🧹 [WEBHOOK CLEANUP] ✅ Webhook válido - sesión existe');
+            console.log(
+              "🧹 [WEBHOOK CLEANUP] ✅ Webhook válido - sesión existe"
+            );
           }
         }
       }
     } catch (error) {
-      console.warn('🧹 [WEBHOOK CLEANUP] Error en verificación:', error);
+      console.warn("🧹 [WEBHOOK CLEANUP] Error en verificación:", error);
     }
   };
 
@@ -2803,12 +2991,12 @@ export default function WebhooksComponent() {
               <Bell className="h-4 w-4" />
               Notificaciones
               {(webhookStats?.unreadNotifications || 0) > 0 && (
-              <Badge
-              variant="destructive"
-              className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center"
-              >
-              {webhookStats?.unreadNotifications || 0}
-              </Badge>
+                <Badge
+                  variant="destructive"
+                  className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center"
+                >
+                  {webhookStats?.unreadNotifications || 0}
+                </Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="config" className="flex items-center gap-2">
@@ -2963,7 +3151,7 @@ export default function WebhooksComponent() {
                           </Button>
                         )}
                       </div>
-                      
+
                       {editingEvents ? (
                         <div className="space-y-3 mt-2">
                           <div className="grid grid-cols-2 gap-2">
@@ -3808,4 +3996,3 @@ export default function WebhooksComponent() {
     </div>
   );
 }
-

@@ -1,12 +1,13 @@
 # Documentación de Endpoints - Baileys API
 
-**Base URL:** `http://100.42.185.2:8015`
+**Base URL:** `https://backend.autosystemprojects.site`
 
 ## Autenticación
 
 La API utiliza JWT para autenticación. La autenticación puede estar deshabilitada en desarrollo (`DISABLE_AUTH=true`).
 
 **Headers requeridos:**
+
 ```
 Authorization: Bearer <token>
 Content-Type: application/json
@@ -15,21 +16,29 @@ Content-Type: application/json
 ## 📱 Sessions - Gestión de Sesiones WhatsApp
 
 ### GET `/sessions/list`
+
 Obtiene la lista de todas las sesiones.
+
 - **Response:** Array de sesiones
 
 ### GET `/sessions/find/:id`
+
 Obtiene información de una sesión específica.
+
 - **Params:** `id` - ID de la sesión
 - **Response:** Datos de la sesión
 
 ### GET `/sessions/status/:id`
+
 Obtiene el estado de una sesión específica.
+
 - **Params:** `id` - ID de la sesión
 - **Response:** Estado de la sesión (conectado, desconectado, etc.)
 
 ### POST `/sessions/add`
+
 Crea una nueva sesión.
+
 - **Body:**
   ```json
   {
@@ -40,25 +49,33 @@ Crea una nueva sesión.
 - **Response:** Datos de la sesión creada
 
 ### DELETE `/sessions/delete/:id`
+
 Elimina una sesión específica.
+
 - **Params:** `id` - ID de la sesión
 - **Response:** Confirmación de eliminación
 
 ## 💬 Chats - Gestión de Mensajes
 
 ### GET `/chats?id=session_id`
+
 Obtiene la lista de chats de una sesión.
+
 - **Query:** `id` - ID de la sesión
 - **Response:** Array de chats
 
 ### GET `/chats/:jid?id=session_id`
+
 Obtiene mensajes de un chat específico.
+
 - **Params:** `jid` - ID del chat
 - **Query:** `id` - ID de la sesión
 - **Response:** Array de mensajes
 
 ### POST `/chats/send?id=session_id`
+
 Envía un mensaje.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -70,7 +87,9 @@ Envía un mensaje.
 - **Response:** Información del mensaje enviado
 
 ### POST `/chats/reply?id=session_id`
+
 Responde a un mensaje específico.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -85,7 +104,9 @@ Responde a un mensaje específico.
   ```
 
 ### POST `/chats/edit?id=session_id`
+
 Edita un mensaje enviado.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -98,7 +119,9 @@ Edita un mensaje enviado.
   ```
 
 ### POST `/chats/pin?id=session_id`
+
 Fija o desfija un chat.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -110,12 +133,16 @@ Fija o desfija un chat.
   ```
 
 ### POST `/chats/send-bulk?id=session_id`
+
 Envía mensajes en lote.
+
 - **Query:** `id` - ID de la sesión
 - **Body:** Array de objetos mensaje
 
 ### POST `/chats/forward?id=session_id`
+
 Reenvía un mensaje.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -127,7 +154,9 @@ Reenvía un mensaje.
   ```
 
 ### POST `/chats/read?id=session_id`
+
 Marca mensajes como leídos.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -137,7 +166,9 @@ Marca mensajes como leídos.
   ```
 
 ### POST `/chats/send-presence?id=session_id`
+
 Envía estado de presencia (escribiendo, grabando, etc.).
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -149,7 +180,9 @@ Envía estado de presencia (escribiendo, grabando, etc.).
 - **Valores válidos para presence:** `unavailable`, `available`, `composing`, `recording`, `paused`
 
 ### POST `/chats/download-media?id=session_id`
+
 Descarga media de un mensaje.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -160,7 +193,9 @@ Descarga media de un mensaje.
   ```
 
 ### POST `/chats/delete?id=session_id`
+
 Elimina un chat.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -171,7 +206,9 @@ Elimina un chat.
   ```
 
 ### POST `/chats/labels/add-to-chat?id=session_id`
+
 Añade etiqueta a un chat.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -183,7 +220,9 @@ Añade etiqueta a un chat.
   ```
 
 ### POST `/chats/labels/remove-from-chat?id=session_id`
+
 Remueve etiqueta de un chat.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -197,12 +236,16 @@ Remueve etiqueta de un chat.
 ## 👥 Groups - Gestión de Grupos
 
 ### GET `/groups?id=session_id`
+
 Obtiene la lista de grupos.
+
 - **Query:** `id` - ID de la sesión
 - **Response:** Array de grupos
 
 ### POST `/groups/create?id=session_id`
+
 Crea un nuevo grupo.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -213,7 +256,9 @@ Crea un nuevo grupo.
   ```
 
 ### POST `/groups/send/:jid?id=session_id`
+
 Envía mensaje a un grupo.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 - **Body:**
@@ -225,17 +270,23 @@ Envía mensaje a un grupo.
   ```
 
 ### GET `/groups/:jid?id=session_id`
+
 Obtiene mensajes de un grupo.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 
 ### GET `/groups/meta/:jid?id=session_id`
+
 Obtiene metadatos de un grupo.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 
 ### POST `/groups/participants-update/:jid?id=session_id`
+
 Actualiza participantes del grupo.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 - **Body:**
@@ -247,7 +298,9 @@ Actualiza participantes del grupo.
   ```
 
 ### POST `/groups/subject-update/:jid?id=session_id`
+
 Actualiza el nombre del grupo.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 - **Body:**
@@ -258,7 +311,9 @@ Actualiza el nombre del grupo.
   ```
 
 ### POST `/groups/description-update/:jid?id=session_id`
+
 Actualiza la descripción del grupo.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 - **Body:**
@@ -269,7 +324,9 @@ Actualiza la descripción del grupo.
   ```
 
 ### POST `/groups/setting-update/:jid?id=session_id`
+
 Actualiza configuración del grupo.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 - **Body:**
@@ -280,17 +337,23 @@ Actualiza configuración del grupo.
   ```
 
 ### POST `/groups/leave/:jid?id=session_id`
+
 Abandona un grupo.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 
 ### GET `/groups/invite-code/:jid?id=session_id`
+
 Obtiene código de invitación del grupo.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 
 ### POST `/groups/accept-invite?id=session_id`
+
 Acepta invitación a grupo.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -300,12 +363,16 @@ Acepta invitación a grupo.
   ```
 
 ### POST `/groups/revoke-code/:jid?id=session_id`
+
 Revoca código de invitación.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 
 ### POST `/groups/profile-picture/:jid?id=session_id`
+
 Actualiza foto de perfil del grupo.
+
 - **Params:** `jid` - ID del grupo
 - **Query:** `id` - ID de la sesión
 - **Body:**
@@ -316,13 +383,17 @@ Actualiza foto de perfil del grupo.
   ```
 
 ### POST `/groups/get-participants?id=session_id`
+
 Obtiene lista de grupos sin participantes.
+
 - **Query:** `id` - ID de la sesión
 
 ## 🔧 Misc - Funciones Misceláneas
 
 ### POST `/misc/update-profile-status?id=session_id`
+
 Actualiza estado del perfil.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -332,7 +403,9 @@ Actualiza estado del perfil.
   ```
 
 ### POST `/misc/update-profile-name?id=session_id`
+
 Actualiza nombre del perfil.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -342,11 +415,15 @@ Actualiza nombre del perfil.
   ```
 
 ### POST `/misc/my-profile?id=session_id`
+
 Obtiene información del perfil propio.
+
 - **Query:** `id` - ID de la sesión
 
 ### POST `/misc/profile-picture?id=session_id`
+
 Obtiene foto de perfil de un usuario.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -357,7 +434,9 @@ Obtiene foto de perfil de un usuario.
   ```
 
 ### POST `/misc/set-profile-picture?id=session_id`
+
 Establece foto de perfil.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -367,7 +446,9 @@ Establece foto de perfil.
   ```
 
 ### POST `/misc/block-and-unblock?id=session_id`
+
 Bloquea o desbloquea un contacto.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -378,7 +459,9 @@ Bloquea o desbloquea un contacto.
   ```
 
 ### POST `/misc/public-story-status?id=session_id`
+
 Comparte estado/historia.
+
 - **Query:** `id` - ID de la sesión
 - **Body:**
   ```json
@@ -391,7 +474,9 @@ Comparte estado/historia.
 ## 🔗 Webhook - Sistema de Webhooks
 
 ### POST `/webhook/create`
+
 Crea webhook para usuario.
+
 - **Body:**
   ```json
   {
@@ -403,21 +488,29 @@ Crea webhook para usuario.
   ```
 
 ### POST `/webhook/:webhookId`
+
 Recibe webhook de usuario específico.
+
 - **Params:** `webhookId` - ID del webhook
 - **Body:** Datos del webhook
 
 ### GET `/webhook/notifications/:userId`
+
 Obtiene notificaciones de usuario.
+
 - **Params:** `userId` - ID del usuario
 - **Query:** `limit`, `offset`
 
 ### PUT `/webhook/notifications/:userId/:notificationId/read`
+
 Marca notificación como leída.
+
 - **Params:** `userId`, `notificationId`
 
 ### PUT `/webhook/configure/:userId`
+
 Configura URL de webhook del cliente.
+
 - **Params:** `userId` - ID del usuario
 - **Body:**
   ```json
@@ -429,24 +522,31 @@ Configura URL de webhook del cliente.
   ```
 
 ### GET `/webhook/stats/:userId`
+
 Obtiene estadísticas de webhook.
+
 - **Params:** `userId` - ID del usuario
 
 ## 🏥 Health - Monitoreo del Sistema
 
 ### GET `/health`
+
 Verifica el estado del servidor.
+
 - **Response:** Estado del sistema
 
 ## 🔐 Auth - Autenticación
 
 ### POST `/api/auth/signin`
+
 Iniciar sesión.
 
 ### POST `/api/auth/signup`
+
 Registrar usuario.
 
 ### POST `/api/users/*`
+
 Operaciones de usuarios.
 
 ## Notas Importantes
@@ -459,4 +559,4 @@ Operaciones de usuarios.
 
 4. **Webhooks:** El sistema incluye un robusto sistema de webhooks para notificaciones en tiempo real.
 
-5. **Base URL:** Todos los endpoints deben ser precedidos por `http://100.42.185.2:8015`.
+5. **Base URL:** Todos los endpoints deben ser precedidos por `https://backend.autosystemprojects.site`.
