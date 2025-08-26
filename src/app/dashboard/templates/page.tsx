@@ -590,54 +590,56 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="space-y-6 lg:space-y-8">
+    <div className="max-w-full overflow-x-hidden p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
       {/* 🎯 HEADER - Super Responsive */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6">
-        <div className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
-        <Bot className="h-8 w-8 lg:h-10 lg:w-10 text-purple-600" />
-        Chatbots y Mensajes
+        <div className="space-y-2 px-2 sm:px-0">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3 flex-wrap">
+        <Bot className="h-8 w-8 lg:h-10 lg:w-10 text-purple-600 flex-shrink-0" />
+        <span className="break-words">Chatbots y Mensajes</span>
         </h1>
-        <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300 max-w-3xl">
+        <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300 max-w-3xl leading-relaxed">
         Crea chatbots inteligentes y gestiona plantillas de mensajes para automatizar
         tus respuestas en WhatsApp. Configura ChatBots con IA para respuestas automáticas.
         </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 px-2 sm:px-0 flex-shrink-0">
           <Button
             onClick={() => setIsCreateDialogOpen(true)}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-11"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-11 w-full sm:w-auto min-w-[140px] text-sm sm:text-base"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Plantilla
+            <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
+            <span className="truncate">Nueva Plantilla</span>
           </Button>
         </div>
       </div>
 
       {/* 🎨 TABS - Mobile optimized */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 px-2 sm:px-0">
           <TabsList className="grid w-full max-w-md grid-cols-2 h-auto p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
             <TabsTrigger
               value="templates"
-              className="flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg"
+              className="flex items-center gap-2 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium rounded-lg"
             >
-              <MessageSquare className="h-4 w-4" />
+              <MessageSquare className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Mensajes</span>
+              <span className="sm:hidden">Msg</span>
             </TabsTrigger>
             <TabsTrigger
               value="bots"
-              className="flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg"
+              className="flex items-center gap-2 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium rounded-lg"
             >
-              <Bot className="h-4 w-4" />
+              <Bot className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">ChatBots</span>
+              <span className="sm:hidden">Bots</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Template Stats - Mobile responsive */}
           {activeTab === "templates" && (
-            <div className="hidden sm:flex gap-4 text-sm">
+            <div className="flex sm:hidden lg:flex gap-2 sm:gap-4 text-xs sm:text-sm justify-center sm:justify-start">
               <div className="text-center">
                 <div className="font-bold text-purple-600">
                   {templates.length}
@@ -675,7 +677,7 @@ export default function TemplatesPage() {
           />
 
           {/* 💻 DESKTOP FILTERS */}
-          <div className="hidden lg:flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border">
+          <div className="hidden lg:flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border mx-2 lg:mx-0">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -690,7 +692,7 @@ export default function TemplatesPage() {
               value={selectedCategory}
               onValueChange={setSelectedCategory}
             >
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-48 min-w-[120px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -706,7 +708,7 @@ export default function TemplatesPage() {
             </Select>
 
             <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 min-w-[100px]">
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>

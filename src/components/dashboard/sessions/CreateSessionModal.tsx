@@ -54,9 +54,15 @@ export function CreateSessionModal({
               value={formData.authType} 
               onValueChange={(value) => onFormDataChange({ authType: value as 'qr' | 'code' })}
             >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="qr">Código QR</TabsTrigger>
-                <TabsTrigger value="code">Código de emparejamiento</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 gap-1">
+                <TabsTrigger value="qr" className="text-xs sm:text-sm px-2 sm:px-3 truncate">
+                  <span className="hidden sm:inline">Código QR</span>
+                  <span className="sm:hidden">QR</span>
+                </TabsTrigger>
+                <TabsTrigger value="code" className="text-xs sm:text-sm px-2 sm:px-3 truncate">
+                  <span className="hidden sm:inline">Código de emparejamiento</span>
+                  <span className="sm:hidden">Código</span>
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

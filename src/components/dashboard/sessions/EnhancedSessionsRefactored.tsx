@@ -142,7 +142,7 @@ export default function EnhancedSessionsComponent() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 w-full">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Header con estadísticas */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="min-w-0 flex-1">
