@@ -80,7 +80,7 @@ class WebSocketSingleton {
       let timeout: NodeJS.Timeout | undefined;
 
       try {
-        this.ws = new WebSocket("ws://backend.autosystemprojects.site/ws");
+        this.ws = new WebSocket("wss://backend.autosystemprojects.site/ws");
 
         timeout = setTimeout(() => {
           reject(new Error("Connection timeout"));

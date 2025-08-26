@@ -679,7 +679,7 @@ export default function WebhookManager() {
 
     try {
       await globalWebSocketManager.connect(
-        "ws://backend.autosystemprojects.site/ws"
+        "wss://backend.autosystemprojects.site/ws"
       );
     } catch (error) {
       console.error("[WS SINGLETON] Error conectando:", error);

@@ -512,7 +512,7 @@ export const useWebhookSocket = (options: UseWebhookSocketOptions) => {
     try {
       console.log("[WEBHOOK SOCKET] 🔌 Iniciando conexión...");
       const websocket = await globalWebSocketManager.connect(
-        "ws://backend.autosystemprojects.site/ws"
+        "wss://backend.autosystemprojects.site/ws"
       );
       // Los handlers se configurarán en el subscriber callback
     } catch (error: any) {
