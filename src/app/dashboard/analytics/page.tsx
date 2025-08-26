@@ -610,9 +610,9 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="min-h-screen w-full space-y-4 sm:space-y-6 lg:space-y-8 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Analytics WhatsApp
@@ -623,18 +623,19 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           {/* Auto-refresh Toggle */}
           <Button
             variant={autoRefresh ? "default" : "outline"}
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className="h-8"
+            className="h-8 w-full sm:w-auto"
           >
             <Activity
               className={`h-4 w-4 mr-2 ${autoRefresh ? "animate-pulse" : ""}`}
             />
-            Auto-refresh
+            <span className="hidden sm:inline">Auto-refresh</span>
+            <span className="sm:hidden">Auto</span>
           </Button>
 
           {/* Time Range Selector */}
@@ -645,38 +646,41 @@ export default function AnalyticsPage() {
                 variant={timeRange === range ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setTimeRange(range)}
-                className="h-8 px-3"
+                className="h-8 px-2 sm:px-3 flex-1 sm:flex-none"
               >
                 {range}
               </Button>
             ))}
           </div>
 
-          <Button variant="outline" onClick={refreshData} disabled={refreshing}>
+          <Button variant="outline" onClick={refreshData} disabled={refreshing} className="w-full sm:w-auto">
             <RefreshCw
               className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
             />
-            Actualizar
+            <span className="hidden sm:inline">Actualizar</span>
+            <span className="sm:hidden">Refresh</span>
           </Button>
 
-          <Button variant="outline" onClick={exportData}>
+          <Button variant="outline" onClick={exportData} className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
-            Exportar
+            <span className="hidden sm:inline">Exportar</span>
+            <span className="sm:hidden">Export</span>
           </Button>
 
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/dashboard/analytics/advanced">
               <BarChart3 className="h-4 w-4 mr-2" />
-              Analytics Avanzados
+              <span className="hidden sm:inline">Analytics Avanzados</span>
+              <span className="sm:hidden">Avanzado</span>
             </Link>
           </Button>
         </div>
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-3 sm:gap-4">
         <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
@@ -692,7 +696,7 @@ export default function AnalyticsPage() {
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
@@ -708,7 +712,7 @@ export default function AnalyticsPage() {
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
@@ -724,7 +728,7 @@ export default function AnalyticsPage() {
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
@@ -740,7 +744,7 @@ export default function AnalyticsPage() {
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
@@ -756,7 +760,7 @@ export default function AnalyticsPage() {
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
@@ -772,7 +776,7 @@ export default function AnalyticsPage() {
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
@@ -789,7 +793,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* Session Status Distribution */}
         <Card>
           <CardHeader>
@@ -894,7 +898,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Sessions and Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* Active Sessions */}
         <Card>
           <CardHeader>
@@ -914,19 +918,19 @@ export default function AnalyticsPage() {
                 {analyticsData.sessions.map((session) => (
                   <div
                     key={session.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg gap-3"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       {getStatusIcon(session.status)}
-                      <div>
-                        <p className="font-medium">{session.id}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{session.id}</p>
                         <p className="text-sm text-muted-foreground">
                           {session.messageCount} mensajes • {session.chatCount}{" "}
                           chats
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-1">
                       <Badge
                         variant={
                           session.status === "authenticated"
@@ -937,10 +941,11 @@ export default function AnalyticsPage() {
                             ? "outline"
                             : "destructive"
                         }
+                        className="text-xs"
                       >
                         {session.status}
                       </Badge>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground">
                         {formatDuration(session.uptime || 0)}
                       </p>
                     </div>
@@ -1036,7 +1041,7 @@ export default function AnalyticsPage() {
                     <AlertTriangle className="h-5 w-5 text-red-600" />
                   )}
                   <span className="font-medium">
-                    {analyticsData.health.status.toUpperCase()}
+                    {analyticsData.health.status?.toUpperCase() || 'DESCONOCIDO'}
                   </span>
                 </div>
               </div>

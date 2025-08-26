@@ -1141,66 +1141,123 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
       {/* Navegación de tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex items-center justify-between">
-          <TabsList className="grid w-full max-w-2xl grid-cols-5">
-            <TabsTrigger value="list" className="flex items-center gap-2">
-              <List className="h-4 w-4" />
-              Lista
-            </TabsTrigger>
-            <TabsTrigger value="create" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              {editingWebhook ? "Editar" : "Crear"}
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notificaciones
-              {(webhookStats?.unreadNotifications || 0) > 0 && (
-                <Badge variant="destructive" className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center">
-                  {webhookStats?.unreadNotifications || 0}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="test" className="flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              Pruebas
-            </TabsTrigger>
-            <TabsTrigger value="cleanup" className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Limpieza
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={refreshData} disabled={refreshing}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-              Actualizar
-            </Button>
-            
-            {/* 🔧 NUEVO: Botón para verificar webhooks fantasma */}
-            <Button 
-              variant={phantomWebhooks.length > 0 ? "destructive" : "outline"} 
-              onClick={checkForPhantomWebhooks}
-              disabled={loading}
+        <div className="space-y-4">
+          {/* 📱 Mobile Tab Selector */}
+          <div className="sm:hidden">
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value)}
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             >
-              {phantomWebhooks.length > 0 ? (
-                <>
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Fantasmas ({phantomWebhooks.length})
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Verificar Fantasmas
-                </>
-              )}
-            </Button>
+              <option value="list">📋 Lista de Webhooks</option>
+              <option value="create">{editingWebhook ? "✏️ Editar" : "➕ Crear"} Webhook</option>
+              <option value="notifications">
+                🔔 Notificaciones {(webhookStats?.unreadNotifications || 0) > 0 ? `(${webhookStats?.unreadNotifications})` : ''}
+              </option>
+              <option value="test">🧪 Pruebas</option>
+              <option value="cleanup">🧹 Limpieza</option>
+            </select>
+          </div>
+
+          {/* 📱 Mobile Actions */}
+          <div className="sm:hidden flex flex-col gap-2">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={refreshData} disabled={refreshing} className="flex-1">
+                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+                Actualizar
+              </Button>
+              
+              {/* 🔧 NUEVO: Botón para verificar webhooks fantasma */}
+              <Button 
+                variant={phantomWebhooks.length > 0 ? "destructive" : "outline"} 
+                onClick={checkForPhantomWebhooks}
+                disabled={loading}
+                className="flex-1"
+              >
+                {phantomWebhooks.length > 0 ? (
+                  <>
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Fantasmas ({phantomWebhooks.length})
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Verificar
+                  </>
+                )}
+              </Button>
+            </div>
             
             {notifications.length > 0 && (
-              <Button variant="outline" onClick={exportNotifications}>
+              <Button variant="outline" onClick={exportNotifications} className="w-full">
                 <Download className="h-4 w-4 mr-2" />
-                Exportar
+                Exportar Notificaciones
               </Button>
             )}
+          </div>
+
+          {/* 💻 Desktop Tabs */}
+          <div className="hidden sm:flex sm:items-center sm:justify-between">
+            <TabsList className="grid w-full max-w-2xl grid-cols-5">
+              <TabsTrigger value="list" className="flex items-center gap-2">
+                <List className="h-4 w-4" />
+                <span className="hidden lg:inline">Lista</span>
+              </TabsTrigger>
+              <TabsTrigger value="create" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden lg:inline">{editingWebhook ? "Editar" : "Crear"}</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                <span className="hidden lg:inline">Notificaciones</span>
+                {(webhookStats?.unreadNotifications || 0) > 0 && (
+                  <Badge variant="destructive" className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center">
+                    {webhookStats?.unreadNotifications || 0}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="test" className="flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                <span className="hidden lg:inline">Pruebas</span>
+              </TabsTrigger>
+              <TabsTrigger value="cleanup" className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" />
+                <span className="hidden lg:inline">Limpieza</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={refreshData} disabled={refreshing}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+                Actualizar
+              </Button>
+              
+              {/* 🔧 NUEVO: Botón para verificar webhooks fantasma */}
+              <Button 
+                variant={phantomWebhooks.length > 0 ? "destructive" : "outline"} 
+                onClick={checkForPhantomWebhooks}
+                disabled={loading}
+              >
+                {phantomWebhooks.length > 0 ? (
+                  <>
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Fantasmas ({phantomWebhooks.length})
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Verificar Fantasmas
+                  </>
+                )}
+              </Button>
+              
+              {notifications.length > 0 && (
+                <Button variant="outline" onClick={exportNotifications}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

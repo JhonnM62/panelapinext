@@ -305,7 +305,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="h-screen flex bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
       <SidebarComponent isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
       
       {/* 📱 MAIN CONTENT AREA - SUPER RESPONSIVE */}
@@ -377,14 +377,10 @@ export default function DashboardLayout({
         {/* 🎨 MAIN CONTENT - Perfect responsive */}
         <main 
           className={cn(
-            "flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900",
-            "scrollbar-hide webkit-overflow-scrolling-touch",
-            "p-4 sm:p-6 lg:p-8"
+            "flex-1 bg-gray-50 dark:bg-gray-900",
+            "p-4 sm:p-6 lg:p-8",
+            "min-h-0" // Permite que el contenido se ajuste naturalmente
           )}
-          style={{ 
-            height: user.membershipExpired ? 'calc(100vh - 10rem)' : 'calc(100vh - 6rem)',
-            overscrollBehavior: 'contain'
-          }}
         >
           <div className="max-w-7xl mx-auto">
             {children}

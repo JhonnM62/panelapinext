@@ -142,27 +142,29 @@ export default function EnhancedSessionsComponent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full">
       {/* Header con estadísticas */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Sesiones de WhatsApp</h2>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Sesiones de WhatsApp</h2>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Gestiona tus sesiones de WhatsApp y monitores su estado
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Button
             onClick={() => setShowCreateForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Nueva Sesión
+            <span className="sm:hidden">Nueva</span>
+            <span className="hidden sm:inline">Nueva Sesión</span>
           </Button>
           <Button
             onClick={() => loadSessions(true)}
             variant="outline"
             disabled={loading}
+            className="w-full sm:w-auto"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
@@ -173,7 +175,7 @@ export default function EnhancedSessionsComponent() {
       {/* Métricas del Dashboard */}
       <div className="space-y-6">
         {/* Cards de Métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard
             title="Total Sesiones"
             value={dashboardStats.totalSessions}
@@ -214,16 +216,16 @@ export default function EnhancedSessionsComponent() {
 
       {/* Controles de gestión de sesiones */}
       {sessions.length > 0 && (
-        <div className="flex flex-wrap gap-2 justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="text-sm">
+        <div className="flex flex-col lg:flex-row gap-4 lg:justify-between lg:items-center">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <Badge variant="secondary" className="text-xs sm:text-sm">
               {sessions.length} sesiones
             </Badge>
-            <Badge variant="default" className="text-sm bg-green-100 text-green-800">
+            <Badge variant="default" className="text-xs sm:text-sm bg-green-100 text-green-800">
               {authenticatedSessions.length} autenticadas
             </Badge>
             {bulkDeleting && (
-              <Badge variant="outline" className="text-sm">
+              <Badge variant="outline" className="text-xs sm:text-sm">
                 <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
                 Procesando...
               </Badge>
@@ -258,9 +260,11 @@ export default function EnhancedSessionsComponent() {
               variant="outline"
               size="sm"
               disabled={bulkDeleting || inactiveSessions.length === 0}
+              className="text-xs sm:text-sm"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Eliminar Inactivas ({inactiveSessions.length})
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Eliminar Inactivas ({inactiveSessions.length})</span>
+              <span className="sm:hidden">Inactivas ({inactiveSessions.length})</span>
             </Button>
             
             <Button
@@ -268,9 +272,11 @@ export default function EnhancedSessionsComponent() {
               variant="outline"
               size="sm"
               disabled={bulkDeleting || authenticatedSessions.length === 0}
+              className="text-xs sm:text-sm"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Eliminar Autenticadas ({authenticatedSessions.length})
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Eliminar Autenticadas ({authenticatedSessions.length})</span>
+              <span className="sm:hidden">Autenticadas ({authenticatedSessions.length})</span>
             </Button>
           </div>
         </div>
@@ -301,7 +307,7 @@ export default function EnhancedSessionsComponent() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {sessions.map((session) => (
               <SessionCard
                 key={session.id}
