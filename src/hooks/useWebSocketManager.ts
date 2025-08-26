@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface UseWebSocketManagerProps {
   enabled?: boolean;
@@ -48,17 +48,17 @@ class WebSocketSingleton {
     // Rate limiting
     const now = Date.now();
     if (now - this.lastConnectionTime < 3000) {
-      console.log('[WS Singleton] Rate limited');
+      console.log("[WS Singleton] Rate limited");
       return this.isConnected();
     }
 
     if (this.isConnecting) {
-      console.log('[WS Singleton] Connection already in progress');
+      console.log("[WS Singleton] Connection already in progress");
       return false;
     }
 
     if (this.isConnected()) {
-      console.log('[WS Singleton] Already connected');
+      console.log("[WS Singleton] Already connected");
       return true;
     }
 
@@ -69,7 +69,7 @@ class WebSocketSingleton {
       await this.createConnection(userId);
       return true;
     } catch (error) {
-      console.error('[WS Singleton] Connection failed:', error);
+      console.error("[WS Singleton] Connection failed:", error);
       this.isConnecting = false;
       return false;
     }
@@ -78,63 +78,74 @@ class WebSocketSingleton {
   private async createConnection(userId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       let timeout: NodeJS.Timeout | undefined;
-      
+
       try {
-        this.ws = new WebSocket('ws://100.42.185.2:8015/ws');
+        this.ws = new WebSocket("ws://backend.autosystemprojects.site/ws");
 
         timeout = setTimeout(() => {
-          reject(new Error('Connection timeout'));
+          reject(new Error("Connection timeout"));
           this.cleanup();
         }, 10000);
 
         this.ws.onopen = () => {
           if (timeout) clearTimeout(timeout);
           this.isConnecting = false;
-          console.log('[WS Singleton] ✅ Connected');
-          
+          console.log("[WS Singleton] ✅ Connected");
+
           // Authenticate
           this.send({
-            type: 'authenticate',
-            userId: userId
+            type: "authenticate",
+            userId: userId,
           });
 
-          this.connectionCallbacks.forEach(cb => {
-            try { cb(); } catch (e) { console.warn('Connection callback error:', e); }
+          this.connectionCallbacks.forEach((cb) => {
+            try {
+              cb();
+            } catch (e) {
+              console.warn("Connection callback error:", e);
+            }
           });
-          
+
           resolve();
         };
 
         this.ws.onmessage = (event) => {
           try {
             const message = JSON.parse(event.data);
-            this.subscribers.forEach(cb => {
-              try { cb(message); } catch (e) { console.warn('Message callback error:', e); }
+            this.subscribers.forEach((cb) => {
+              try {
+                cb(message);
+              } catch (e) {
+                console.warn("Message callback error:", e);
+              }
             });
           } catch (e) {
-            console.warn('[WS Singleton] Invalid message:', e);
+            console.warn("[WS Singleton] Invalid message:", e);
           }
         };
 
         this.ws.onclose = () => {
           if (timeout) clearTimeout(timeout);
-          console.log('[WS Singleton] 🔴 Disconnected');
+          console.log("[WS Singleton] 🔴 Disconnected");
           this.cleanup();
-          this.disconnectionCallbacks.forEach(cb => {
-            try { cb(); } catch (e) { console.warn('Disconnection callback error:', e); }
+          this.disconnectionCallbacks.forEach((cb) => {
+            try {
+              cb();
+            } catch (e) {
+              console.warn("Disconnection callback error:", e);
+            }
           });
-          
+
           // Auto-reconnect after 5 seconds
           this.scheduleReconnect(userId);
         };
 
         this.ws.onerror = (error) => {
           if (timeout) clearTimeout(timeout);
-          console.error('[WS Singleton] ❌ Error:', error);
+          console.error("[WS Singleton] ❌ Error:", error);
           this.cleanup();
           reject(error);
         };
-
       } catch (error) {
         if (timeout) clearTimeout(timeout);
         this.isConnecting = false;
@@ -145,11 +156,11 @@ class WebSocketSingleton {
 
   private scheduleReconnect(userId: string): void {
     if (this.reconnectTimeout) return;
-    
+
     this.reconnectTimeout = setTimeout(() => {
       this.reconnectTimeout = null;
       if (!this.isConnected()) {
-        console.log('[WS Singleton] Attempting reconnection...');
+        console.log("[WS Singleton] Attempting reconnection...");
         this.connect(userId);
       }
     }, 5000);
@@ -196,28 +207,33 @@ export function useWebSocketManager({
   onConnect,
   onDisconnect,
   onMessage,
-  onError
+  onError,
 }: UseWebSocketManagerProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
   const [lastUpsertMessage, setLastUpsertMessage] = useState<any>(null); // 🆕 Para AutoProcessor
   const wsManager = useRef(WebSocketSingleton.getInstance());
 
-  const handleMessage = useCallback((message: any) => {
-    setLastMessage(message);
-    
-    // 🆕 Persistir específicamente MESSAGES_UPSERT para AutoProcessor
-    if (message.type === 'MESSAGES_UPSERT') {
-      setLastUpsertMessage({
-        ...message,
-        timestamp: Date.now(),
-        processed: false
-      });
-      console.log('[WS Manager] 📨 MESSAGES_UPSERT capturado para AutoProcessor');
-    }
-    
-    onMessage?.(message);
-  }, [onMessage]);
+  const handleMessage = useCallback(
+    (message: any) => {
+      setLastMessage(message);
+
+      // 🆕 Persistir específicamente MESSAGES_UPSERT para AutoProcessor
+      if (message.type === "MESSAGES_UPSERT") {
+        setLastUpsertMessage({
+          ...message,
+          timestamp: Date.now(),
+          processed: false,
+        });
+        console.log(
+          "[WS Manager] 📨 MESSAGES_UPSERT capturado para AutoProcessor"
+        );
+      }
+
+      onMessage?.(message);
+    },
+    [onMessage]
+  );
 
   const handleConnect = useCallback(() => {
     setIsConnected(true);
@@ -235,7 +251,7 @@ export function useWebSocketManager({
     }
 
     const manager = wsManager.current;
-    
+
     // Subscribe to events
     const unsubscribeMessage = manager.subscribe(handleMessage);
     const unsubscribeConnect = manager.onConnect(handleConnect);
@@ -246,8 +262,8 @@ export function useWebSocketManager({
 
     // Connect if not already connected
     if (!manager.isConnected()) {
-      manager.connect(userId).catch(error => {
-        console.error('[useWebSocketManager] Connection error:', error);
+      manager.connect(userId).catch((error) => {
+        console.error("[useWebSocketManager] Connection error:", error);
         onError?.(error);
       });
     }
@@ -257,7 +273,14 @@ export function useWebSocketManager({
       unsubscribeConnect();
       unsubscribeDisconnect();
     };
-  }, [enabled, userId, handleMessage, handleConnect, handleDisconnect, onError]);
+  }, [
+    enabled,
+    userId,
+    handleMessage,
+    handleConnect,
+    handleDisconnect,
+    onError,
+  ]);
 
   const sendMessage = useCallback((message: any) => {
     return wsManager.current.send(message);
@@ -267,8 +290,8 @@ export function useWebSocketManager({
     if (userId) {
       wsManager.current.disconnect();
       setTimeout(() => {
-        wsManager.current.connect(userId).catch(error => {
-          console.error('[useWebSocketManager] Reconnection error:', error);
+        wsManager.current.connect(userId).catch((error) => {
+          console.error("[useWebSocketManager] Reconnection error:", error);
           onError?.(error);
         });
       }, 1000);
@@ -276,7 +299,9 @@ export function useWebSocketManager({
   }, [userId, onError]);
 
   const markUpsertAsProcessed = useCallback(() => {
-    setLastUpsertMessage((prev: any) => prev ? { ...prev, processed: true } : null);
+    setLastUpsertMessage((prev: any) =>
+      prev ? { ...prev, processed: true } : null
+    );
   }, []);
 
   return {
@@ -285,6 +310,6 @@ export function useWebSocketManager({
     lastUpsertMessage, // 🆕 Para AutoProcessor
     markUpsertAsProcessed, // 🆕 Marcar como procesado
     sendMessage,
-    forceReconnect
+    forceReconnect,
   };
 }
