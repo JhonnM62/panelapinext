@@ -1035,13 +1035,13 @@ export default function AnalyticsPage() {
                   Estado
                 </p>
                 <div className="flex items-center gap-2">
-                  {analyticsData.health.status === "ok" ? (
+                  {analyticsData.health?.status === "ok" ? (
                     <CheckCircle className="h-5 w-5 text-green-600" />
                   ) : (
                     <AlertTriangle className="h-5 w-5 text-red-600" />
                   )}
                   <span className="font-medium">
-                    {analyticsData.health.status?.toUpperCase() || 'DESCONOCIDO'}
+                    {analyticsData.health?.status?.toUpperCase() || 'DESCONOCIDO'}
                   </span>
                 </div>
               </div>
@@ -1051,8 +1051,8 @@ export default function AnalyticsPage() {
                   Memoria
                 </p>
                 <p className="text-lg font-semibold">
-                  {analyticsData.health.memory.used} /{" "}
-                  {analyticsData.health.memory.total}
+                  {analyticsData.health?.memory?.used || 'N/A'} /{" "}
+                  {analyticsData.health?.memory?.total || 'N/A'}
                 </p>
               </div>
 
@@ -1061,7 +1061,7 @@ export default function AnalyticsPage() {
                   Tiempo Activo
                 </p>
                 <p className="text-lg font-semibold">
-                  {formatDuration(analyticsData.health.uptime)}
+                  {formatDuration(analyticsData.health?.uptime || 0)}
                 </p>
               </div>
 
@@ -1070,7 +1070,7 @@ export default function AnalyticsPage() {
                   Última Actualización
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(analyticsData.health.timestamp).toLocaleString()}
+                  {analyticsData.health?.timestamp ? new Date(analyticsData.health.timestamp).toLocaleString() : 'N/A'}
                 </p>
               </div>
             </div>
