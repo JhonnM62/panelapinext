@@ -9,23 +9,23 @@ interface StatusIndicatorProps {
 export function StatusIndicator({ session }: StatusIndicatorProps) {
   const getStatusIcon = (status: string, authenticated: boolean = false) => {
     if (authenticated) {
-      return <CheckCircle className="h-4 w-4 text-green-600" />
+      return <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
     }
     
     switch (status) {
       case 'authenticated':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
       case 'connected':
-        return <Wifi className="h-4 w-4 text-blue-600" />
+        return <Wifi className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 flex-shrink-0" />
       case 'connecting':
-        return <Activity className="h-4 w-4 text-yellow-600 animate-pulse" />
+        return <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600 animate-pulse flex-shrink-0" />
       case 'disconnected':
       case 'disconnecting':
-        return <WifiOff className="h-4 w-4 text-red-600" />
+        return <WifiOff className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 flex-shrink-0" />
       case 'error':
-        return <XCircle className="h-4 w-4 text-red-600" />
+        return <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 flex-shrink-0" />
       default:
-        return <AlertCircle className="h-4 w-4 text-gray-600" />
+        return <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600 flex-shrink-0" />
     }
   }
 
@@ -34,10 +34,10 @@ export function StatusIndicator({ session }: StatusIndicatorProps) {
   const text = getStatusText(session.status, session.authenticated)
   
   return (
-    <span className="inline-flex items-center gap-2">
-      <span className={`w-2 h-2 rounded-full ${color}`}></span>
+    <div className="inline-flex items-center gap-1 sm:gap-2 flex-wrap">
+      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${color}`}></span>
       {icon}
-      <span className="text-sm font-medium">{text}</span>
-    </span>
+      <span className="text-xs sm:text-sm font-medium truncate">{text}</span>
+    </div>
   )
 }

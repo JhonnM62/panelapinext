@@ -41,7 +41,7 @@ export function ConfirmationModal({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {icon || (variant === 'destructive' ? <AlertTriangle className="h-5 w-5 text-red-500" /> : null)}
+            {icon || (variant === 'destructive' ? <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 flex-shrink-0" /> : null)}
             {title}
           </DialogTitle>
           <DialogDescription>
@@ -65,12 +65,12 @@ export function ConfirmationModal({
           >
             {isLoading ? (
               <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin flex-shrink-0" />
                 Procesando...
               </>
             ) : (
               <>
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
                 {confirmText}
               </>
             )}

@@ -18,7 +18,7 @@ export function DebuggerToggle() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
-          <Bug className="h-4 w-4" />
+          <Bug className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
           Debug
         </Button>
       </DialogTrigger>

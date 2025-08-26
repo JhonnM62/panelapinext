@@ -56,19 +56,19 @@ export function SessionCard({
   }
   return (
     <Card className="relative">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <CardHeader className="pb-2 sm:pb-3">
+        <div className="flex items-start sm:items-center justify-between gap-2">
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
             <input
               type="checkbox"
               checked={isSelected}
               onChange={() => onSelect(session.id)}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-gray-300 mt-1 sm:mt-0 flex-shrink-0"
             />
-            <div>
-              <CardTitle className="text-lg">{session.id}</CardTitle>
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-base sm:text-lg truncate">{session.id}</CardTitle>
               {session.phoneNumber && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
                   {session.phoneNumber}
                 </p>
               )}
@@ -82,28 +82,29 @@ export function SessionCard({
       </CardHeader>
       
       <CardContent className="pt-0">
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {/* Información de la sesión */}
           <div className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Creada:</span>
-              <span>{session.createdAt ? new Date(session.createdAt).toLocaleDateString() : 'N/A'}</span>
+            <div className="flex justify-between text-xs sm:text-sm gap-2">
+              <span className="text-muted-foreground flex-shrink-0">Creada:</span>
+              <span className="text-right truncate">{session.createdAt ? new Date(session.createdAt).toLocaleDateString() : 'N/A'}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Última actividad:</span>
-              <span>{session.lastActivity ? new Date(session.lastActivity).toLocaleDateString() : 'N/A'}</span>
+            <div className="flex justify-between text-xs sm:text-sm gap-2">
+              <span className="text-muted-foreground flex-shrink-0">Última actividad:</span>
+              <span className="text-right truncate">{session.lastActivity ? new Date(session.lastActivity).toLocaleDateString() : 'N/A'}</span>
             </div>
           </div>
           
           {/* Acciones */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-end">
             <Button
               onClick={() => onRefresh(session.id)}
               variant="outline"
               size="sm"
               disabled={isRefreshing}
+              className="flex-shrink-0"
             >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             </Button>
             
             <Button
@@ -111,8 +112,9 @@ export function SessionCard({
               variant="destructive"
               size="sm"
               disabled={isDeleting}
+              className="flex-shrink-0"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>

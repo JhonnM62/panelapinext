@@ -101,9 +101,9 @@ export function CreateSessionModal({
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isCreating ? (
-              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2 flex-shrink-0" />
             ) : (
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
             )}
             Crear Sesión
           </Button>

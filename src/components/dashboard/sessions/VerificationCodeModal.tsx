@@ -32,7 +32,7 @@ export function VerificationCodeModal({
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
+            <Key className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
             Código de Verificación
           </CardTitle>
           <CardDescription>
@@ -43,7 +43,7 @@ export function VerificationCodeModal({
           <div className="text-center">
             {isPolling ? (
               <div className="flex flex-col items-center justify-center p-8">
-                <RefreshCw className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+                <RefreshCw className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-blue-500 mb-4 flex-shrink-0" />
                 <p className="text-muted-foreground">Generando código...</p>
               </div>
             ) : (
@@ -56,7 +56,7 @@ export function VerificationCodeModal({
                   variant="outline"
                   className="w-full mb-4"
                 >
-                  <Copy className="h-4 w-4 mr-2" />
+                  <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
                   {verificationData.copied ? 'Copiado!' : 'Copiar código'}
                 </Button>
               </>
@@ -106,9 +106,9 @@ export function VerificationCodeModal({
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {verificationData.requesting ? (
-                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2 flex-shrink-0" />
               ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
               )}
               Nuevo Código
             </Button>

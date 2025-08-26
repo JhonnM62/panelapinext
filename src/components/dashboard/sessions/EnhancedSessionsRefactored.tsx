@@ -156,7 +156,7 @@ export default function EnhancedSessionsComponent() {
             onClick={() => setShowCreateForm(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
             <span className="sm:hidden">Nueva</span>
             <span className="hidden sm:inline">Nueva Sesión</span>
           </Button>
@@ -166,7 +166,7 @@ export default function EnhancedSessionsComponent() {
             disabled={loading}
             className="w-full sm:w-auto"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
         </div>
@@ -181,7 +181,7 @@ export default function EnhancedSessionsComponent() {
             value={dashboardStats.totalSessions}
             change={12.3}
             changeLabel="vs semana anterior"
-            icon={<Smartphone className="h-8 w-8" />}
+            icon={<Smartphone className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />}
             trend="up"
           />
           <MetricCard
@@ -189,7 +189,7 @@ export default function EnhancedSessionsComponent() {
             value={dashboardStats.connectedSessions}
             change={5.7}
             changeLabel="vs semana anterior"
-            icon={<Wifi className="h-8 w-8" />}
+            icon={<Wifi className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />}
             trend="up"
           />
           <MetricCard
@@ -197,7 +197,7 @@ export default function EnhancedSessionsComponent() {
             value={dashboardStats.authenticatedSessions}
             change={-2.1}
             changeLabel="vs semana anterior"
-            icon={<CheckCircle className="h-8 w-8" />}
+            icon={<CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />}
             trend="down"
           />
           <MetricCard
@@ -205,7 +205,7 @@ export default function EnhancedSessionsComponent() {
             value={loadingAnalytics ? '...' : dashboardStats.totalMessages.toLocaleString()}
             change={18.4}
             changeLabel="vs ayer"
-            icon={<MessageSquare className="h-8 w-8" />}
+            icon={<MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0" />}
             trend="up"
           />
         </div>
@@ -226,7 +226,7 @@ export default function EnhancedSessionsComponent() {
             </Badge>
             {bulkDeleting && (
               <Badge variant="outline" className="text-xs sm:text-sm">
-                <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                <RefreshCw className="h-3 w-3 mr-1 animate-spin flex-shrink-0" />
                 Procesando...
               </Badge>
             )}
@@ -249,7 +249,7 @@ export default function EnhancedSessionsComponent() {
                 variant="destructive"
                 size="sm"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
                 Eliminar Seleccionadas ({selectedSessions.length})
               </Button>
             )}
@@ -262,7 +262,7 @@ export default function EnhancedSessionsComponent() {
               disabled={bulkDeleting || inactiveSessions.length === 0}
               className="text-xs sm:text-sm"
             >
-              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
               <span className="hidden sm:inline">Eliminar Inactivas ({inactiveSessions.length})</span>
               <span className="sm:hidden">Inactivas ({inactiveSessions.length})</span>
             </Button>
@@ -274,7 +274,7 @@ export default function EnhancedSessionsComponent() {
               disabled={bulkDeleting || authenticatedSessions.length === 0}
               className="text-xs sm:text-sm"
             >
-              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
               <span className="hidden sm:inline">Eliminar Autenticadas ({authenticatedSessions.length})</span>
               <span className="sm:hidden">Autenticadas ({authenticatedSessions.length})</span>
             </Button>
@@ -286,13 +286,13 @@ export default function EnhancedSessionsComponent() {
       <div className="grid gap-4">
         {loading ? (
           <div className="flex items-center justify-center p-8">
-            <RefreshCw className="h-8 w-8 animate-spin" />
+            <RefreshCw className="h-6 w-6 sm:h-8 sm:w-8 animate-spin flex-shrink-0" />
             <span className="ml-2">Cargando sesiones...</span>
           </div>
         ) : sessions.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center p-8">
-              <MessageSquare className="h-16 w-16 text-gray-400 mb-4" />
+              <MessageSquare className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mb-4 flex-shrink-0" />
               <h3 className="text-lg font-semibold mb-2">No hay sesiones</h3>
               <p className="text-muted-foreground text-center mb-4">
                 Crea tu primera sesión de WhatsApp para comenzar
@@ -301,7 +301,7 @@ export default function EnhancedSessionsComponent() {
                 onClick={() => setShowCreateForm(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
                 Nueva Sesión
               </Button>
             </CardContent>

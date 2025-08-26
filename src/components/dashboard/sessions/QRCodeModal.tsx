@@ -30,7 +30,7 @@ export function QRCodeModal({
       <Card className="w-full max-w-md h-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
+            <Camera className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
             Código QR de WhatsApp
           </CardTitle>
           <CardDescription>
@@ -41,7 +41,7 @@ export function QRCodeModal({
           <div className="text-center max-h-[400px] overflow-hidden">
             {qrData.qrCode === 'polling' ? (
               <div className="flex flex-col items-center justify-center p-8">
-                <RefreshCw className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+                <RefreshCw className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-blue-500 mb-4 flex-shrink-0" />
                 <p className="text-muted-foreground">Generando código QR...</p>
               </div>
             ) : (
@@ -86,9 +86,9 @@ export function QRCodeModal({
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isPollingActive ? (
-              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2 flex-shrink-0" />
             ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
             )}
             Regenerar QR
           </Button>

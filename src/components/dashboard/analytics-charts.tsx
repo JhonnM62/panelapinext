@@ -229,27 +229,29 @@ export function MetricCard({
 
   return (
     <Card className={`hover:shadow-lg transition-shadow ${className}`}>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold">{value}</p>
+      <CardContent className="p-3 sm:p-4 lg:p-6">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
+          <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{title}</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{value}</p>
             {change !== undefined && (
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 flex-wrap">
                 {getTrendIcon()}
-                <span className={`text-sm font-medium ${getTrendColor()}`}>
+                <span className={`text-xs sm:text-sm font-medium ${getTrendColor()}`}>
                   {change > 0 ? '+' : ''}{change}%
                 </span>
                 {changeLabel && (
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">
                     {changeLabel}
                   </span>
                 )}
               </div>
             )}
           </div>
-          <div className="text-primary">
-            {icon}
+          <div className="text-primary flex-shrink-0 flex items-center justify-center">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 flex items-center justify-center">
+              {icon}
+            </div>
           </div>
         </div>
       </CardContent>
