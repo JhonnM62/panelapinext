@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare } from "@/components/ui/icons";
+import { Menu, X } from "lucide-react";
 
 // Iconos SVG simples inline
 const Smartphone = ({ className }: { className?: string }) => (
@@ -92,6 +93,7 @@ const Sparkles = ({ className }: { className?: string }) => (
 
 export default function HomePage() {
   const [activeFeature, setActiveFeature] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   const features = [
@@ -155,6 +157,7 @@ export default function HomePage() {
       <nav className="relative z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
+            {/* Logo */}
             <div className="flex items-center space-x-2">
               <div className="flex items-center space-x-2 text-primary">
                 <Smartphone className="h-8 w-8" />
@@ -163,7 +166,9 @@ export default function HomePage() {
                 </span>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
               <Link
                 href="/pricing"
                 className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors"
@@ -179,7 +184,48 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </Button>
+            </div>
           </div>
+
+          {/* Mobile Navigation Menu */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden mt-4 pb-4 border-t border-gray-200/50 dark:border-gray-700/50">
+              <div className="flex flex-col space-y-3 pt-4">
+                <Link
+                  href="/pricing"
+                  className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors py-2 px-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Precios
+                </Link>
+                <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    Iniciar Sesión
+                  </Button>
+                </Link>
+                <Link href="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    Comenzar Gratis
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
