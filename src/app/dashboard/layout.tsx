@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Menu, Home, MessageSquare, Settings, User, BarChart3, Webhook, LogOut, Bell, CreditCard, Users, Zap, AlertTriangle, Smartphone, TrendingUp, Code, Layers } from '@/components/ui/icons'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useAuthStore } from '@/store/auth'
+import { useSessionPersistence } from '@/hooks/useSessionPersistence'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Card, CardContent } from '@/components/ui/card'
@@ -222,11 +223,25 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { user } = useAuthStore()
+  const { user, logout } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+
+  // Configurar persistencia de sesión con callbacks personalizados
+  useSessionPersistence({
+    inactivityTimeoutHours: 12,
+    enableHardRefreshDetection: true,
+    onSessionExpired: () => {
+      console.log('🔒 [Dashboard] Sesión expirada por inactividad')
+      // El logout ya se maneja en el hook
+    },
+    onHardRefreshDetected: () => {
+      console.log('🔄 [Dashboard] Recarga dura detectada')
+      // El logout ya se maneja en el hook
+    }
+  })
 
   useEffect(() => {
     const checkAuth = async () => {

@@ -13,7 +13,7 @@ interface AuthState {
   // Actions
   login: (credentials: LoginRequest) => Promise<void>
   register: (data: RegisterRequest) => Promise<void>
-  logout: () => void
+  logout: (reason?: 'manual' | 'inactivity' | 'hard_refresh' | 'expired') => void
   checkAuth: () => void
   clearError: () => void
   renewMembership: (tipoplan: string) => Promise<void>
@@ -240,11 +240,18 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      logout: () => {
+      logout: (reason?: 'manual' | 'inactivity' | 'hard_refresh' | 'expired') => {
+        const logoutReason = reason || 'manual'
+        console.log(`🔧 [Auth] Logout iniciado - Razón: ${logoutReason}`)
+        
         // Limpiar completamente el localStorage de datos de autenticación
         localStorage.removeItem('token')
         localStorage.removeItem('baileys_token')
         localStorage.removeItem('auth-storage')
+        
+        // Limpiar datos de sesión específicos
+        localStorage.removeItem('session_last_activity')
+        localStorage.removeItem('session_id')
         
         // Limpiar cualquier otro dato relacionado con sesiones
         Object.keys(localStorage).forEach(key => {
@@ -253,8 +260,13 @@ export const useAuthStore = create<AuthState>()(
           }
         })
         
+        // Limpiar sessionStorage para forzar recarga completa
+        if (reason === 'hard_refresh') {
+          sessionStorage.clear()
+        }
+        
         set({ user: null, token: null, error: null })
-        console.log('🔧 [Auth] Logout: localStorage completamente limpiado')
+        console.log(`🔧 [Auth] Logout completado - Razón: ${logoutReason}`)
       },
 
       checkAuth: () => {
