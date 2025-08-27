@@ -590,9 +590,9 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="max-w-full overflow-x-hidden p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
+    <div className="max-w-full overflow-x-hidden pt-6 pb-4 px-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
       {/* 🎯 HEADER - Super Responsive */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6 mt-2 sm:mt-0">
         <div className="space-y-2 px-2 sm:px-0">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3 flex-wrap">
         <Bot className="h-8 w-8 lg:h-10 lg:w-10 text-purple-600 flex-shrink-0" />
