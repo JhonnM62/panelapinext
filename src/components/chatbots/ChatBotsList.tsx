@@ -381,23 +381,24 @@ export default function ChatBotsList() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header con botón de crear */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Mis ChatBots IA</h2>
-          <p className="text-muted-foreground">Gestiona tus asistentes virtuales con inteligencia artificial</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-xl sm:text-2xl font-bold">Mis ChatBots IA</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">Gestiona tus asistentes virtuales con inteligencia artificial</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={loadBots}
+            className="flex-1 sm:flex-none"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Button onClick={() => setIsCreateDialogOpen(true)} className="flex-1 sm:flex-none">
             <Plus className="h-4 w-4 mr-2" />
             Crear ChatBot
           </Button>
@@ -405,100 +406,102 @@ export default function ChatBotsList() {
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total ChatBots</p>
-                <p className="text-2xl font-bold">{Array.isArray(bots) ? bots.length : 0}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total ChatBots</p>
+                <p className="text-lg sm:text-2xl font-bold">{Array.isArray(bots) ? bots.length : 0}</p>
               </div>
-              <Bot className="h-8 w-8 text-blue-600" />
+              <Bot className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Activos</p>
-                <p className="text-2xl font-bold">{Array.isArray(bots) ? bots.filter(b => b.configIA?.activo === true).length : 0}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Activos</p>
+                <p className="text-lg sm:text-2xl font-bold">{Array.isArray(bots) ? bots.filter(b => b.configIA?.activo === true).length : 0}</p>
               </div>
-              <PlayCircle className="h-8 w-8 text-green-600" />
+              <PlayCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Mensajes Enviados</p>
-                <p className="text-2xl font-bold">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Mensajes Enviados</p>
+                <p className="text-lg sm:text-2xl font-bold">
                   {Array.isArray(bots) ? bots.reduce((sum, bot) => sum + (bot.estadisticas?.mensajesEnviados || 0), 0) : 0}
                 </p>
               </div>
-              <Zap className="h-8 w-8 text-purple-600" />
+              <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
+        <Card className="w-full">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Conversaciones</p>
-                <p className="text-2xl font-bold">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Conversaciones</p>
+                <p className="text-lg sm:text-2xl font-bold">
                   {Array.isArray(bots) ? bots.reduce((sum, bot) => sum + (bot.estadisticas?.conversacionesIniciadas || 0), 0) : 0}
                 </p>
               </div>
-              <Brain className="h-8 w-8 text-orange-600" />
+              <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Búsqueda */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Buscar ChatBots</CardTitle>
+      <Card className="w-full">
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-lg sm:text-2xl">Buscar ChatBots</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por nombre, descripción o sesión..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 w-full"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Lista de ChatBots */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
         {Array.isArray(filteredBots) && filteredBots.map((bot) => (
-          <Card key={bot.id || bot._id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-lg flex items-center gap-2">
+          <Card key={bot.id || bot._id} className="hover:shadow-lg transition-shadow w-full">
+            <CardHeader className="pb-3 sm:pb-6">
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1 flex-1 min-w-0">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     {getStatusIcon(bot)}
-                    {bot.nombreBot}
+                    <span className="truncate">{bot.nombreBot}</span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm">
                     {bot.descripcion || 'Sin descripción'}
                   </CardDescription>
                 </div>
-                {getStatusBadge(bot)}
+                <div className="flex-shrink-0">
+                  {getStatusBadge(bot)}
+                </div>
               </div>
             </CardHeader>
             
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+            <CardContent className="pt-0">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Sesión WhatsApp</p>
                     <p className="font-medium truncate">{bot.sesionId || 'Sin sesión'}</p>

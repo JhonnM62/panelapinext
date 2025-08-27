@@ -590,10 +590,10 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="max-w-full overflow-x-hidden pt-6 pb-4 px-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
+    <div className="max-w-full overflow-x-hidden pt-6 pb-4 px-2 sm:px-4 lg:px-6 xl:px-8 space-y-6 lg:space-y-8">
       {/* 🎯 HEADER - Super Responsive */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6 mt-2 sm:mt-0">
-        <div className="space-y-2 px-2 sm:px-0">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6 mt-2 sm:mt-0 w-full">
+        <div className="space-y-2 px-1 sm:px-0 flex-1 min-w-0">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3 flex-wrap">
         <Bot className="h-8 w-8 lg:h-10 lg:w-10 text-purple-600 flex-shrink-0" />
         <span className="break-words">Chatbots y Mensajes</span>
@@ -604,13 +604,13 @@ export default function TemplatesPage() {
         </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 px-2 sm:px-0 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row gap-3 px-1 sm:px-0 flex-shrink-0 w-full sm:w-auto">
           <Button
             onClick={() => setIsCreateDialogOpen(true)}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-11 w-full sm:w-auto min-w-[140px] text-sm sm:text-base"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 w-full sm:w-auto min-w-[160px] text-sm sm:text-base font-medium px-4 py-2 flex items-center justify-center gap-2"
           >
-            <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
-            <span className="truncate">Nueva Plantilla</span>
+            <Plus className="h-4 w-4 flex-shrink-0" />
+            <span className="whitespace-nowrap">Nueva Plantilla</span>
           </Button>
         </div>
       </div>
