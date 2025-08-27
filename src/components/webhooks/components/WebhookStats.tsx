@@ -40,9 +40,16 @@ export default function WebhookStatsCards({
   isConnected
 }: WebhookStatsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div 
+      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 w-full" 
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        width: '100%'
+      }}
+    >
       {/* Total Notificaciones */}
-      <Card>
+      <Card className="w-full">
         <CardContent className="flex items-center p-4">
           <Bell className="h-6 w-6 flex-shrink-0 text-blue-600" />
           <div className="ml-3 min-w-0 flex-1">
@@ -57,7 +64,7 @@ export default function WebhookStatsCards({
       </Card>
 
       {/* Sin Leer */}
-      <Card>
+      <Card className="w-full">
         <CardContent className="flex items-center p-4">
           <AlertTriangle className="h-6 w-6 flex-shrink-0 text-orange-600" />
           <div className="ml-3 min-w-0 flex-1">
@@ -70,7 +77,7 @@ export default function WebhookStatsCards({
       </Card>
 
       {/* Estado WebSocket */}
-      <Card>
+      <Card className="w-full">
         <CardContent className="flex items-center p-4">
           <Activity
             className={`h-6 w-6 flex-shrink-0 ${
@@ -87,7 +94,7 @@ export default function WebhookStatsCards({
       </Card>
 
       {/* Webhooks Creados */}
-      <Card>
+      <Card className="w-full">
         <CardContent className="flex items-center p-4">
           <Webhook className="h-6 w-6 flex-shrink-0 text-green-600" />
           <div className="ml-3 min-w-0 flex-1">
@@ -100,7 +107,7 @@ export default function WebhookStatsCards({
       </Card>
 
       {/* Disponibles */}
-      <Card>
+      <Card className="w-full">
         <CardContent className="flex items-center p-4">
           <Users className="h-6 w-6 flex-shrink-0 text-purple-600" />
           <div className="ml-3 min-w-0 flex-1">

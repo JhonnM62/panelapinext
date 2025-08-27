@@ -34,6 +34,7 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   Settings,
   MessageSquare,
   Zap,
@@ -99,6 +100,7 @@ export default function ChatBotForm({
   const [testResult, setTestResult] = useState<any>(null);
   const [sessions, setSessions] = useState<SessionOption[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [sessionWebhooks, setSessionWebhooks] = useState<Record<string, boolean>>({});
 
   // Estado del formulario adaptado al modelo creacionbots
   const getInitialFormData = () => {
@@ -242,6 +244,79 @@ export default function ChatBotForm({
     loadAvailableSessions();
   }, []);
 
+  // Verificar si una sesión tiene webhook configurado
+  const checkWebhookForSession = async (sessionId: string): Promise<boolean> => {
+    try {
+      const user = useAuthStore.getState().user;
+      if (!user?.nombrebot) return false;
+
+      const response = await fetch(
+        `https://backend.autosystemprojects.site/webhook/user/${user.nombrebot}/list`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) {
+          // Buscar webhook activo para esta sesión
+          const sessionWebhook = result.data.find(
+            (webhook: any) => webhook.sessionId === sessionId && webhook.active
+          );
+          return Boolean(sessionWebhook);
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error("Error verificando webhook para sesión:", error);
+      return false;
+    }
+  };
+
+  // Obtener información completa del webhook para una sesión
+  const getWebhookInfoForSession = async (sessionId: string): Promise<{webhookId: string, webhookUrl: string} | null> => {
+    try {
+      const user = useAuthStore.getState().user;
+      if (!user?.nombrebot) return null;
+
+      const response = await fetch(
+        `https://backend.autosystemprojects.site/webhook/user/${user.nombrebot}/list`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) {
+          // Buscar webhook activo para esta sesión
+          const sessionWebhook = result.data.find(
+            (webhook: any) => webhook.sessionId === sessionId && webhook.active
+          );
+          if (sessionWebhook) {
+            return {
+              webhookId: sessionWebhook.webhookId,
+              webhookUrl: sessionWebhook.webhookUrl || sessionWebhook.clientWebhookUrl
+            };
+          }
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Error obteniendo información de webhook para sesión:", error);
+      return null;
+    }
+  };
+
   const loadAvailableSessions = async () => {
     setLoadingSessions(true);
     try {
@@ -266,6 +341,13 @@ export default function ChatBotForm({
           }));
 
         setSessions(validSessions);
+
+        // Cargar estado de webhooks para cada sesión
+        const webhookStates: Record<string, boolean> = {};
+        for (const session of validSessions) {
+          webhookStates[session.sesionId] = await checkWebhookForSession(session.sesionId);
+        }
+        setSessionWebhooks(webhookStates);
 
         // Auto-seleccionar si hay solo una sesión disponible y no estamos editando
         const availableSessions = validSessions.filter(
@@ -311,6 +393,17 @@ export default function ChatBotForm({
         throw new Error("El prompt del bot es requerido");
       }
 
+      // Validación de webhook para sesión seleccionada
+      if (!editingBot) { // Solo validar para nuevos bots
+        const hasWebhook = await checkWebhookForSession(formData.sesionId);
+        if (!hasWebhook) {
+          throw new Error(
+            "La sesión seleccionada no tiene un webhook configurado. " +
+            "Por favor, configura un webhook para esta sesión antes de crear el chatbot."
+          );
+        }
+      }
+
       // 🔧 DEBUG: Imprimir formData antes de preparar datos
       console.log("🔧 [FORM DEBUG] FormData completo antes de enviar:", {
         nombreBot: formData.nombreBot,
@@ -320,12 +413,17 @@ export default function ChatBotForm({
         todoElFormData: formData,
       });
 
+      // Obtener información del webhook asociado a la sesión
+      const webhookInfo = await getWebhookInfoForSession(formData.sesionId);
+
       // Preparar datos según el modelo creacionbots
       const botData = {
         nombreBot: formData.nombreBot,
         descripcion: formData.descripcion,
         tipoBot: formData.tipoBot,
         sesionId: formData.sesionId,
+        webhookId: webhookInfo?.webhookId || null,
+        webhookUrl: webhookInfo?.webhookUrl || null,
         configIA: {
           userbot: formData.nombreBot, // SIEMPRE usar el nombre completo del bot
           apikey: formData.apikey,
@@ -619,16 +717,40 @@ export default function ChatBotForm({
                           value={session.sesionId}
                           disabled={!session.disponible}
                         >
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-3 w-3" />
-                            {session.numeroWhatsapp} - {session.sesionId}
-                            {!session.disponible && " (No disponible)"}
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-3 w-3" />
+                              <span>{session.numeroWhatsapp} - {session.sesionId}</span>
+                              {!session.disponible && " (No disponible)"}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {sessionWebhooks[session.sesionId] ? (
+                                <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-300">
+                                  <Webhook className="h-3 w-3 mr-1" />
+                                  Webhook OK
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive" className="text-xs">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Sin Webhook
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </SelectItem>
                       ))
                     )}
                   </SelectContent>
                 </Select>
+                <div className="mt-2">
+                  <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+                    <Webhook className="h-4 w-4" />
+                    <AlertDescription className="text-sm">
+                      <strong>Validación de Webhook:</strong> Solo las sesiones con webhook configurado pueden crear chatbots. 
+                      Las sesiones marcadas con "Sin Webhook" requieren configuración previa en la sección de Webhooks.
+                    </AlertDescription>
+                  </Alert>
+                </div>
               </div>
 
               <div className="col-span-1 md:col-span-2 space-y-2">
@@ -986,6 +1108,38 @@ export default function ChatBotForm({
                   </div>
                 </Card>
               </div>
+
+              {/* Información del Webhook Asociado */}
+              {formData.sesionId && (
+                <div className="space-y-2">
+                  <Label>Webhook Asociado</Label>
+                  <Card className="p-4 border-green-200 bg-green-50 dark:bg-green-950/20">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Webhook className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                          {sessionWebhooks[formData.sesionId] ? 'Webhook Configurado' : 'Sin Webhook'}
+                        </span>
+                        {sessionWebhooks[formData.sesionId] ? (
+                          <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                            Activo
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">
+                            Requerido
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-green-700 dark:text-green-300">
+                        {sessionWebhooks[formData.sesionId] 
+                          ? 'Esta sesión tiene un webhook configurado y puede recibir mensajes automáticamente.'
+                          : 'Esta sesión requiere configuración de webhook antes de crear el chatbot.'
+                        }
+                      </p>
+                    </div>
+                  </Card>
+                </div>
+              )}
             </div>
           </TabsContent>
 

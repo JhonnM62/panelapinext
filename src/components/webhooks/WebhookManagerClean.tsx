@@ -1246,11 +1246,11 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="space-y-4">
           {/* 📱 Mobile Tab Selector */}
-          <div className="sm:hidden">
+          <div className="sm:hidden relative">
             <select
               value={activeTab}
               onChange={(e) => setActiveTab(e.target.value)}
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              className="w-full p-3 pr-10 min-h-[48px] text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
             >
               <option value="list">📋 Lista de Webhooks</option>
               <option value="create">
@@ -1265,19 +1265,25 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
               <option value="test">🧪 Pruebas</option>
               <option value="cleanup">🧹 Limpieza</option>
             </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
 
           {/* 📱 Mobile Actions */}
-          <div className="sm:hidden flex flex-col gap-2">
-            <div className="flex gap-2">
+          <div className="sm:hidden flex flex-col gap-3">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
+                size="lg"
                 onClick={refreshData}
                 disabled={refreshing}
-                className="flex-1"
+                className="flex-1 h-12 text-base font-medium"
               >
                 <RefreshCw
-                  className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+                  className={`h-5 w-5 mr-2 ${refreshing ? "animate-spin" : ""}`}
                 />
                 Actualizar
               </Button>
@@ -1285,18 +1291,19 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
               {/* 🔧 NUEVO: Botón para verificar webhooks fantasma */}
               <Button
                 variant={phantomWebhooks.length > 0 ? "destructive" : "outline"}
+                size="lg"
                 onClick={checkForPhantomWebhooks}
                 disabled={loading}
-                className="flex-1"
+                className="flex-1 h-12 text-base font-medium"
               >
                 {phantomWebhooks.length > 0 ? (
                   <>
-                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    <AlertTriangle className="h-5 w-5 mr-2" />
                     Fantasmas ({phantomWebhooks.length})
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="h-5 w-5 mr-2" />
                     Verificar
                   </>
                 )}
@@ -1306,10 +1313,11 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
             {notifications.length > 0 && (
               <Button
                 variant="outline"
+                size="lg"
                 onClick={exportNotifications}
-                className="w-full"
+                className="w-full h-12 text-base font-medium"
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-5 w-5 mr-2" />
                 Exportar Notificaciones
               </Button>
             )}

@@ -250,53 +250,51 @@ function StatsCard({
   return (
     <Card
       className={cn(
-        "hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] border-l-4",
+        "w-full hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] border-l-4",
         color === "blue" && "border-l-blue-500",
         color === "green" && "border-l-green-500",
         color === "purple" && "border-l-purple-500",
         color === "orange" && "border-l-orange-500"
       )}
     >
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              {title}
-            </p>
-            <p
-              className={cn(
-                "text-3xl font-bold",
-                color === "blue" && "text-blue-600 dark:text-blue-400",
-                color === "green" && "text-green-600 dark:text-green-400",
-                color === "purple" && "text-purple-600 dark:text-purple-400",
-                color === "orange" && "text-orange-600 dark:text-orange-400"
-              )}
-            >
-              {value}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {description}
-            </p>
-          </div>
-          <div
+      <CardContent className="p-3 sm:p-6 flex items-center justify-between">
+        <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+            {title}
+          </p>
+          <p
             className={cn(
-              "p-3 rounded-full",
-              color === "blue" && "bg-blue-100 dark:bg-blue-900/30",
-              color === "green" && "bg-green-100 dark:bg-green-900/30",
-              color === "purple" && "bg-purple-100 dark:bg-purple-900/30",
-              color === "orange" && "bg-orange-100 dark:bg-orange-900/30"
+              "text-lg sm:text-2xl lg:text-3xl font-bold",
+              color === "blue" && "text-blue-600 dark:text-blue-400",
+              color === "green" && "text-green-600 dark:text-green-400",
+              color === "purple" && "text-purple-600 dark:text-purple-400",
+              color === "orange" && "text-orange-600 dark:text-orange-400"
             )}
           >
-            <Icon
-              className={cn(
-                "h-8 w-8",
-                color === "blue" && "text-blue-600 dark:text-blue-400",
-                color === "green" && "text-green-600 dark:text-green-400",
-                color === "purple" && "text-purple-600 dark:text-purple-400",
-                color === "orange" && "text-orange-600 dark:text-orange-400"
-              )}
-            />
-          </div>
+            {value}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            {description}
+          </p>
+        </div>
+        <div
+          className={cn(
+            "p-2 sm:p-3 rounded-full flex-shrink-0",
+            color === "blue" && "bg-blue-100 dark:bg-blue-900/30",
+            color === "green" && "bg-green-100 dark:bg-green-900/30",
+            color === "purple" && "bg-purple-100 dark:bg-purple-900/30",
+            color === "orange" && "bg-orange-100 dark:bg-orange-900/30"
+          )}
+        >
+          <Icon
+            className={cn(
+              "h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8",
+              color === "blue" && "text-blue-600 dark:text-blue-400",
+              color === "green" && "text-green-600 dark:text-green-400",
+              color === "purple" && "text-purple-600 dark:text-purple-400",
+              color === "orange" && "text-orange-600 dark:text-orange-400"
+            )}
+          />
         </div>
       </CardContent>
     </Card>
@@ -395,13 +393,13 @@ export default function WebhooksPage() {
   );
 
   return (
-    <div className="space-y-6 lg:space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* 🎯 HEADER - Responsive */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6">
-        <div className="space-y-2">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-3">
-            <Webhook className="h-8 w-8 lg:h-10 lg:w-10 text-blue-600" />
-            Sistema de Webhooks
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
+        <div className="flex-1 min-w-0 space-y-2">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2 sm:gap-3">
+            <Webhook className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-blue-600 flex-shrink-0" />
+            <span className="truncate">Sistema de Webhooks</span>
           </h1>
           <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300 max-w-3xl">
             Configura webhooks para recibir notificaciones en tiempo real cuando
@@ -411,9 +409,9 @@ export default function WebhooksPage() {
         </div>
 
         {/* 📊 Plan Info - Mobile responsive */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="text-center px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700">
-            <div className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+          <div className="text-center px-3 sm:px-4 py-2 sm:py-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700 flex-1 sm:flex-none">
+            <div className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
               {resourceLimits.webhooks.current}/{resourceLimits.webhooks.limit}
             </div>
             <div className="text-xs text-blue-600/80 dark:text-blue-400/80">
@@ -424,59 +422,29 @@ export default function WebhooksPage() {
             onClick={loadSessions}
             variant="outline"
             disabled={loading}
-            className="flex items-center justify-center gap-2 h-auto py-3"
+            className="flex items-center justify-center gap-2 h-auto py-2 sm:py-3 w-full sm:w-auto flex-1 sm:flex-none"
           >
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-            Actualizar
+            <span className="whitespace-nowrap">Actualizar</span>
           </Button>
         </div>
       </div>
 
-      {/* 📊 STATS CARDS - Perfect responsive grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <StatsCard
-          title="Sesiones Totales"
-          value={sessions.length}
-          description="Sesiones disponibles"
-          icon={Smartphone}
-          color="blue"
-        />
-        <StatsCard
-          title="Sesiones Activas"
-          value={authenticatedSessions.length}
-          description="Listas para webhooks"
-          icon={CheckCircle}
-          color="green"
-        />
-        <StatsCard
-          title="Webhooks Configurados"
-          value={resourceLimits.webhooks.current}
-          description={`${resourceLimits.webhooks.remaining} disponibles`}
-          icon={Webhook}
-          color="purple"
-        />
-        <StatsCard
-          title="Límite del Plan"
-          value={resourceLimits.webhooks.limit}
-          description={`${resourceLimits.webhooks.percentage}% utilizado`}
-          icon={Settings}
-          color="orange"
-        />
-      </div>
+
 
       {/* 🚨 NO SESSIONS ALERT */}
       {sessions.length === 0 && (
-        <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-800/20">
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl">
-                <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+        <Card className="w-full border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-800/20">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex-shrink-0">
+                <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-amber-600 dark:text-amber-400" />
               </div>
-              <div className="flex-1 space-y-2">
-                <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100">
+              <div className="flex-1 min-w-0 space-y-2">
+                <h3 className="text-base sm:text-lg font-semibold text-amber-900 dark:text-amber-100">
                   No hay sesiones WhatsApp configuradas
                 </h3>
-                <p className="text-amber-800 dark:text-amber-200">
+                <p className="text-sm sm:text-base text-amber-800 dark:text-amber-200">
                   Necesitas al menos una sesión WhatsApp autenticada para
                   configurar webhooks. Los webhooks te enviarán notificaciones
                   cuando recibas mensajes.
@@ -484,11 +452,11 @@ export default function WebhooksPage() {
               </div>
               <Button
                 asChild
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shrink-0"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-full sm:w-auto flex-shrink-0"
               >
-                <a href="/dashboard/sessions">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Crear Sesión
+                <a href="/dashboard/sessions" className="flex items-center justify-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  <span className="whitespace-nowrap">Crear Sesión</span>
                 </a>
               </Button>
             </div>
@@ -498,57 +466,44 @@ export default function WebhooksPage() {
 
       {/* 🎨 MAIN CONTENT TABS - Mobile optimized */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        {/* 📱 Mobile Tab Selector */}
-        <div className="sm:hidden mb-6">
-          <select
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value)}
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          >
-            <option value="manager">Gestión de Webhooks</option>
-            <option value="analytics">Análisis y Estadísticas</option>
-            <option value="docs">Documentación</option>
-          </select>
-        </div>
 
-        {/* 💻 Desktop Tabs */}
-        <div className="hidden sm:block">
+
+        {/* 📱💻 Responsive Tabs */}
           <TabsList className="grid w-full grid-cols-3 h-auto p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
             <TabsTrigger
               value="manager"
-              className="flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200"
+              className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200"
             >
-              <Settings className="h-4 w-4" />
-              <span>Gestión de Webhooks</span>
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden md:inline">Gestión de Webhooks</span>
+              <span className="md:hidden">Gestión</span>
             </TabsTrigger>
             <TabsTrigger
               value="analytics"
-              className="flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200"
+              className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200"
             >
-              <Activity className="h-4 w-4" />
+              <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>Análisis</span>
             </TabsTrigger>
             <TabsTrigger
               value="docs"
-              className="flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200"
+              className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200"
             >
-              <Globe className="h-4 w-4" />
-              <span>Documentación</span>
+              <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Documentación</span>
+              <span className="sm:hidden">Docs</span>
             </TabsTrigger>
           </TabsList>
-        </div>
+        
 
         {/* 📄 TAB CONTENT */}
-        <div className="mt-6">
-          <TabsContent value="manager" className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <WebhookManager
-                sessions={sessions}
-              />
-            </div>
-          </TabsContent>
+        <TabsContent value="manager" className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
+          <WebhookManager
+            sessions={sessions}
+          />
+        </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
+          <TabsContent value="analytics" className="mt-4 sm:mt-6 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -575,7 +530,7 @@ export default function WebhooksPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="docs" className="space-y-6">
+          <TabsContent value="docs" className="mt-4 sm:mt-6 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -641,7 +596,6 @@ export default function WebhooksPage() {
               </CardContent>
             </Card>
           </TabsContent>
-        </div>
       </Tabs>
     </div>
   );

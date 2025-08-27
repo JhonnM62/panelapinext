@@ -125,13 +125,13 @@ export default function WebhookList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">
           Webhooks Configurados ({webhookConfigs.length})
         </h3>
-        <Button onClick={onCreateNew}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={onCreateNew} size="lg" className="h-12 text-base font-medium">
+          <Plus className="h-5 w-5 mr-2" />
           Crear Webhook
         </Button>
       </div>
@@ -146,123 +146,124 @@ export default function WebhookList({
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Crea tu primer webhook para recibir notificaciones en tiempo real
             </p>
-            <Button onClick={onCreateNew}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={onCreateNew} size="lg" className="h-12 text-base font-medium">
+              <Plus className="h-5 w-5 mr-2" />
               Crear Webhook
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3">
           {webhookConfigs.map((webhook) => (
-            <Card key={webhook.webhookId} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Webhook className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <h4 className="font-semibold">Webhook - {webhook.sessionId}</h4>
-                        <p className="text-sm text-gray-600">
-                          {sessions.find(s => s.id === webhook.sessionId)?.phoneNumber || 'Número no disponible'}
-                        </p>
-                      </div>
+            <Card key={webhook.webhookId} className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+              <CardContent className="p-3">
+                <div className="space-y-3">
+                  {/* Header compacto */}
+                  <div className="flex items-center gap-2">
+                    <Webhook className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm truncate">Webhook - {webhook.sessionId}</h4>
+                      <p className="text-xs text-gray-600 truncate">
+                        {sessions.find(s => s.id === webhook.sessionId)?.phoneNumber || 'Número no disponible'}
+                      </p>
                     </div>
+                    <Badge variant={webhook.active ? 'default' : 'secondary'} className="text-xs px-2 py-1 flex-shrink-0">
+                      {webhook.active ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <Label className="text-xs text-gray-500">URL del Webhook</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Input 
-                            value={webhook.webhookUrl} 
-                            disabled 
-                            className="text-xs flex-1" 
-                          />
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => copyWebhookUrl(webhook.webhookUrl)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {webhook.clientWebhookUrl && (
-                        <div>
-                          <Label className="text-xs text-gray-500">URL Cliente</Label>
-                          <Input 
-                            value={webhook.clientWebhookUrl} 
-                            disabled 
-                            className="text-xs mt-1" 
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-4">
-                      <Label className="text-xs text-gray-500">Eventos Configurados</Label>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {webhook.events.map((event) => (
-                          <Badge key={event} variant="default" className="text-xs">
-                            {event}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex items-center gap-4">
-                        <Badge variant={webhook.active ? 'default' : 'secondary'}>
-                          {webhook.active ? 'Activo' : 'Inactivo'}
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          Creado: {formatTimestamp(webhook.createdAt)}
-                        </span>
-                        {webhook.updatedAt && (
-                          <span className="text-xs text-gray-500">
-                            Actualizado: {formatTimestamp(webhook.updatedAt)}
-                          </span>
-                        )}
-                      </div>
+                  {/* URL del Webhook */}
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-1 block">URL del Webhook</Label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        value={webhook.webhookUrl} 
+                        disabled 
+                        className="text-xs flex-1 h-8" 
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => copyWebhookUrl(webhook.webhookUrl)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 ml-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => onEdit(webhook)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Editar
-                    </Button>
+                  {/* URL Cliente (si existe) */}
+                  {webhook.clientWebhookUrl && (
+                    <div>
+                      <Label className="text-xs text-gray-500 mb-1 block">URL Cliente</Label>
+                      <Input 
+                        value={webhook.clientWebhookUrl} 
+                        disabled 
+                        className="text-xs h-8" 
+                      />
+                    </div>
+                  )}
 
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => onTest(webhook)}
-                      disabled={testing}
-                    >
-                      {testing ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Play className="h-4 w-4 mr-2" />
-                      )}
-                      Probar
-                    </Button>
+                  {/* Eventos y Metadatos en una fila */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex-1">
+                      <Label className="text-xs text-gray-500 mb-1 block">Eventos</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {webhook.events.slice(0, 3).map((event) => (
+                          <Badge key={event} variant="default" className="text-xs px-2 py-0">
+                            {event}
+                          </Badge>
+                        ))}
+                        {webhook.events.length > 3 && (
+                          <Badge variant="outline" className="text-xs px-2 py-0">
+                            +{webhook.events.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs text-gray-500 block">
+                        {formatTimestamp(webhook.createdAt)}
+                      </span>
+                    </div>
+                  </div>
 
+                  {/* Botones de acción */}
+                  <div className="flex gap-2 pt-2 border-t border-gray-100">
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => onEdit(webhook)}
+                      className="flex-1 h-9 text-xs"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onTest(webhook)}
+                      disabled={testing}
+                      className="flex-1 h-9 text-xs"
+                    >
+                      {testing ? (
+                        <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <Play className="h-3 w-3 mr-1" />
+                      )}
+                      Probar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       onClick={() => handleDeleteClick(webhook.webhookId)}
-                      className="text-red-600 hover:text-red-700"
+                      className="flex-1 h-9 text-xs"
                       disabled={deleting}
                     >
                       {deleting ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
                       ) : (
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="h-3 w-3 mr-1" />
                       )}
                       Eliminar
                     </Button>
