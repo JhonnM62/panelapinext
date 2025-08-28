@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/auth'
 import { useSessionPersistence } from '@/hooks/useSessionPersistence'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { DashboardSkeleton } from '@/components/ui/dashboard-skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -257,16 +258,9 @@ export default function DashboardLayout({
     return parts.slice(0, 2).toUpperCase()
   }
 
-  // Mostrar loading mientras se verifica autenticación
+  // Mostrar skeleton mientras se verifica autenticación
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center">
-          <LoadingSpinner className="w-12 h-12 text-blue-600 mb-4" />
-          <p className="text-lg font-medium text-gray-600 dark:text-gray-400">Cargando dashboard...</p>
-        </div>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   // Si no hay usuario, no mostrar nada (se está redirigiendo)
