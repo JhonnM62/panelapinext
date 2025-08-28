@@ -167,17 +167,21 @@ export default function WebhookForm({
             onValueChange={setSelectedSessionId}
             disabled={!!editingWebhook}
           >
-            <SelectTrigger>
+            <SelectTrigger className="min-h-[44px] w-full">
               <SelectValue placeholder="Selecciona una sesión" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-w-[calc(100vw-2rem)] w-full">
               {sessions.filter(s => s.authenticated).map((session) => (
-                <SelectItem key={session.id} value={session.id}>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span>{session.id}</span>
+                <SelectItem 
+                  key={session.id} 
+                  value={session.id}
+                  className="min-h-[44px] p-3"
+                >
+                  <div className="flex items-center gap-2 w-full min-w-0">
+                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <span className="truncate flex-1">{session.id}</span>
                     {session.phoneNumber && (
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs flex-shrink-0">
                         {session.phoneNumber}
                       </Badge>
                     )}

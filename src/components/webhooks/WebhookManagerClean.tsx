@@ -104,7 +104,7 @@ interface WebhookManagerProps {
   sessions: SessionOption[];
 }
 
-export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
+export default function WebhookManagerClean({ sessions = [] }: WebhookManagerProps) {
   const router = useRouter();
   const { user, token } = useAuthStore();
   const { suscripcion, resourceLimits, checkLimits } = usePlanLimits();
@@ -1161,21 +1161,23 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-full overflow-hidden space-y-6">
       {/* Header con estadísticas */}
-      <WebhookStatsCards
-        stats={webhookStats}
-        resourceLimits={resourceLimits}
-        webhookConfigs={webhookConfigs}
-        isConnected={wsConnected}
-      />
+      <div className="w-full">
+        <WebhookStatsCards
+          stats={webhookStats}
+          resourceLimits={resourceLimits}
+          webhookConfigs={webhookConfigs}
+          isConnected={wsConnected}
+        />
+      </div>
 
       {/* Alerta de webhooks fantasma detectados */}
       {phantomWebhooks.length > 0 && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <div className="w-full max-w-full p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-            <h3 className="font-medium text-red-800 dark:text-red-200">
+            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <h3 className="font-medium text-red-800 dark:text-red-200 truncate">
               👻 Webhooks Fantasma Detectados
             </h3>
           </div>
@@ -1183,21 +1185,21 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
             Se encontraron {phantomWebhooks.length} webhook(s) que existen en la
             lista local pero no en el servidor:
           </p>
-          <div className="flex flex-wrap gap-1 mb-3">
+          <div className="flex flex-wrap gap-1 mb-3 max-w-full overflow-hidden">
             {phantomWebhooks.map((phantomId, index) => (
               <code
                 key={index}
-                className="text-xs bg-red-100 dark:bg-red-800 px-2 py-1 rounded"
+                className="text-xs bg-red-100 dark:bg-red-800 px-2 py-1 rounded truncate max-w-[200px]"
               >
                 {phantomId}
               </code>
             ))}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
               onClick={() => cleanupPhantomWebhooks(phantomWebhooks)}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white flex-shrink-0"
             >
               <Trash2 className="h-3 w-3 mr-1" />
               Limpiar Ahora
@@ -1206,11 +1208,12 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
               size="sm"
               variant="outline"
               onClick={() => setPhantomWebhooks([])}
+              className="flex-shrink-0"
             >
               Ignorar
             </Button>
-            <div className="flex items-center gap-2 ml-auto">
-              <label className="text-xs text-red-700 dark:text-red-300">
+            <div className="flex items-center gap-2 ml-auto min-w-0">
+              <label className="text-xs text-red-700 dark:text-red-300 truncate">
                 <input
                   type="checkbox"
                   checked={autoCleanupEnabled}
@@ -1226,8 +1229,8 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
 
       {/* Error de conexión WebSocket */}
       {connectionError && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-          <p className="text-red-700 dark:text-red-300 text-sm">
+        <div className="w-full max-w-full p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+          <p className="text-red-700 dark:text-red-300 text-sm break-words">
             ⚠️ Error de conexión WebSocket: {connectionError}
           </p>
           <Button
@@ -1243,14 +1246,15 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
       )}
 
       {/* Navegación de tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="space-y-4">
+      <div className="w-full max-w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="space-y-4 w-full max-w-full overflow-hidden">
           {/* 📱 Mobile Tab Selector */}
-          <div className="sm:hidden relative">
+          <div className="sm:hidden relative w-full max-w-full">
             <select
               value={activeTab}
               onChange={(e) => setActiveTab(e.target.value)}
-              className="w-full p-3 pr-10 min-h-[48px] text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              className="w-full max-w-full p-3 pr-10 min-h-[48px] text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer truncate"
             >
               <option value="list">📋 Lista de Webhooks</option>
               <option value="create">
@@ -1266,118 +1270,141 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
               <option value="cleanup">🧹 Limpieza</option>
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
 
           {/* 📱 Mobile Actions */}
-          <div className="sm:hidden flex flex-col gap-3">
-            <div className="flex gap-3">
+          <div className="sm:hidden space-y-3 w-full max-w-full">
+            {/* Primera fila de botones principales */}
+            <div className="grid grid-cols-2 gap-2 w-full">
               <Button
                 variant="outline"
-                size="lg"
+                size="sm"
                 onClick={refreshData}
                 disabled={refreshing}
-                className="flex-1 h-12 text-base font-medium"
+                className="h-10 text-sm font-medium px-2 min-w-0 flex-1"
               >
                 <RefreshCw
-                  className={`h-5 w-5 mr-2 ${refreshing ? "animate-spin" : ""}`}
+                  className={`h-4 w-4 mr-1 flex-shrink-0 ${refreshing ? "animate-spin" : ""}`}
                 />
-                Actualizar
+                <span className="truncate">Actualizar</span>
               </Button>
 
-              {/* 🔧 NUEVO: Botón para verificar webhooks fantasma */}
+              {/* 🔧 Botón para verificar webhooks fantasma */}
               <Button
                 variant={phantomWebhooks.length > 0 ? "destructive" : "outline"}
-                size="lg"
+                size="sm"
                 onClick={checkForPhantomWebhooks}
                 disabled={loading}
-                className="flex-1 h-12 text-base font-medium"
+                className="h-10 text-sm font-medium px-2 min-w-0 flex-1"
               >
                 {phantomWebhooks.length > 0 ? (
                   <>
-                    <AlertTriangle className="h-5 w-5 mr-2" />
-                    Fantasmas ({phantomWebhooks.length})
+                    <AlertTriangle className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <span className="truncate">Fantasmas ({phantomWebhooks.length})</span>
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-5 w-5 mr-2" />
-                    Verificar
+                    <RefreshCw className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <span className="truncate">Verificar</span>
                   </>
                 )}
               </Button>
             </div>
 
+            {/* Segunda fila - Botón de exportar si hay notificaciones */}
             {notifications.length > 0 && (
               <Button
                 variant="outline"
-                size="lg"
+                size="sm"
                 onClick={exportNotifications}
-                className="w-full h-12 text-base font-medium"
+                className="w-full h-10 text-sm font-medium min-w-0"
               >
-                <Download className="h-5 w-5 mr-2" />
-                Exportar Notificaciones
+                <Download className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Exportar Notificaciones</span>
               </Button>
             )}
           </div>
 
           {/* 💻 Desktop Tabs */}
-          <div className="hidden sm:flex sm:items-center sm:justify-between">
-            <TabsList className="grid w-full max-w-2xl grid-cols-5">
-              <TabsTrigger value="list" className="flex items-center gap-2">
-                <List className="h-4 w-4" />
-                <span className="hidden lg:inline">Lista</span>
-              </TabsTrigger>
-              <TabsTrigger value="create" className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                <span className="hidden lg:inline">
-                  {editingWebhook ? "Editar" : "Crear"}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="notifications"
-                className="flex items-center gap-2"
-              >
-                <Bell className="h-4 w-4" />
-                <span className="hidden lg:inline">Notificaciones</span>
-                {(webhookStats?.unreadNotifications || 0) > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center"
-                  >
-                    {webhookStats?.unreadNotifications || 0}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="test" className="flex items-center gap-2">
-                <Play className="h-4 w-4" />
-                <span className="hidden lg:inline">Pruebas</span>
-              </TabsTrigger>
-              <TabsTrigger value="cleanup" className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4" />
-                <span className="hidden lg:inline">Limpieza</span>
-              </TabsTrigger>
-            </TabsList>
+          <div className="hidden sm:flex sm:items-center sm:justify-between sm:gap-4">
+            {/* Contenedor con scroll horizontal para tablets */}
+            <div className="flex-1 overflow-x-auto">
+              <TabsList className="grid w-full min-w-fit grid-cols-5 md:max-w-2xl">
+                <TabsTrigger value="list" className="flex items-center gap-1 md:gap-2 px-2 md:px-3">
+                  <List className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden md:inline truncate">Lista</span>
+                </TabsTrigger>
+                <TabsTrigger value="create" className="flex items-center gap-1 md:gap-2 px-2 md:px-3">
+                  <Plus className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden md:inline truncate">
+                    {editingWebhook ? "Editar" : "Crear"}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="notifications"
+                  className="flex items-center gap-1 md:gap-2 px-2 md:px-3 relative"
+                >
+                  <Bell className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden md:inline truncate">Notificaciones</span>
+                  {(webhookStats?.unreadNotifications || 0) > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="ml-1 h-4 min-w-4 px-1 py-0 text-xs flex items-center justify-center flex-shrink-0"
+                    >
+                      {webhookStats?.unreadNotifications || 0}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="test" className="flex items-center gap-1 md:gap-2 px-2 md:px-3">
+                  <Play className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden md:inline truncate">Pruebas</span>
+                </TabsTrigger>
+                <TabsTrigger value="cleanup" className="flex items-center gap-1 md:gap-2 px-2 md:px-3">
+                  <RefreshCw className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden md:inline truncate">Limpieza</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            <div className="flex gap-2">
+            {/* Botones de acción para desktop */}
+            <div className="flex gap-2 flex-shrink-0">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={refreshData}
                 disabled={refreshing}
+                className="hidden lg:flex"
               >
                 <RefreshCw
                   className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
                 />
                 Actualizar
               </Button>
+              
+              {/* Versión compacta para tablets */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshData}
+                disabled={refreshing}
+                className="lg:hidden"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+                />
+              </Button>
 
-              {/* 🔧 NUEVO: Botón para verificar webhooks fantasma */}
+              {/* 🔧 Botón para verificar webhooks fantasma */}
               <Button
                 variant={phantomWebhooks.length > 0 ? "destructive" : "outline"}
+                size="sm"
                 onClick={checkForPhantomWebhooks}
                 disabled={loading}
+                className="hidden lg:flex"
               >
                 {phantomWebhooks.length > 0 ? (
                   <>
@@ -1391,12 +1418,48 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
                   </>
                 )}
               </Button>
+              
+              {/* Versión compacta para tablets */}
+              <Button
+                variant={phantomWebhooks.length > 0 ? "destructive" : "outline"}
+                size="sm"
+                onClick={checkForPhantomWebhooks}
+                disabled={loading}
+                className="lg:hidden"
+              >
+                {phantomWebhooks.length > 0 ? (
+                  <>
+                    <AlertTriangle className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
 
               {notifications.length > 0 && (
-                <Button variant="outline" onClick={exportNotifications}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar
-                </Button>
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={exportNotifications}
+                    className="hidden lg:flex"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar
+                  </Button>
+                  
+                  {/* Versión compacta para tablets */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={exportNotifications}
+                    className="lg:hidden"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -1454,7 +1517,8 @@ export default function WebhookManager({ sessions = [] }: WebhookManagerProps) {
         <TabsContent value="cleanup">
           <WebhookCleanup />
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
     </div>
   );
 }

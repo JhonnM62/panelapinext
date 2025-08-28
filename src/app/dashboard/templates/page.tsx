@@ -403,51 +403,57 @@ function MobileFilters({
       </div>
 
       {/* Quick Filters */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={showFavoritesOnly ? "default" : "outline"}
-          size="sm"
-          onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-          className="text-xs"
-        >
-          <Heart className="h-3 w-3 mr-1" />
-          Favoritas
-        </Button>
+      <div className="space-y-3">
+        {/* Primera fila - Botón de favoritas */}
+        <div className="flex justify-center">
+          <Button
+            variant={showFavoritesOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            className="text-xs px-4 h-8"
+          >
+            <Heart className="h-3 w-3 mr-1" />
+            Favoritas
+          </Button>
+        </div>
 
-        {/* Category Filter */}
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-auto min-w-[120px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {categoryOptions.map((category) => (
-              <SelectItem key={category.value} value={category.value}>
-                <div className="flex items-center gap-2">
-                  <category.icon className="h-4 w-4" />
-                  {category.label}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Segunda fila - Filtros de categoría y tipo */}
+        <div className="grid grid-cols-1 gap-2">
+          {/* Category Filter */}
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Seleccionar categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              {categoryOptions.map((category) => (
+                <SelectItem key={category.value} value={category.value}>
+                  <div className="flex items-center gap-2">
+                    <category.icon className="h-4 w-4" />
+                    {category.label}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {/* Type Filter */}
-        <Select value={selectedType} onValueChange={setSelectedType}>
-          <SelectTrigger className="w-auto min-w-[100px] text-xs">
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los tipos</SelectItem>
-            {typeOptions.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                <div className="flex items-center gap-2">
-                  <type.icon className="h-4 w-4" />
-                  {type.label}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {/* Type Filter */}
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Seleccionar tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los tipos</SelectItem>
+              {typeOptions.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  <div className="flex items-center gap-2">
+                    <type.icon className="h-4 w-4" />
+                    {type.label}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );
@@ -617,46 +623,49 @@ export default function TemplatesPage() {
 
       {/* 🎨 TABS - Mobile optimized */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 px-2 sm:px-0">
-          <TabsList className="grid w-full max-w-md grid-cols-2 h-auto p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
-            <TabsTrigger
-              value="templates"
-              className="flex items-center gap-2 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium rounded-lg"
-            >
-              <MessageSquare className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Mensajes</span>
-              <span className="sm:hidden">Msg</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="bots"
-              className="flex items-center gap-2 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium rounded-lg"
-            >
-              <Bot className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">ChatBots</span>
-              <span className="sm:hidden">Bots</span>
-            </TabsTrigger>
-          </TabsList>
+        <div className="flex flex-col gap-4 mb-6">
+          {/* Pestañas principales */}
+          <div className="flex justify-center">
+            <TabsList className="grid w-full max-w-sm grid-cols-2 h-auto p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+              <TabsTrigger
+                value="templates"
+                className="flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium rounded-lg"
+              >
+                <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Mensajes</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="bots"
+                className="flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium rounded-lg"
+              >
+                <Bot className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">ChatBots</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Template Stats - Mobile responsive */}
           {activeTab === "templates" && (
-            <div className="flex sm:hidden lg:flex gap-2 sm:gap-4 text-xs sm:text-sm justify-center sm:justify-start">
-              <div className="text-center">
-                <div className="font-bold text-purple-600">
-                  {templates.length}
+            <div className="flex justify-center">
+              <div className="grid grid-cols-3 gap-4 text-center bg-gray-50 dark:bg-gray-800 rounded-lg p-3 max-w-sm w-full">
+                <div className="space-y-1">
+                  <div className="font-bold text-lg text-purple-600">
+                    {templates.length}
+                  </div>
+                  <div className="text-gray-500 text-xs font-medium">Total</div>
                 </div>
-                <div className="text-gray-500 text-xs">Total</div>
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-pink-600">
-                  {templates.filter((t) => t.isFavorite).length}
+                <div className="space-y-1">
+                  <div className="font-bold text-lg text-pink-600">
+                    {templates.filter((t) => t.isFavorite).length}
+                  </div>
+                  <div className="text-gray-500 text-xs font-medium">Favoritas</div>
                 </div>
-                <div className="text-gray-500 text-xs">Favoritas</div>
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-blue-600">
-                  {filteredTemplates.length}
+                <div className="space-y-1">
+                  <div className="font-bold text-lg text-blue-600">
+                    {filteredTemplates.length}
+                  </div>
+                  <div className="text-gray-500 text-xs font-medium">Mostradas</div>
                 </div>
-                <div className="text-gray-500 text-xs">Mostradas</div>
               </div>
             </div>
           )}
@@ -677,7 +686,7 @@ export default function TemplatesPage() {
           />
 
           {/* 💻 DESKTOP FILTERS */}
-          <div className="hidden lg:flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border mx-2 lg:mx-0">
+          <div className="hidden lg:flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
