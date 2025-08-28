@@ -18,6 +18,7 @@ interface AuthState {
   clearError: () => void
   renewMembership: (tipoplan: string) => Promise<void>
   refreshUserInfo: () => Promise<void>
+  initializeAuth: () => void
 }
 
 // Función helper para calcular días restantes
@@ -79,8 +80,11 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('No se recibió token del servidor')
           }
           
-          // Guardar token en localStorage inmediatamente
+          // Guardar token en localStorage y cookies inmediatamente
           localStorage.setItem('token', userData.token)
+          
+          // Guardar token en cookies para que el middleware pueda acceder
+          document.cookie = `token=${userData.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`
           
           // Calcular si la membresía está expirada
           const daysRemaining = getDaysRemaining(userData.fechaFin)
@@ -129,7 +133,9 @@ export const useAuthStore = create<AuthState>()(
           localStorage.removeItem('last_login_attempt')
           localStorage.removeItem('login_retry_after')
           
+          console.log('🔧 [Auth] Actualizando estado del store...')
           set({ user, token: userData.token, isLoading: false })
+          console.log('🔧 [Auth] Login completado exitosamente')
         } catch (error: any) {
           console.error('🔧 [Auth] Error en login:', error)
           
@@ -163,11 +169,20 @@ export const useAuthStore = create<AuthState>()(
           }
           
           // Otros errores
+          console.error('🔧 [Auth] Error detallado:', {
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data,
+            stack: error.stack
+          })
+          
+          const errorMessage = error.response?.data?.message || error.message || 'Error al iniciar sesión'
+          
           set({ 
-            error: error.message || 'Error al iniciar sesión',
+            error: errorMessage,
             isLoading: false 
           })
-          throw error
+          throw new Error(errorMessage)
         }
       },
 
@@ -249,6 +264,10 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('baileys_token')
         localStorage.removeItem('auth-storage')
         
+        // Limpiar cookies de autenticación
+        document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        document.cookie = 'baileys_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        
         // Limpiar datos de sesión específicos
         localStorage.removeItem('session_last_activity')
         localStorage.removeItem('session_id')
@@ -270,9 +289,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: () => {
-        const { token } = get()
+        const { token, user, isLoading } = get()
         if (!token) {
-          set({ isLoading: false })
+          if (isLoading) {
+            set({ isLoading: false })
+          }
           return
         }
 
@@ -282,27 +303,33 @@ export const useAuthStore = create<AuthState>()(
           
           if (decoded.exp < now) {
             // Token expirado - marcar como expirado pero no logout
-            console.log('[AUTH] Token expirado - marcando membresía como expirada')
-            
-            set((state) => ({
-              user: state.user ? {
-                ...state.user,
-                membershipExpired: true
-              } : null,
-              isLoading: false
-            }))
-            
+            if (!user?.membershipExpired) {
+              console.log('[AUTH] Token expirado - marcando membresía como expirada')
+              set((state) => ({
+                user: state.user ? {
+                  ...state.user,
+                  membershipExpired: true
+                } : null,
+                isLoading: false
+              }))
+            } else if (isLoading) {
+              set({ isLoading: false })
+            }
             return
           }
           
-          // Token válido - asegurar que membershipExpired esté en false
-          set((state) => ({
-            user: state.user ? {
-              ...state.user,
-              membershipExpired: false
-            } : null,
-            isLoading: false
-          }))
+          // Token válido - solo actualizar si hay cambios necesarios
+          const needsUpdate = user?.membershipExpired === true || isLoading === true
+          if (needsUpdate) {
+            console.log('[AUTH] Token válido - actualizando estado')
+            set((state) => ({
+              user: state.user ? {
+                ...state.user,
+                membershipExpired: false
+              } : null,
+              isLoading: false
+            }))
+          }
         } catch (error) {
           console.error('[AUTH] Error decodificando token:', error)
           get().logout()
@@ -333,8 +360,9 @@ export const useAuthStore = create<AuthState>()(
           
           const userData = response.data.data
           
-          // Actualizar localStorage con el nuevo token
+          // Actualizar localStorage y cookies con el nuevo token
           localStorage.setItem('token', userData.token)
+          document.cookie = `token=${userData.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`
           
           // Calcular días restantes
           const daysRemaining = getDaysRemaining(userData.fechaFin)
@@ -470,6 +498,31 @@ export const useAuthStore = create<AuthState>()(
           
         } catch (error: any) {
           console.error('🔧 [Auth] Error refrescando información:', error)
+        }
+      },
+
+      initializeAuth: () => {
+        const { token } = get()
+        
+        // Si no hay token en el estado, intentar obtenerlo desde cookies
+        if (!token) {
+          const getCookieValue = (name: string): string | null => {
+            const value = `; ${document.cookie}`
+            const parts = value.split(`; ${name}=`)
+            if (parts.length === 2) {
+              return parts.pop()?.split(';').shift() || null
+            }
+            return null
+          }
+          
+          const cookieToken = getCookieValue('token')
+          if (cookieToken) {
+            console.log('🔧 [Auth] Token encontrado en cookies, inicializando...')
+            set({ token: cookieToken })
+            
+            // También guardarlo en localStorage para consistencia
+            localStorage.setItem('token', cookieToken)
+          }
         }
       },
     }),

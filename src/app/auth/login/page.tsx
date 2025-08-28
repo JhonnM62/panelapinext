@@ -65,16 +65,20 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       clearError()
+      console.log('🔧 [LoginPage] Iniciando proceso de login...')
       await login(data)
+      
+      console.log('🔧 [LoginPage] Login exitoso, redirigiendo...')
       toast({
         title: 'Éxito',
         description: 'Has iniciado sesión correctamente',
       })
       router.push('/dashboard')
-    } catch (error) {
+    } catch (error: any) {
+      console.error('🔧 [LoginPage] Error en login:', error)
       toast({
         title: 'Error',
-        description: 'Credenciales inválidas',
+        description: error.message || 'Credenciales inválidas',
         variant: 'destructive',
       })
     }
@@ -96,7 +100,7 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

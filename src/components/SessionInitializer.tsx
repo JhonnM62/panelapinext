@@ -9,7 +9,7 @@ interface SessionInitializerProps {
 }
 
 export function SessionInitializer({ children }: SessionInitializerProps) {
-  const { user, checkAuth, logout } = useAuthStore()
+  const { user, checkAuth, logout, initializeAuth } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
 
@@ -17,15 +17,27 @@ export function SessionInitializer({ children }: SessionInitializerProps) {
     // Solo ejecutar en el cliente
     if (typeof window === 'undefined') return
 
+    let isInitialized = false
+
     const initializeSession = () => {
-      console.log('🔧 [SessionInitializer] Inicializando sesión...')
+      if (isInitialized) return // Evitar múltiples inicializaciones
+      
+      // Inicializar autenticación desde cookies si es necesario
+      initializeAuth()
       
       // Verificar si estamos en una página que requiere autenticación
       const protectedRoutes = ['/dashboard', '/admin', '/gemini']
       const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
       
       if (!isProtectedRoute) {
-        console.log('🔧 [SessionInitializer] Ruta pública, no se requiere verificación')
+        isInitialized = true
+        return
+      }
+
+      // Si ya hay un usuario autenticado en el store, no hacer nada
+      if (user) {
+        updateLastActivity()
+        isInitialized = true
         return
       }
 
@@ -33,49 +45,31 @@ export function SessionInitializer({ children }: SessionInitializerProps) {
       const token = localStorage.getItem('token')
       
       if (!token) {
-        console.log('🔧 [SessionInitializer] No hay token, redirigiendo a login')
         router.push('/auth/login')
-        return
-      }
-
-      // Verificar si es una recarga dura
-      const isHardRefresh = detectHardRefresh()
-      if (isHardRefresh) {
-        console.log('🔄 [SessionInitializer] Recarga dura detectada, cerrando sesión')
-        logout('hard_refresh')
-        router.push('/auth/login')
+        isInitialized = true
         return
       }
 
       // Verificar timeout de inactividad
       const isInactive = checkInactivityTimeout()
       if (isInactive) {
-        console.log('🔒 [SessionInitializer] Sesión expirada por inactividad')
         logout('inactivity')
         router.push('/auth/login')
+        isInitialized = true
         return
       }
 
       // Si llegamos aquí, verificar autenticación normalmente
-      console.log('✅ [SessionInitializer] Verificando autenticación...')
       checkAuth()
-      
-      // Actualizar última actividad
       updateLastActivity()
+      isInitialized = true
     }
-
-    // Ejecutar inicialización
-    initializeSession()
 
     // Configurar listener para cambios de visibilidad
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // La página se volvió visible, verificar sesión
-        console.log('👁️ [SessionInitializer] Página visible, verificando sesión')
-        
+      if (!document.hidden && isInitialized) {
         const isInactive = checkInactivityTimeout()
         if (isInactive) {
-          console.log('🔒 [SessionInitializer] Sesión expirada durante inactividad')
           logout('inactivity')
           router.push('/auth/login')
         } else {
@@ -84,12 +78,16 @@ export function SessionInitializer({ children }: SessionInitializerProps) {
       }
     }
 
+    // Ejecutar inicialización
+    initializeSession()
+    
+    // Agregar listener de visibilidad
     document.addEventListener('visibilitychange', handleVisibilityChange)
-
+    
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [pathname, router, checkAuth, logout])
+  }, [pathname, router, user, checkAuth, logout, initializeAuth])
 
   // Función para detectar recarga dura
   const detectHardRefresh = (): boolean => {

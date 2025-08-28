@@ -152,22 +152,54 @@ export const planesApi = {
 
   // Obtener suscripción actual del usuario
   async obtenerSuscripcionActual(): Promise<Suscripcion | null> {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No autenticado");
+    const maxRetries = 3;
+    let retryCount = 0;
 
-      const response = await fetch(`${API_BASE_URL}/planes/usuario/actual`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    while (retryCount < maxRetries) {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No autenticado");
 
-      const data = await response.json();
-      return data.success && data.data ? data.data : null;
-    } catch (error) {
-      console.error("Error obteniendo suscripción:", error);
-      return null;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(`${API_BASE_URL}/planes/usuario/actual`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          return data.data;
+        } else {
+          console.warn('Respuesta sin datos válidos:', data);
+          return null;
+        }
+      } catch (error: any) {
+        retryCount++;
+        console.error(`Error obteniendo suscripción (intento ${retryCount}/${maxRetries}):`, error);
+        
+        // Si es el último intento o es un error de autenticación, no reintentar
+        if (retryCount >= maxRetries || error.message?.includes('autenticado')) {
+          throw error;
+        }
+        
+        // Esperar antes del siguiente intento (backoff exponencial)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+      }
     }
+    
+    return null;
   },
 
   // Verificar límites para un tipo de recurso

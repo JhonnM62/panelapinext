@@ -25,6 +25,16 @@ export function useSessionPersistence(config: SessionPersistenceConfig = {}) {
   } = config
 
   const { user, logout, checkAuth } = useAuthStore()
+  const checkAuthRef = useRef(checkAuth)
+  const onSessionExpiredRef = useRef(onSessionExpired)
+  const onHardRefreshDetectedRef = useRef(onHardRefreshDetected)
+  
+  // Actualizar las referencias cuando las funciones cambien
+  useEffect(() => {
+    checkAuthRef.current = checkAuth
+    onSessionExpiredRef.current = onSessionExpired
+    onHardRefreshDetectedRef.current = onHardRefreshDetected
+  }, [checkAuth, onSessionExpired, onHardRefreshDetected])
   const router = useRouter()
   const lastActivityRef = useRef<number>(Date.now())
   const sessionIdRef = useRef<string>(generateSessionId())
@@ -58,7 +68,6 @@ export function useSessionPersistence(config: SessionPersistenceConfig = {}) {
     const timeSinceLastActivity = now - lastActivityTime
 
     if (timeSinceLastActivity > inactivityTimeoutMs) {
-      console.log('🔒 [SessionPersistence] Sesión expirada por inactividad')
       return true
     }
 
@@ -69,26 +78,13 @@ export function useSessionPersistence(config: SessionPersistenceConfig = {}) {
   const detectHardRefresh = useCallback(() => {
     if (!enableHardRefreshDetection) return false
 
-    // Verificar si es una recarga dura usando performance.navigation
-    if (typeof window !== 'undefined' && window.performance) {
-      const navigation = window.performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
+    // Solo verificar el flag específico de recarga dura
+    // No usar sessionStorage.length === 0 porque puede ser falso positivo en desarrollo
+    if (typeof window !== 'undefined') {
+      const hardRefreshFlag = sessionStorage.getItem(SESSION_KEYS.HARD_REFRESH_FLAG)
       
-      if (navigation) {
-        // Tipo 1 = reload, pero necesitamos distinguir entre F5 y Ctrl+F5
-        const isReload = navigation.type === 'reload'
-        
-        if (isReload) {
-          // Verificar si sessionStorage está vacío (indicativo de recarga dura)
-          const sessionStorageEmpty = sessionStorage.length === 0
-          
-          // Verificar si hay un flag específico de recarga dura
-          const hardRefreshFlag = sessionStorage.getItem(SESSION_KEYS.HARD_REFRESH_FLAG)
-          
-          if (sessionStorageEmpty || hardRefreshFlag === 'true') {
-            console.log('🔄 [SessionPersistence] Recarga dura detectada')
-            return true
-          }
-        }
+      if (hardRefreshFlag === 'true') {
+        return true
       }
     }
 
@@ -108,20 +104,18 @@ export function useSessionPersistence(config: SessionPersistenceConfig = {}) {
     const timeoutMs = inactivityTimeoutHours * 60 * 60 * 1000
     inactivityTimerRef.current = setTimeout(() => {
       if (checkInactivityTimeout()) {
-        console.log('🔒 [SessionPersistence] Cerrando sesión por inactividad')
-        onSessionExpired?.()
-        logout()
-        router.push('/auth/login')
+        onSessionExpiredRef.current?.()
+      logout()
+      router.push('/auth/login')
       }
     }, timeoutMs)
-  }, [updateLastActivity, inactivityTimeoutHours, checkInactivityTimeout, onSessionExpired, logout, router])
+  }, [updateLastActivity, inactivityTimeoutHours, checkInactivityTimeout, logout, router])
 
   // Detectar teclas de recarga dura
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     // Ctrl+F5 o Ctrl+Shift+R
     if ((event.ctrlKey && event.key === 'F5') || 
         (event.ctrlKey && event.shiftKey && event.key === 'R')) {
-      console.log('🔄 [SessionPersistence] Recarga dura iniciada por teclado')
       sessionStorage.setItem(SESSION_KEYS.HARD_REFRESH_FLAG, 'true')
     }
   }, [])
@@ -141,8 +135,7 @@ export function useSessionPersistence(config: SessionPersistenceConfig = {}) {
 
     // Verificar si es una recarga dura
     if (detectHardRefresh()) {
-      console.log('🔄 [SessionPersistence] Forzando cierre de sesión por recarga dura')
-      onHardRefreshDetected?.()
+      onHardRefreshDetectedRef.current?.()
       logout()
       router.push('/auth/login')
       return
@@ -150,28 +143,34 @@ export function useSessionPersistence(config: SessionPersistenceConfig = {}) {
 
     // Verificar timeout de inactividad
     if (checkInactivityTimeout()) {
-      console.log('🔒 [SessionPersistence] Forzando cierre de sesión por inactividad')
-      onSessionExpired?.()
+      onSessionExpiredRef.current?.()
       logout()
       router.push('/auth/login')
       return
     }
-
-    // Si llegamos aquí, la sesión es válida
-    console.log('✅ [SessionPersistence] Sesión válida, manteniendo autenticación')
     
     // Actualizar actividad
     updateLastActivity()
     
-    // Verificar autenticación
-    checkAuth()
+    // Verificar autenticación usando la referencia para evitar dependencias
+    checkAuthRef.current()
     
-    // Configurar timer de inactividad
-    handleUserActivity()
+    // Configurar timer de inactividad inicial
+    const timeoutMs = inactivityTimeoutHours * 60 * 60 * 1000
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current)
+    }
+    inactivityTimerRef.current = setTimeout(() => {
+      if (checkInactivityTimeout()) {
+        onSessionExpiredRef.current?.()
+        logout()
+        router.push('/auth/login')
+      }
+    }, timeoutMs)
 
     // Limpiar flags de recarga dura
     sessionStorage.removeItem(SESSION_KEYS.HARD_REFRESH_FLAG)
-  }, [detectHardRefresh, checkInactivityTimeout, onHardRefreshDetected, onSessionExpired, logout, router, updateLastActivity, checkAuth, handleUserActivity])
+  }, [detectHardRefresh, checkInactivityTimeout, logout, router, updateLastActivity, inactivityTimeoutHours]) // Removido handleUserActivity para evitar bucle infinito
 
   // Configurar event listeners
   useEffect(() => {

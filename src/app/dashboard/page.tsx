@@ -418,8 +418,12 @@ export default function DashboardPage() {
   };
 
   const loadDashboardData = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('🎯 [Dashboard] No hay usuario disponible, cancelando carga de datos');
+      return;
+    }
 
+    console.log('🎯 [Dashboard] Iniciando carga de datos del dashboard...');
     setLoading(true);
     try {
       // Cargar datos básicos
@@ -534,12 +538,14 @@ export default function DashboardPage() {
       setLoading(false);
       setRefreshing(false);
       setLastUpdated(new Date());
+      console.log('🎯 [Dashboard] ✅ Carga de datos completada exitosamente');
     }
   };
 
   useEffect(() => {
-    // Solo cargar datos si el usuario existe y no se están cargando los límites del plan
-    if (user && !planLoading) {
+    // Cargar datos inmediatamente cuando el usuario esté disponible
+    if (user) {
+      console.log('🎯 [Dashboard] Usuario disponible, cargando datos del dashboard...');
       loadDashboardData();
 
       // Auto-refresh cada 60 segundos (aumentado para reducir carga)
@@ -553,14 +559,14 @@ export default function DashboardPage() {
 
       return () => clearInterval(interval);
     }
-  }, [user, planLoading]); // Agregar planLoading como dependencia
+  }, [user]); // Solo depender del usuario, no del planLoading
 
   const refreshData = () => {
     setRefreshing(true);
     loadDashboardData();
   };
 
-  // 🎨 MOSTRAR SKELETON MIENTRAS CARGA
+  // 🎨 MOSTRAR SKELETON SOLO MIENTRAS CARGA EL DASHBOARD
   if (loading) {
     return <DashboardSkeleton />;
   }
@@ -583,7 +589,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* 📊 Resource Limit Banners */}
-      {suscripcion && resourceLimits && (
+      {!planLoading && suscripcion && resourceLimits && (
         <div className="space-y-4">
           <ResourceLimitBanner
             suscripcion={suscripcion}
@@ -603,6 +609,25 @@ export default function DashboardPage() {
             resourceType="webhooks"
             resourceDisplayName="Webhooks"
           />
+        </div>
+      )}
+      
+      {/* 📊 Plan Loading State */}
+      {planLoading && (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="border-l-4 border-l-blue-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-48 bg-gray-300" />
+                    <Skeleton className="h-3 w-64 bg-gray-200" />
+                  </div>
+                  <Skeleton className="h-8 w-20 bg-blue-200 rounded-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 

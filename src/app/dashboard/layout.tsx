@@ -232,7 +232,7 @@ export default function DashboardLayout({
   // Configurar persistencia de sesión con callbacks personalizados
   useSessionPersistence({
     inactivityTimeoutHours: 12,
-    enableHardRefreshDetection: true,
+    enableHardRefreshDetection: false, // Deshabilitar para evitar conflictos con SessionInitializer
     onSessionExpired: () => {
       console.log('🔒 [Dashboard] Sesión expirada por inactividad')
       // El logout ya se maneja en el hook

@@ -10,10 +10,11 @@ import {
 } from "@/types/plans";
 
 export const usePlanLimits = () => {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [suscripcion, setSuscripcion] = useState<Suscripcion | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const calculateLimitValidation = useCallback(
     (current: number, limit: number): LimitValidation => {
@@ -88,21 +89,76 @@ export const usePlanLimits = () => {
     };
   }, [suscripcion, calculateLimitValidation]);
 
-  const loadSuscripcion = useCallback(async () => {
-    if (!user) return;
+  const loadSuscripcion = useCallback(async (isRetry = false) => {
+    if (!user || !token) {
+      setLoading(false);
+      setSuscripcion(null);
+      setError(null);
+      setRetryCount(0);
+      return;
+    }
 
     try {
       setLoading(true);
-      setError(null);
+      console.log("📊 [PLAN LIMITS] 🔄 Iniciando carga, loading establecido a true");
+      if (!isRetry) {
+        setError(null);
+        setRetryCount(0);
+      }
+
+      // Verificar que el token esté en localStorage
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        console.warn('Token no encontrado en localStorage, esperando sincronización...');
+        setLoading(false);
+        return;
+      }
 
       const data = await planesApi.obtenerSuscripcionActual();
       setSuscripcion(data);
+      setRetryCount(0); // Reset retry count on success
+      setLoading(false); // Marcar como completado en caso exitoso
+      console.log("📊 [PLAN LIMITS] ✅ Carga completada, loading establecido a false");
+      
+      if (!data) {
+        setError("No se pudo cargar la información del plan");
+      }
     } catch (err: any) {
-      console.error("Error cargando suscripción:", err);
-      setError(err.message || "Error al cargar información del plan");
-      setSuscripcion(null);
+      console.error(`Error cargando suscripción (intento ${retryCount + 1}):`, err);
+      
+      const currentRetryCount = retryCount + 1;
+      setRetryCount(currentRetryCount);
+      
+      // Auto-retry hasta 3 veces con delay exponencial
+      if (currentRetryCount < 3 && !err.message?.includes('autenticado')) {
+        const delay = Math.pow(2, currentRetryCount) * 1000; // 2s, 4s, 8s
+        console.log(`Reintentando en ${delay/1000}s...`);
+        
+        setTimeout(() => {
+          loadSuscripcion(true);
+        }, delay);
+        
+        setError(`Error al cargar suscripción. Reintentando... (${currentRetryCount}/3)`);
+      } else {
+        // Error final después de todos los reintentos
+        let errorMessage = "Error al cargar información del plan";
+        
+        if (err.message?.includes('autenticado')) {
+          errorMessage = "Sesión expirada. Por favor, inicia sesión nuevamente.";
+        } else if (err.message?.includes('Network')) {
+          errorMessage = "Error de conexión. Verifica tu conexión a internet.";
+        } else if (err.message?.includes('500')) {
+          errorMessage = "Error del servidor. Intenta nuevamente más tarde.";
+        }
+        
+        setError(errorMessage);
+        setSuscripcion(null);
+      }
     } finally {
-      setLoading(false);
+      // Solo setear loading a false si no vamos a reintentar
+      if (retryCount >= 2 || error?.includes('autenticado')) {
+        setLoading(false);
+      }
     }
   }, [user]);
 
@@ -321,17 +377,40 @@ export const usePlanLimits = () => {
   );
 
   const refreshData = useCallback(() => {
+    setRetryCount(0);
+    loadSuscripcion();
+  }, [loadSuscripcion]);
+
+  const retryLoadSuscripcion = useCallback(() => {
+    setRetryCount(0);
+    setError(null);
     loadSuscripcion();
   }, [loadSuscripcion]);
 
   useEffect(() => {
-    loadSuscripcion();
-  }, [loadSuscripcion]);
+    if (user && token) {
+      // Pequeño delay para asegurar que localStorage esté sincronizado
+      const timeoutId = setTimeout(() => {
+        loadSuscripcion();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user, token]); // Depende de user y token para asegurar sincronización
+
+  // 🔍 DEBUG: Log del estado actual del hook
+  console.log("📊 [PLAN LIMITS] Estado actual del hook:", {
+    loading,
+    hasSuscripcion: !!suscripcion,
+    hasResourceLimits: !!getResourceLimits(),
+    error
+  });
 
   return {
     suscripcion,
     loading,
     error,
+    retryCount,
     resourceLimits: getResourceLimits(),
     canCreateResource,
     checkLimits,
@@ -341,5 +420,6 @@ export const usePlanLimits = () => {
     incrementResourceUsage,
     decrementResourceUsage,
     refreshData,
+    retryLoadSuscripcion,
   };
 };
