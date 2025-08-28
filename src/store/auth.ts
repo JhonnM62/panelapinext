@@ -84,7 +84,9 @@ export const useAuthStore = create<AuthState>()(
           localStorage.setItem('token', userData.token)
           
           // Guardar token en cookies para que el middleware pueda acceder
-          document.cookie = `token=${userData.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`
+          // Configurar cookie con mayor duración y configuración segura
+          const maxAge = 30 * 24 * 60 * 60 // 30 días
+          document.cookie = `token=${userData.token}; path=/; max-age=${maxAge}; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`
           
           // Calcular si la membresía está expirada
           const daysRemaining = getDaysRemaining(userData.fechaFin)
@@ -263,10 +265,11 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('token')
         localStorage.removeItem('baileys_token')
         localStorage.removeItem('auth-storage')
+        localStorage.removeItem('user')
         
         // Limpiar cookies de autenticación
-        document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-        document.cookie = 'baileys_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax'
+        document.cookie = 'baileys_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax'
         
         // Limpiar datos de sesión específicos
         localStorage.removeItem('session_last_activity')
@@ -280,8 +283,12 @@ export const useAuthStore = create<AuthState>()(
         })
         
         // Limpiar sessionStorage para forzar recarga completa
-        if (reason === 'hard_refresh') {
-          sessionStorage.clear()
+        try {
+          if (reason === 'hard_refresh') {
+            sessionStorage.clear()
+          }
+        } catch (e) {
+          // Ignorar errores de sessionStorage
         }
         
         set({ user: null, token: null, error: null })
@@ -502,7 +509,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       initializeAuth: () => {
-        const { token } = get()
+        const { token, user } = get()
+        
+        // Si ya hay usuario y token, no hacer nada
+        if (user && token) {
+          return
+        }
         
         // Si no hay token en el estado, intentar obtenerlo desde cookies
         if (!token) {
@@ -522,6 +534,9 @@ export const useAuthStore = create<AuthState>()(
             
             // También guardarlo en localStorage para consistencia
             localStorage.setItem('token', cookieToken)
+            
+            // Verificar autenticación con el token recuperado
+            get().checkAuth()
           }
         }
       },

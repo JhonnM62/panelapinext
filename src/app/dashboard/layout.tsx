@@ -244,15 +244,11 @@ export default function DashboardLayout({
   })
 
   useEffect(() => {
-    const checkAuth = async () => {
-      if (!user) {
-        router.push('/auth/login')
-      } else {
-        setIsLoading(false)
-      }
-    }
-    checkAuth()
-  }, [user, router])
+    // Simplificar: solo verificar si hay usuario para mostrar/ocultar loading
+    // El middleware ya maneja la redirección si no hay token válido
+    // useSessionPersistence maneja la verificación de autenticación
+    setIsLoading(!user)
+  }, [user])
 
   // Función para obtener las iniciales del email
   const getInitials = (email: string) => {
