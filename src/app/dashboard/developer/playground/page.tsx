@@ -47,6 +47,12 @@ import {
   Globe,
   Key,
   Lock,
+  MessageSquare,
+  Image,
+  Video,
+  Mic,
+  FileText,
+  MapPin,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
@@ -107,117 +113,11 @@ const API_BASE_URL = "https://backend.autosystemprojects.site";
 
 const endpoints: APIEndpoint[] = [
   {
-    id: "sessions-list",
-    method: "GET",
-    path: "/sessions/list",
-    title: "Listar Sesiones",
-    description: "Obtiene la lista de todas las sesiones activas",
-    category: "Sesiones",
-    requiresAuth: true,
-    parameters: [],
-    responses: {
-      "200": {
-        description: "Lista de sesiones obtenida exitosamente",
-        example: {
-          success: true,
-          message: "Session list",
-          data: ["session-1", "session-2"],
-        },
-      },
-    },
-  },
-  {
-    id: "sessions-create",
-    method: "POST",
-    path: "/sessions/add",
-    title: "Crear Sesión",
-    description: "Crea una nueva sesión de WhatsApp",
-    category: "Sesiones",
-    requiresAuth: true,
-    parameters: [],
-    bodySchema: {
-      id: {
-        type: "string",
-        required: true,
-        description: "ID único para la sesión",
-        example: "mi-sesion-bot",
-      },
-      token: {
-        type: "string",
-        required: true,
-        description: "Token de autenticación",
-        example: "your-auth-token",
-      },
-      typeAuth: {
-        type: "string",
-        required: false,
-        description: "Tipo de autenticación: qr o code",
-        example: "qr",
-      },
-      phoneNumber: {
-        type: "string",
-        required: false,
-        description: "Número de teléfono para autenticación por código",
-        example: "+573001234567",
-      },
-    },
-    responses: {
-      "200": {
-        description: "Sesión creada exitosamente",
-        example: {
-          success: true,
-          message: "QR code received, please scan the QR code.",
-          data: {
-            qr: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
-          },
-        },
-      },
-      "409": {
-        description: "La sesión ya existe",
-        example: {
-          success: false,
-          message: "Session already exists, please use another id.",
-          data: {},
-        },
-      },
-    },
-  },
-  {
-    id: "sessions-status",
-    method: "GET",
-    path: "/sessions/status/:id",
-    title: "Estado de Sesión",
-    description: "Obtiene el estado actual de una sesión",
-    category: "Sesiones",
-    requiresAuth: true,
-    parameters: [
-      {
-        name: "id",
-        type: "string",
-        required: true,
-        description: "ID de la sesión",
-        example: "mi-sesion-bot",
-      },
-    ],
-    responses: {
-      "200": {
-        description: "Estado obtenido exitosamente",
-        example: {
-          success: true,
-          message: "",
-          data: {
-            status: "authenticated",
-          },
-        },
-      },
-    },
-  },
-  {
-    id: "chats-send",
+    id: "message-text",
     method: "POST",
     path: "/chats/send",
-    title: "Enviar Mensaje",
-    description: "Envía un mensaje de texto, imagen, video, etc.",
+    title: "Mensaje de Texto",
+    description: "Envía un mensaje de texto simple",
     category: "Mensajes",
     requiresAuth: true,
     parameters: [
@@ -225,29 +125,23 @@ const endpoints: APIEndpoint[] = [
         name: "id",
         type: "string",
         required: true,
-        description: "ID de la sesión",
-        example: "mi-sesion-bot",
+        description: "ID de la sesión activa",
+        example: "mi-bot-session",
       },
     ],
     bodySchema: {
       receiver: {
         type: "string",
         required: true,
-        description: "Número de teléfono del destinatario",
-        example: "+573001234567",
-      },
-      isGroup: {
-        type: "boolean",
-        required: false,
-        description: "Si es un mensaje a grupo",
-        example: false,
+        description: "Número de teléfono del destinatario (con código de país)",
+        example: "573001234567",
       },
       message: {
         type: "object",
         required: true,
         description: "Contenido del mensaje",
         example: {
-          text: "Hola, ¿cómo estás?",
+          text: "¡Hola! Este es un mensaje de prueba desde la API.",
         },
       },
     },
@@ -256,8 +150,263 @@ const endpoints: APIEndpoint[] = [
         description: "Mensaje enviado exitosamente",
         example: {
           success: true,
-          message: "The message has been successfully sent.",
-          data: {},
+          message: "Message sent successfully",
+          data: {
+            messageId: "msg_123456789",
+            timestamp: "2024-01-15T10:30:00Z",
+          },
+        },
+      },
+    },
+  },
+  {
+    id: "message-image",
+    method: "POST",
+    path: "/chats/send",
+    title: "Mensaje con Imagen",
+    description: "Envía una imagen con caption opcional",
+    category: "Mensajes",
+    requiresAuth: true,
+    parameters: [
+      {
+        name: "id",
+        type: "string",
+        required: true,
+        description: "ID de la sesión activa",
+        example: "mi-bot-session",
+      },
+    ],
+    bodySchema: {
+      receiver: {
+        type: "string",
+        required: true,
+        description: "Número de teléfono del destinatario",
+        example: "573001234567",
+      },
+      message: {
+        type: "object",
+        required: true,
+        description: "Datos de la imagen",
+        example: {
+          image: {
+            url: "https://ejemplo.com/imagen.jpg",
+            caption: "Esta es una imagen de ejemplo",
+          },
+        },
+      },
+    },
+    responses: {
+      "200": {
+        description: "Imagen enviada exitosamente",
+        example: {
+          success: true,
+          message: "Image sent successfully",
+          data: {
+            messageId: "msg_123456789",
+            mediaId: "media_987654321",
+          },
+        },
+      },
+    },
+  },
+  {
+    id: "message-video",
+    method: "POST",
+    path: "/chats/send",
+    title: "Mensaje con Video",
+    description: "Envía un video con caption opcional",
+    category: "Mensajes",
+    requiresAuth: true,
+    parameters: [
+      {
+        name: "id",
+        type: "string",
+        required: true,
+        description: "ID de la sesión activa",
+        example: "mi-bot-session",
+      },
+    ],
+    bodySchema: {
+      receiver: {
+        type: "string",
+        required: true,
+        description: "Número de teléfono del destinatario",
+        example: "573001234567",
+      },
+      message: {
+        type: "object",
+        required: true,
+        description: "Datos del video",
+        example: {
+          video: {
+            url: "https://ejemplo.com/video.mp4",
+            caption: "Video de demostración",
+          },
+        },
+      },
+    },
+    responses: {
+      "200": {
+        description: "Video enviado exitosamente",
+        example: {
+          success: true,
+          message: "Video sent successfully",
+          data: {
+            messageId: "msg_123456789",
+            mediaId: "media_987654321",
+          },
+        },
+      },
+    },
+  },
+  {
+    id: "message-audio",
+    method: "POST",
+    path: "/chats/send",
+    title: "Mensaje de Audio",
+    description: "Envía un archivo de audio o nota de voz",
+    category: "Mensajes",
+    requiresAuth: true,
+    parameters: [
+      {
+        name: "id",
+        type: "string",
+        required: true,
+        description: "ID de la sesión activa",
+        example: "mi-bot-session",
+      },
+    ],
+    bodySchema: {
+      receiver: {
+        type: "string",
+        required: true,
+        description: "Número de teléfono del destinatario",
+        example: "573001234567",
+      },
+      message: {
+        type: "object",
+        required: true,
+        description: "Datos del audio",
+        example: {
+          audio: {
+            url: "https://ejemplo.com/audio.mp3",
+            ptt: true,
+          },
+        },
+      },
+    },
+    responses: {
+      "200": {
+        description: "Audio enviado exitosamente",
+        example: {
+          success: true,
+          message: "Audio sent successfully",
+          data: {
+            messageId: "msg_123456789",
+            mediaId: "media_987654321",
+          },
+        },
+      },
+    },
+  },
+  {
+    id: "message-document",
+    method: "POST",
+    path: "/chats/send",
+    title: "Mensaje con Documento",
+    description: "Envía un documento (PDF, Word, Excel, etc.)",
+    category: "Mensajes",
+    requiresAuth: true,
+    parameters: [
+      {
+        name: "id",
+        type: "string",
+        required: true,
+        description: "ID de la sesión activa",
+        example: "mi-bot-session",
+      },
+    ],
+    bodySchema: {
+      receiver: {
+        type: "string",
+        required: true,
+        description: "Número de teléfono del destinatario",
+        example: "573001234567",
+      },
+      message: {
+        type: "object",
+        required: true,
+        description: "Datos del documento",
+        example: {
+          document: {
+            url: "https://ejemplo.com/documento.pdf",
+            filename: "reporte.pdf",
+            caption: "Reporte mensual adjunto",
+          },
+        },
+      },
+    },
+    responses: {
+      "200": {
+        description: "Documento enviado exitosamente",
+        example: {
+          success: true,
+          message: "Document sent successfully",
+          data: {
+            messageId: "msg_123456789",
+            mediaId: "media_987654321",
+          },
+        },
+      },
+    },
+  },
+  {
+    id: "message-location",
+    method: "POST",
+    path: "/chats/send",
+    title: "Mensaje de Ubicación",
+    description: "Envía una ubicación geográfica",
+    category: "Mensajes",
+    requiresAuth: true,
+    parameters: [
+      {
+        name: "id",
+        type: "string",
+        required: true,
+        description: "ID de la sesión activa",
+        example: "mi-bot-session",
+      },
+    ],
+    bodySchema: {
+      receiver: {
+        type: "string",
+        required: true,
+        description: "Número de teléfono del destinatario",
+        example: "573001234567",
+      },
+      message: {
+        type: "object",
+        required: true,
+        description: "Datos de la ubicación",
+        example: {
+          location: {
+            latitude: 4.6097102,
+            longitude: -74.0817699,
+            name: "Bogotá, Colombia",
+            address: "Bogotá, Cundinamarca, Colombia",
+          },
+        },
+      },
+    },
+    responses: {
+      "200": {
+        description: "Ubicación enviada exitosamente",
+        example: {
+          success: true,
+          message: "Location sent successfully",
+          data: {
+            messageId: "msg_123456789",
+          },
         },
       },
     },
@@ -364,9 +513,7 @@ export default function APIPlaygroundPage() {
   const [parameters, setParameters] = useState<{ [key: string]: any }>({});
   const [requestBody, setRequestBody] = useState("");
   const [customHeaders, setCustomHeaders] = useState<{ [key: string]: string }>(
-    {
-      "Content-Type": "application/json",
-    }
+    {}
   );
   const [authToken, setAuthToken] = useState("");
   const [showToken, setShowToken] = useState(false);
@@ -395,22 +542,27 @@ export default function APIPlaygroundPage() {
     }
   }, [authToken]);
 
+  // Inicializar cuerpo de solicitud con datos de ejemplo cuando cambie el endpoint
+  useEffect(() => {
+    if (selectedEndpoint.bodySchema) {
+      const exampleBody: { [key: string]: any } = {};
+      Object.entries(selectedEndpoint.bodySchema).forEach(([key, schema]) => {
+        if (schema.example !== undefined) {
+          exampleBody[key] = schema.example;
+        }
+      });
+      setRequestBody(JSON.stringify(exampleBody, null, 2));
+    } else {
+      setRequestBody("");
+    }
+  }, [selectedEndpoint]);
+
   // Construir URL completa
   const buildUrl = () => {
     let url = `${API_BASE_URL}${selectedEndpoint.path}`;
 
-    // Reemplazar parámetros de ruta
-    selectedEndpoint.parameters.forEach((param) => {
-      if (parameters[param.name]) {
-        url = url.replace(`:${param.name}`, parameters[param.name]);
-      }
-    });
-
-    // Agregar query parameters para GET
-    if (
-      selectedEndpoint.method === "GET" &&
-      Object.keys(parameters).length > 0
-    ) {
+    // Agregar query parameters para todos los métodos
+    if (Object.keys(parameters).length > 0) {
       const queryParams = new URLSearchParams();
       Object.entries(parameters).forEach(([key, value]) => {
         if (value) queryParams.append(key, value);
@@ -430,7 +582,10 @@ export default function APIPlaygroundPage() {
 
     try {
       const url = buildUrl();
-      const headers: { [key: string]: string } = { ...customHeaders };
+      const headers: { [key: string]: string } = {
+        "Content-Type": "application/json",
+        ...customHeaders
+      };
 
       // Agregar token de autenticación si es requerido
       if (selectedEndpoint.requiresAuth && authToken) {
@@ -547,7 +702,10 @@ export default function APIPlaygroundPage() {
   // Generar código de ejemplo
   const generateCodeExample = (language: "javascript" | "python" | "curl") => {
     const url = buildUrl();
-    const headers = { ...customHeaders };
+    const headers: { [key: string]: string } = {
+      "Content-Type": "application/json",
+      ...customHeaders
+    };
     if (selectedEndpoint.requiresAuth && authToken) {
       headers["x-access-token"] = authToken;
     }
@@ -674,39 +832,89 @@ curl -X ${selectedEndpoint.method} \\
               <CardTitle className="text-lg">Endpoints Disponibles</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {endpoints.map((endpoint) => (
-                  <Button
-                    key={endpoint.id}
-                    variant={
-                      selectedEndpoint.id === endpoint.id
-                        ? "default"
-                        : "outline"
+              <div className="space-y-4">
+                {/* Agrupar endpoints por categoría */}
+                {Object.entries(
+                  endpoints.reduce((acc, endpoint) => {
+                    if (!acc[endpoint.category]) {
+                      acc[endpoint.category] = [];
                     }
-                    className="w-full justify-start"
-                    onClick={() => {
-                      setSelectedEndpoint(endpoint);
-                      setParameters({});
-                      setRequestBody("");
-                      setResponse(null);
-                    }}
-                  >
-                    <Badge
-                      variant={
-                        endpoint.method === "GET"
-                          ? "secondary"
-                          : endpoint.method === "POST"
-                          ? "default"
-                          : endpoint.method === "DELETE"
-                          ? "destructive"
-                          : "outline"
-                      }
-                      className="mr-2 text-xs"
-                    >
-                      {endpoint.method}
-                    </Badge>
-                    <span className="truncate">{endpoint.title}</span>
-                  </Button>
+                    acc[endpoint.category].push(endpoint);
+                    return acc;
+                  }, {} as { [key: string]: typeof endpoints })
+                ).map(([category, categoryEndpoints]) => (
+                  <div key={category} className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
+                      {category}
+                    </h4>
+                    <div className="space-y-1">
+                      {categoryEndpoints.map((endpoint) => {
+                        const getIcon = () => {
+                          switch (endpoint.id) {
+                            case "message-text":
+                              return <MessageSquare className="h-4 w-4" />;
+                            case "message-image":
+                              return <Image className="h-4 w-4" />;
+                            case "message-video":
+                              return <Video className="h-4 w-4" />;
+                            case "message-audio":
+                              return <Mic className="h-4 w-4" />;
+                            case "message-document":
+                              return <FileText className="h-4 w-4" />;
+                            case "message-location":
+                              return <MapPin className="h-4 w-4" />;
+                            default:
+                              return <Send className="h-4 w-4" />;
+                          }
+                        };
+
+                        return (
+                          <Button
+                            key={endpoint.id}
+                            variant={
+                              selectedEndpoint.id === endpoint.id
+                                ? "default"
+                                : "outline"
+                            }
+                            className="w-full justify-start h-auto py-3"
+                            onClick={() => {
+                              setSelectedEndpoint(endpoint);
+                              setParameters({});
+                              setResponse(null);
+                            }}
+                          >
+                            <div className="flex items-center gap-3 w-full">
+                              <div className="flex items-center gap-2">
+                                {getIcon()}
+                                <Badge
+                                  variant={
+                                    endpoint.method === "GET"
+                                      ? "secondary"
+                                      : endpoint.method === "POST"
+                                      ? "default"
+                                      : endpoint.method === "DELETE"
+                                      ? "destructive"
+                                      : "outline"
+                                  }
+                                  className="text-xs"
+                                >
+                                  {endpoint.method}
+                                </Badge>
+                              </div>
+                              <div className="flex-1 text-left">
+                                <div className="font-medium text-sm">
+                                  {endpoint.title}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {endpoint.description}
+                                </div>
+                              </div>
+                            </div>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 ))}
               </div>
             </CardContent>
@@ -801,8 +1009,7 @@ curl -X ${selectedEndpoint.method} \\
             <CardContent>
               <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
                 <code className="text-sm">
-                  {selectedEndpoint.method} {API_BASE_URL}
-                  {selectedEndpoint.path}
+                  {selectedEndpoint.method} {buildUrl()}
                 </code>
               </div>
             </CardContent>
@@ -910,19 +1117,38 @@ curl -X ${selectedEndpoint.method} \\
                   <CardTitle className="text-lg">Headers</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Textarea
-                    value={JSON.stringify(customHeaders, null, 2)}
-                    onChange={(e) => {
-                      try {
-                        setCustomHeaders(JSON.parse(e.target.value));
-                      } catch (error) {
-                        // Invalid JSON, don't update
-                      }
-                    }}
-                    placeholder="Enter headers as JSON..."
-                    rows={4}
-                    className="font-mono text-sm"
-                  />
+                  <div className="space-y-4">
+                    {/* Default Headers Display */}
+                    <div>
+                      <Label>Headers por defecto:</Label>
+                      <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                        <pre className="text-sm">
+                          {JSON.stringify({
+                            "Content-Type": "application/json",
+                            ...(selectedEndpoint.requiresAuth && authToken ? { "x-access-token": authToken } : {})
+                          }, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                    
+                    {/* Custom Headers */}
+                    <div>
+                      <Label>Headers personalizados:</Label>
+                      <Textarea
+                        value={JSON.stringify(customHeaders, null, 2)}
+                        onChange={(e) => {
+                          try {
+                            setCustomHeaders(JSON.parse(e.target.value));
+                          } catch (error) {
+                            // Invalid JSON, don't update
+                          }
+                        }}
+                        placeholder="Enter additional headers as JSON..."
+                        rows={4}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 

@@ -38,35 +38,35 @@ import { toast } from "@/components/ui/use-toast";
 
 const API_BASE_URL = "https://backend.autosystemprojects.site";
 
-// Ejemplos de código para diferentes lenguajes
+// Ejemplos de código para diferentes lenguajes y plataformas
 const codeExamples = {
   javascript: {
-    session: `// Crear nueva sesión WhatsApp
-import axios from 'axios'
+    appsheet: `// Integración con AppSheet - Enviar mensaje desde una app
+// Este código se puede usar en AppSheet con la acción "Call a webhook"
 
-const API_URL = '${API_BASE_URL}'
-
-const createSession = async (sessionId, token) => {
-  try {
-    const response = await axios.post(\`\${API_URL}/sessions/add\`, {
-      id: sessionId,
-      token: token,
-      typeAuth: 'qr' // o 'code' para código de verificación
-    }, {
-      headers: {
-        'x-access-token': token
-      }
+const sendMessageFromApp = async (phoneNumber, message, botId) => {
+  const response = await fetch('${API_BASE_URL}/chats/send', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-access-token': 'tu_token_aqui'
+    },
+    body: JSON.stringify({
+      number: phoneNumber,
+      message: message,
+      sessionId: botId
     })
-    
-    console.log('Sesión creada:', response.data)
-    return response.data
-  } catch (error) {
-    console.error('Error:', error.response?.data || error.message)
-  }
-}
+  });
+  
+  return await response.json();
+};
 
-// Usar la función
-createSession('mi-bot-session', 'tu-token-aqui')`,
+// Ejemplo de uso en AppSheet:
+// 1. Crear una acción "Call a webhook"
+// 2. URL: tu-dominio.com/api/send-message
+// 3. Método: POST
+// 4. Headers: x-access-token con tu token
+// 5. Body: datos del formulario AppSheet`,
 
     message: `// Enviar mensaje de texto
 const sendMessage = async (sessionId, phoneNumber, message, token) => {
@@ -148,35 +148,47 @@ app.listen(3000, () => {
   },
 
   python: {
-    session: `# Crear sesión WhatsApp con Python
+    appsheet: `# Integración con AppSheet usando Python Flask
 import requests
 import json
+from flask import Flask, request, jsonify
 
-API_URL = '${API_BASE_URL}'
+# Servidor Flask para integrar con AppSheet
+app = Flask(__name__)
 
-def create_session(session_id, token):
-    url = f'{API_URL}/sessions/add'
-    headers = {
-        'Content-Type': 'application/json',
-        'x-access-token': token
-    }
-    data = {
-        'id': session_id,
-        'token': token,
-        'typeAuth': 'qr'
-    }
-    
+@app.route('/api/send-message', methods=['POST'])
+def send_message_from_appsheet():
+    """Endpoint para recibir datos de AppSheet y enviar mensajes"""
     try:
-        response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f'Error: {e}')
-        return None
+        # Obtener datos del formulario AppSheet
+        data = request.json
+        phone = data.get('phone')
+        message = data.get('message')
+        session_id = data.get('session_id')
+        
+        # Enviar mensaje usando la API
+        url = "${API_BASE_URL}/chats/send"
+        headers = {
+            "Content-Type": "application/json",
+            "x-access-token": "tu_token_aqui"
+        }
+        
+        payload = {
+            "number": phone,
+            "message": message,
+            "sessionId": session_id
+        }
+        
+        response = requests.post(url, headers=headers, json=payload)
+        result = response.json()
+        
+        return jsonify({"success": True, "data": result})
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
-# Usar la función
-result = create_session('mi-bot-session', 'tu-token-aqui')
-print(json.dumps(result, indent=2))`,
+if __name__ == '__main__':
+    app.run(debug=True)`,
 
     message: `# Enviar mensajes con Python
 def send_message(session_id, phone_number, message, token):
@@ -241,36 +253,57 @@ if __name__ == '__main__':
   },
 
   php: {
-    session: `<?php
-// Crear sesión WhatsApp con PHP
-function createSession($sessionId, $token) {
-    $url = '${API_BASE_URL}/sessions/add';
-    $headers = [
-        'Content-Type: application/json',
-        'x-access-token: ' . $token
+    appsheet: `<?php
+// Integración con AppSheet usando PHP
+// Endpoint para recibir webhooks de AppSheet
+
+header('Content-Type: application/json');
+
+// Función para enviar mensajes a través de la API
+function sendMessageFromAppSheet($phone, $message, $sessionId) {
+    $apiUrl = '${API_BASE_URL}/chats/send';
+    $token = 'tu_token_aqui';
+    
+    $data = [
+        'number' => $phone,
+        'message' => $message,
+        'sessionId' => $sessionId
     ];
-    $data = json_encode([
-        'id' => $sessionId,
-        'token' => $token,
-        'typeAuth' => 'qr'
-    ]);
     
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $options = [
+        'http' => [
+            'header' => [
+                'Content-Type: application/json',
+                'x-access-token: ' . $token
+            ],
+            'method' => 'POST',
+            'content' => json_encode($data)
+        ]
+    ];
     
-    $response = curl_exec($ch);
-    curl_close($ch);
+    $context = stream_context_create($options);
+    $result = file_get_contents($apiUrl, false, $context);
     
-    return json_decode($response, true);
+    return json_decode($result, true);
 }
 
-// Usar la función
-$result = createSession('mi-bot-session', 'tu-token-aqui');
-print_r($result);
+// Procesar datos de AppSheet
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    $phone = $input['phone'] ?? '';
+    $message = $input['message'] ?? '';
+    $sessionId = $input['session_id'] ?? '';
+    
+    if ($phone && $message && $sessionId) {
+        $result = sendMessageFromAppSheet($phone, $message, $sessionId);
+        echo json_encode(['success' => true, 'data' => $result]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
+    }
+} else {
+    echo json_encode(['success' => false, 'error' => 'Método no permitido']);
+}
 ?>`,
 
     message: `<?php
@@ -428,7 +461,7 @@ const sdkLibraries = [
 
 export default function DeveloperPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
-  const [selectedExample, setSelectedExample] = useState("session");
+  const [selectedExample, setSelectedExample] = useState("appsheet");
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -595,13 +628,13 @@ export default function DeveloperPage() {
                 <div className="flex gap-2 mb-4">
                   <Button
                     variant={
-                      selectedExample === "session" ? "default" : "outline"
+                      selectedExample === "appsheet" ? "default" : "outline"
                     }
                     size="sm"
-                    onClick={() => setSelectedExample("session")}
+                    onClick={() => setSelectedExample("appsheet")}
                   >
                     <Smartphone className="h-4 w-4 mr-2" />
-                    Sesiones
+                    AppSheet
                   </Button>
                   <Button
                     variant={
@@ -657,6 +690,95 @@ export default function DeveloperPage() {
         </CardContent>
       </Card>
 
+      {/* AppSheet Integration Guide */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Puzzle className="h-5 w-5 mr-2" />
+            Integración con AppSheet
+          </CardTitle>
+          <CardDescription>
+            Guía completa para implementar CRUD con AppSheet y WhatsApp
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                ¿Por qué AppSheet?
+              </h3>
+              <ul className="text-sm text-blue-700 dark:text-blue-200 space-y-1">
+                <li>• Sin código: Crea aplicaciones sin programar</li>
+                <li>• Integración nativa con Google Sheets</li>
+                <li>• Webhooks automáticos para notificaciones</li>
+                <li>• Interfaz móvil responsive automática</li>
+                <li>• Sincronización en tiempo real</li>
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  CONFIGURACIÓN INICIAL
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                    <strong>1. Crear Google Sheet</strong>
+                    <p className="text-muted-foreground mt-1">
+                      Columnas: ID, Nombre, Teléfono, Mensaje, Estado, Fecha
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                    <strong>2. Conectar AppSheet</strong>
+                    <p className="text-muted-foreground mt-1">
+                      Importar Sheet y configurar tipos de datos
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                    <strong>3. Configurar Webhook</strong>
+                    <p className="text-muted-foreground mt-1">
+                      URL: tu-servidor.com/appsheet-webhook
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  OPERACIONES CRUD
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded">
+                    <strong className="text-green-700 dark:text-green-300">CREATE</strong>
+                    <p className="text-muted-foreground mt-1">
+                      Formulario → Webhook → Enviar WhatsApp
+                    </p>
+                  </div>
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                    <strong className="text-blue-700 dark:text-blue-300">READ</strong>
+                    <p className="text-muted-foreground mt-1">
+                      Vista de tabla con filtros y búsqueda
+                    </p>
+                  </div>
+                  <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded">
+                    <strong className="text-orange-700 dark:text-orange-300">UPDATE</strong>
+                    <p className="text-muted-foreground mt-1">
+                      Editar registro → Notificar cambios
+                    </p>
+                  </div>
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded">
+                    <strong className="text-red-700 dark:text-red-300">DELETE</strong>
+                    <p className="text-muted-foreground mt-1">
+                      Eliminar con confirmación automática
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* API Endpoints Quick Reference */}
       <Card>
         <CardHeader>
@@ -669,35 +791,7 @@ export default function DeveloperPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <h3 className="font-medium text-sm text-muted-foreground">
-                SESIONES
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-green-600">POST /sessions/add</code>
-                  <span className="text-muted-foreground">Crear sesión</span>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-blue-600">GET /sessions/list</code>
-                  <span className="text-muted-foreground">Listar sesiones</span>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-blue-600">
-                    GET /sessions/status/:id
-                  </code>
-                  <span className="text-muted-foreground">Estado sesión</span>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-red-600">
-                    DELETE /sessions/delete/:id
-                  </code>
-                  <span className="text-muted-foreground">Eliminar sesión</span>
-                </div>
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-3">
               <h3 className="font-medium text-sm text-muted-foreground">
                 MENSAJES
@@ -848,27 +942,46 @@ export default function DeveloperPage() {
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
               <Puzzle className="h-5 w-5 mr-2" />
-              Integraciones
+              Plataformas No-Code
             </CardTitle>
-            <CardDescription>Conecta con plataformas populares</CardDescription>
+            <CardDescription>Integra sin programar</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full justify-start">
+                <span className="mr-2">📱</span>
+                <div className="text-left">
+                  <div className="font-medium">AppSheet</div>
+                  <div className="text-xs text-muted-foreground">Google Apps</div>
+                </div>
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
                 <span className="mr-2">⚡</span>
-                Zapier
+                <div className="text-left">
+                  <div className="font-medium">Zapier</div>
+                  <div className="text-xs text-muted-foreground">Automatización</div>
+                </div>
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full justify-start">
                 <span className="mr-2">🔷</span>
-                Make.com
+                <div className="text-left">
+                  <div className="font-medium">Make.com</div>
+                  <div className="text-xs text-muted-foreground">Integrator</div>
+                </div>
               </Button>
-              <Button variant="outline" className="w-full">
-                <span className="mr-2">🌊</span>
-                N8N
+              <Button variant="outline" className="w-full justify-start">
+                <span className="mr-2">🔶</span>
+                <div className="text-left">
+                  <div className="font-medium">Power Automate</div>
+                  <div className="text-xs text-muted-foreground">Microsoft</div>
+                </div>
               </Button>
-              <Button variant="outline" className="w-full">
-                <span className="mr-2">🔗</span>
-                Ver Todas
+              <Button variant="outline" className="w-full justify-start">
+                <span className="mr-2">📊</span>
+                <div className="text-left">
+                  <div className="font-medium">Airtable</div>
+                  <div className="text-xs text-muted-foreground">Base de datos</div>
+                </div>
               </Button>
             </div>
           </CardContent>

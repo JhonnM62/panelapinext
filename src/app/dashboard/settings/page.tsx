@@ -18,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
 import { 
   User, 
   Crown, 
@@ -27,86 +29,92 @@ import {
   CreditCard,
   Settings as SettingsIcon,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Bell,
+  Smartphone,
+  Key,
+  Eye,
+  EyeOff,
+  Copy,
+  CheckCircle2,
+  Clock
 } from 'lucide-react'
 import { formatDate, getDaysRemaining } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
 
 // Componente para gestionar API Keys
 function APIKeyManager() {
   const [showToken, setShowToken] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [token, setToken] = useState('sk-test-1234567890abcdef')
-  const [newToken, setNewToken] = useState('')
   const { toast } = useToast()
-
-  const handleSaveToken = () => {
-    if (newToken.trim()) {
-      setToken(newToken)
-      setIsEditing(false)
-      setNewToken('')
+  const { user } = useAuthStore()
+  
+  // Obtener el token real del usuario autenticado
+  const userToken = user?.token || ''
+  
+  const copyToken = async () => {
+    try {
+      await navigator.clipboard.writeText(userToken)
       toast({
-        title: 'Token actualizado',
-        description: 'El token de API ha sido actualizado exitosamente',
+        title: 'Token copiado',
+        description: 'El token de autenticación ha sido copiado al portapapeles',
+      })
+    } catch (error) {
+      toast({
+        title: 'Error al copiar',
+        description: 'No se pudo copiar el token al portapapeles',
+        variant: 'destructive'
       })
     }
   }
 
-  const copyToken = () => {
-    navigator.clipboard.writeText(token)
-    toast({
-      title: 'Copiado',
-      description: 'Token copiado al portapapeles',
-    })
-  }
-
-  if (isEditing) {
-    return (
-      <div className="space-y-2 min-w-0 flex-1">
-        <Input
-          value={newToken}
-          onChange={(e) => setNewToken(e.target.value)}
-          placeholder="Ingresa el nuevo token"
-          className="w-full"
-        />
-        <div className="flex gap-2">
-          <Button size="sm" onClick={handleSaveToken}>
-            Guardar
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => {
-            setIsEditing(false)
-            setNewToken('')
-          }}>
-            Cancelar
-          </Button>
-        </div>
-      </div>
-    )
+  const toggleTokenVisibility = () => {
+    setShowToken(!showToken)
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-2 min-w-0">
-        <code className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded max-w-32 truncate">
-          {showToken ? token : '••••••••••••••••'}
+    <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
+      <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
+        <code 
+          className="text-sm bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-md font-mono text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 flex-1 sm:flex-initial sm:max-w-48 lg:max-w-64 truncate"
+          aria-label={showToken ? 'Token de autenticación visible' : 'Token de autenticación oculto'}
+        >
+          {showToken ? userToken : '•'.repeat(Math.min(userToken.length, 24))}
         </code>
+        
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setShowToken(!showToken)}
+          onClick={toggleTokenVisibility}
+          className="h-9 w-9 p-0 flex-shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+          aria-label={showToken ? 'Ocultar token' : 'Mostrar token'}
+          title={showToken ? 'Ocultar token' : 'Mostrar token'}
         >
-          {showToken ? '🙈' : '👁️'}
+          {showToken ? (
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+            </svg>
+          ) : (
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          )}
         </Button>
+        
         <Button
           variant="ghost"
           size="sm"
           onClick={copyToken}
+          className="h-9 w-9 p-0 flex-shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+          aria-label="Copiar token al portapapeles"
+          title="Copiar token"
+          disabled={!userToken}
         >
-          📋
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
         </Button>
       </div>
-      <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-        Editar
-      </Button>
     </div>
   )
 }
@@ -114,6 +122,14 @@ function APIKeyManager() {
 export default function SettingsPage() {
   const { user, isLoading } = useAuthStore()
   const { toast } = useToast()
+  const router = useRouter()
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNotifications: true,
+    pushNotifications: false,
+    sessionAlerts: true,
+    webhookEvents: true,
+    systemUpdates: false
+  })
 
   if (!user) return null
 
@@ -350,9 +366,123 @@ export default function SettingsPage() {
                       Recibir notificaciones sobre el estado de las sesiones
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Configurar
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Bell className="h-4 w-4 mr-2" />
+                        Configurar
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center">
+                          <Bell className="h-5 w-5 mr-2" />
+                          Configurar Notificaciones
+                        </DialogTitle>
+                        <DialogDescription>
+                          Personaliza qué notificaciones deseas recibir y cómo recibirlas.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-6 py-4">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label className="text-sm font-medium flex items-center">
+                                <Mail className="h-4 w-4 mr-2" />
+                                Notificaciones por Email
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                Recibir alertas importantes por correo electrónico
+                              </p>
+                            </div>
+                            <Switch 
+                              checked={notificationSettings.emailNotifications}
+                              onCheckedChange={(checked) => 
+                                setNotificationSettings(prev => ({...prev, emailNotifications: checked}))
+                              }
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label className="text-sm font-medium flex items-center">
+                                <Smartphone className="h-4 w-4 mr-2" />
+                                Notificaciones Push
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                Notificaciones en tiempo real en el navegador
+                              </p>
+                            </div>
+                            <Switch 
+                              checked={notificationSettings.pushNotifications}
+                              onCheckedChange={(checked) => 
+                                setNotificationSettings(prev => ({...prev, pushNotifications: checked}))
+                              }
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label className="text-sm font-medium">Alertas de Sesión</Label>
+                              <p className="text-xs text-muted-foreground">
+                                Notificar cuando las sesiones se conecten/desconecten
+                              </p>
+                            </div>
+                            <Switch 
+                              checked={notificationSettings.sessionAlerts}
+                              onCheckedChange={(checked) => 
+                                setNotificationSettings(prev => ({...prev, sessionAlerts: checked}))
+                              }
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label className="text-sm font-medium">Eventos de Webhook</Label>
+                              <p className="text-xs text-muted-foreground">
+                                Notificar sobre actividad de webhooks
+                              </p>
+                            </div>
+                            <Switch 
+                              checked={notificationSettings.webhookEvents}
+                              onCheckedChange={(checked) => 
+                                setNotificationSettings(prev => ({...prev, webhookEvents: checked}))
+                              }
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label className="text-sm font-medium">Actualizaciones del Sistema</Label>
+                              <p className="text-xs text-muted-foreground">
+                                Notificar sobre nuevas funciones y mantenimiento
+                              </p>
+                            </div>
+                            <Switch 
+                              checked={notificationSettings.systemUpdates}
+                              onCheckedChange={(checked) => 
+                                setNotificationSettings(prev => ({...prev, systemUpdates: checked}))
+                              }
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-end space-x-2">
+                          <DialogTrigger asChild>
+                            <Button variant="outline">Cancelar</Button>
+                          </DialogTrigger>
+                          <Button onClick={() => {
+                            toast({
+                              title: "Configuración guardada",
+                              description: "Tus preferencias de notificación han sido actualizadas."
+                            })
+                          }}>
+                            Guardar Cambios
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -362,7 +492,12 @@ export default function SettingsPage() {
                       Configurar webhooks para recibir eventos
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => router.push('/dashboard/webhooks')}
+                  >
+                    <SettingsIcon className="h-4 w-4 mr-2" />
                     Configurar
                   </Button>
                 </div>
