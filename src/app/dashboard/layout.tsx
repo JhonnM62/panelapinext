@@ -317,7 +317,7 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col min-w-0">
         
         {/* 🎯 TOP BAR - Mobile Optimized */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-3 shadow-sm">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-2 shadow-sm">
           <div className="flex items-center justify-between">
             {/* Mobile menu button */}
             <button 
@@ -360,7 +360,7 @@ export default function DashboardLayout({
         
         {/* 🚨 MEMBERSHIP BANNER - Mobile optimized */}
         {user.membershipExpired && (
-          <div className="bg-gradient-to-r from-amber-500 to-orange-500 dark:from-amber-600 dark:to-orange-600 text-white px-4 py-3 shadow-sm">
+          <div className="bg-gradient-to-r from-amber-500 to-orange-500 dark:from-amber-600 dark:to-orange-600 text-white px-4 py-2 shadow-sm">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 flex-shrink-0" />
@@ -383,7 +383,7 @@ export default function DashboardLayout({
         <main 
           className={cn(
             "flex-1 bg-gray-50 dark:bg-gray-900",
-            "p-4 sm:p-6 lg:p-8",
+            "p-3 sm:p-4 lg:p-6",
             "min-h-0" // Permite que el contenido se ajuste naturalmente
           )}
         >

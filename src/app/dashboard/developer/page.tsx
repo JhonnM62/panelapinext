@@ -31,6 +31,8 @@ import {
   Key,
   Puzzle,
   Rocket,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 // import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -460,8 +462,12 @@ const sdkLibraries = [
 ];
 
 export default function DeveloperPage() {
-  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [selectedExample, setSelectedExample] = useState("appsheet");
+  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+  const [showAppSheetGuide, setShowAppSheetGuide] = useState(false);
+  const [showApiTesting, setShowApiTesting] = useState(false);
+  const [showNoCodePlatforms, setShowNoCodePlatforms] = useState(false);
+  const [showResources, setShowResources] = useState(false);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -472,66 +478,74 @@ export default function DeveloperPage() {
   };
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-2 sm:space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex-1">
+          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Centro de Desarrolladores
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
-            SDKs, ejemplos de código y documentación para integrar WhatsApp en
-            tu aplicación
+          <p className="text-gray-600 dark:text-gray-300 mt-0.5 text-xs sm:text-sm">
+            SDKs, ejemplos de código y documentación para integrar WhatsApp
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button asChild variant="outline">
+        <div className="flex flex-row items-center gap-2">
+          <Button asChild variant="outline" size="sm" className="text-xs">
             <Link href="/dashboard/developer/api-reference">
-              <BookOpen className="h-4 w-4 mr-2" />
-              API Reference
+              <BookOpen className="h-3 w-3 mr-1" />
+              <span className="hidden sm:inline">API Docs</span>
+              <span className="sm:hidden">Docs</span>
             </Link>
           </Button>
 
-          <Button asChild>
+          <Button asChild size="sm" className="text-xs">
             <Link href="/dashboard/developer/playground">
-              <Play className="h-4 w-4 mr-2" />
-              API Playground
+              <Play className="h-3 w-3 mr-1" />
+              <span className="hidden sm:inline">Playground</span>
+              <span className="sm:hidden">Play</span>
             </Link>
           </Button>
         </div>
       </div>
 
       {/* Quick Start Guides */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
         {quickStartGuides.map((guide, index) => (
           <Card key={index} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div
-                className={`w-10 h-10 rounded-lg ${guide.color} flex items-center justify-center mb-3`}
-              >
-                <guide.icon className="h-5 w-5 text-white" />
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg ${guide.color} flex items-center justify-center flex-shrink-0`}
+                >
+                  <guide.icon className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="text-sm sm:text-base leading-tight">{guide.title}</CardTitle>
+                  <CardDescription className="text-xs mt-0.5">{guide.description}</CardDescription>
+                </div>
               </div>
-              <CardTitle className="text-lg">{guide.title}</CardTitle>
-              <CardDescription>{guide.description}</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {guide.steps.map((step, stepIndex) => (
+            <CardContent className="pt-0">
+              <div className="space-y-1">
+                {guide.steps.slice(0, 2).map((step, stepIndex) => (
                   <div
                     key={stepIndex}
-                    className="flex items-center gap-2 text-sm"
+                    className="flex items-start gap-2"
                   >
-                    <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium">
+                    <div className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
                       {stepIndex + 1}
                     </div>
-                    <span className="text-muted-foreground">{step}</span>
+                    <span className="text-xs text-muted-foreground leading-tight">{step}</span>
                   </div>
                 ))}
+                {guide.steps.length > 2 && (
+                  <div className="text-xs text-muted-foreground ml-6">+{guide.steps.length - 2} pasos más</div>
+                )}
               </div>
-              <Button className="w-full mt-4" variant="outline">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Ver Guía Completa
+              <Button className="w-full mt-2" variant="outline" size="sm">
+                <ExternalLink className="h-3 w-3 mr-1" />
+                <span className="text-xs">Ver Guía</span>
               </Button>
             </CardContent>
           </Card>
@@ -540,61 +554,50 @@ export default function DeveloperPage() {
 
       {/* SDK Libraries */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Package className="h-5 w-5 mr-2" />
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center text-lg">
+            <Package className="h-4 w-4 mr-2" />
             SDKs Oficiales
           </CardTitle>
-          <CardDescription>
-            Librerías oficiales para integrar la API de WhatsApp en tu lenguaje
-            favorito
+          <CardDescription className="text-xs">
+            Librerías para integrar la API de WhatsApp
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {sdkLibraries.map((sdk, index) => (
               <div
                 key={index}
-                className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{sdk.icon}</span>
-                    <div>
-                      <h3 className="font-medium">{sdk.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {sdk.description}
-                      </p>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-lg flex-shrink-0">{sdk.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-medium text-sm truncate">{sdk.name}</h3>
+                      <Badge variant="secondary" className="text-xs">{sdk.version}</Badge>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <Badge variant="secondary">{sdk.version}</Badge>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {sdk.downloads} descargas
-                    </p>
-                  </div>
                 </div>
 
-                <div className="bg-gray-100 dark:bg-gray-800 rounded p-2 font-mono text-sm mb-3">
-                  {sdk.installCommand}
+                <div className="bg-gray-100 dark:bg-gray-800 rounded p-1.5 font-mono text-xs mb-2 overflow-x-auto">
+                  <code className="whitespace-nowrap">{sdk.installCommand}</code>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Button
                     size="sm"
                     variant="outline"
+                    className="flex-1 text-xs"
                     onClick={() => copyToClipboard(sdk.installCommand)}
                   >
-                    <Copy className="h-4 w-4 mr-1" />
+                    <Copy className="h-3 w-3 mr-1" />
                     Copiar
                   </Button>
-                  <Button size="sm" variant="outline">
-                    <Download className="h-4 w-4 mr-1" />
-                    Docs
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    GitHub
+                  <Button size="sm" variant="outline" className="text-xs">
+                    <Download className="h-3 w-3 mr-1" />
+                    <span className="hidden sm:inline">Docs</span>
+                    <span className="sm:hidden">Doc</span>
                   </Button>
                 </div>
               </div>
@@ -605,36 +608,36 @@ export default function DeveloperPage() {
 
       {/* Code Examples */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Code2 className="h-5 w-5 mr-2" />
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center text-lg">
+            <Code2 className="h-4 w-4 mr-2" />
             Ejemplos de Código
           </CardTitle>
-          <CardDescription>
-            Ejemplos prácticos listos para usar en diferentes lenguajes de
-            programación
+          <CardDescription className="text-xs">
+            Ejemplos prácticos para diferentes lenguajes
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={selectedLanguage} onValueChange={setSelectedLanguage}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="javascript">JavaScript</TabsTrigger>
-              <TabsTrigger value="python">Python</TabsTrigger>
-              <TabsTrigger value="php">PHP</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 h-8">
+              <TabsTrigger value="javascript" className="text-xs px-2">JS</TabsTrigger>
+              <TabsTrigger value="python" className="text-xs px-2">Python</TabsTrigger>
+              <TabsTrigger value="php" className="text-xs px-2">PHP</TabsTrigger>
             </TabsList>
 
             {Object.keys(codeExamples).map((lang) => (
-              <TabsContent key={lang} value={lang} className="space-y-4">
-                <div className="flex gap-2 mb-4">
+              <TabsContent key={lang} value={lang} className="space-y-2">
+                <div className="flex gap-1 mb-2">
                   <Button
                     variant={
                       selectedExample === "appsheet" ? "default" : "outline"
                     }
                     size="sm"
                     onClick={() => setSelectedExample("appsheet")}
+                    className="text-xs px-2 h-7"
                   >
-                    <Smartphone className="h-4 w-4 mr-2" />
-                    AppSheet
+                    <Smartphone className="h-3 w-3 mr-1" />
+                    App
                   </Button>
                   <Button
                     variant={
@@ -642,9 +645,10 @@ export default function DeveloperPage() {
                     }
                     size="sm"
                     onClick={() => setSelectedExample("message")}
+                    className="text-xs px-2 h-7"
                   >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Mensajes
+                    <MessageSquare className="h-3 w-3 mr-1" />
+                    Msg
                   </Button>
                   <Button
                     variant={
@@ -652,15 +656,16 @@ export default function DeveloperPage() {
                     }
                     size="sm"
                     onClick={() => setSelectedExample("webhook")}
+                    className="text-xs px-2 h-7"
                   >
-                    <Zap className="h-4 w-4 mr-2" />
-                    Webhooks
+                    <Zap className="h-3 w-3 mr-1" />
+                    Hook
                   </Button>
                 </div>
 
                 <div className="relative">
                   <Button
-                    className="absolute top-3 right-3 z-10"
+                    className="absolute top-2 right-2 z-10"
                     size="sm"
                     variant="outline"
                     onClick={() =>
@@ -671,10 +676,10 @@ export default function DeveloperPage() {
                       )
                     }
                   >
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-3 w-3" />
                   </Button>
 
-                  <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                  <pre className="bg-gray-900 text-gray-100 p-3 sm:p-4 rounded-lg overflow-x-auto text-xs sm:text-sm max-h-64 sm:max-h-96 overflow-y-auto">
                     <code>
                       {
                         codeExamples[lang as keyof typeof codeExamples][
@@ -692,15 +697,32 @@ export default function DeveloperPage() {
 
       {/* AppSheet Integration Guide */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Puzzle className="h-5 w-5 mr-2" />
-            Integración con AppSheet
-          </CardTitle>
-          <CardDescription>
-            Guía completa para implementar CRUD con AppSheet y WhatsApp
-          </CardDescription>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center text-sm sm:text-base">
+                <Puzzle className="h-4 w-4 mr-2" />
+                Integración con AppSheet
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Guía completa para implementar CRUD con AppSheet y WhatsApp
+              </CardDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAppSheetGuide(!showAppSheetGuide)}
+              className="h-6 w-6 p-0"
+            >
+              {showAppSheetGuide ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </CardHeader>
+        {showAppSheetGuide && (
         <CardContent>
           <div className="space-y-6">
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
@@ -777,41 +799,42 @@ export default function DeveloperPage() {
             </div>
           </div>
         </CardContent>
+        )}
       </Card>
 
       {/* API Endpoints Quick Reference */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="flex items-center text-xl sm:text-2xl">
             <Globe className="h-5 w-5 mr-2" />
             Endpoints Principales
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm sm:text-base">
             Referencia rápida de los endpoints más utilizados
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             <div className="space-y-3">
               <h3 className="font-medium text-sm text-muted-foreground">
                 MENSAJES
               </h3>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-green-600">POST /chats/send</code>
-                  <span className="text-muted-foreground">Enviar mensaje</span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-green-600 text-xs sm:text-sm font-mono">POST /chats/send</code>
+                  <span className="text-muted-foreground text-xs sm:text-sm">Enviar mensaje</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-green-600">POST /chats/send-bulk</code>
-                  <span className="text-muted-foreground">Envío masivo</span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-green-600 text-xs sm:text-sm font-mono">POST /chats/send-bulk</code>
+                  <span className="text-muted-foreground text-xs sm:text-sm">Envío masivo</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-blue-600">GET /chats</code>
-                  <span className="text-muted-foreground">Lista de chats</span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-blue-600 text-xs sm:text-sm font-mono">GET /chats</code>
+                  <span className="text-muted-foreground text-xs sm:text-sm">Lista de chats</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-orange-600">POST /chats/reply</code>
-                  <span className="text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-orange-600 text-xs sm:text-sm font-mono">POST /chats/reply</code>
+                  <span className="text-muted-foreground text-xs sm:text-sm">
                     Responder mensaje
                   </span>
                 </div>
@@ -823,81 +846,81 @@ export default function DeveloperPage() {
                 GRUPOS
               </h3>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-green-600">POST /groups/create</code>
-                  <span className="text-muted-foreground">Crear grupo</span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-green-600 text-xs sm:text-sm font-mono">POST /groups/create</code>
+                  <span className="text-muted-foreground text-xs sm:text-sm">Crear grupo</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-blue-600">GET /groups</code>
-                  <span className="text-muted-foreground">Listar grupos</span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-blue-600 text-xs sm:text-sm font-mono">GET /groups</code>
+                  <span className="text-muted-foreground text-xs sm:text-sm">Listar grupos</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-orange-600">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-orange-600 text-xs sm:text-sm font-mono break-all">
                     POST /groups/participants-update
                   </code>
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground text-xs sm:text-sm">
                     Gestionar miembros
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-blue-600">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-blue-600 text-xs sm:text-sm font-mono break-all">
                     GET /groups/invite-code/:jid
                   </code>
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground text-xs sm:text-sm">
                     Código invitación
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 lg:col-span-2 xl:col-span-1">
               <h3 className="font-medium text-sm text-muted-foreground">
                 WEBHOOKS
               </h3>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-green-600">POST /webhook/create</code>
-                  <span className="text-muted-foreground">Crear webhook</span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-green-600 text-xs sm:text-sm font-mono">POST /webhook/create</code>
+                  <span className="text-muted-foreground text-xs sm:text-sm">Crear webhook</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-blue-600">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-blue-600 text-xs sm:text-sm font-mono break-all">
                     GET /webhook/notifications/:userId
                   </code>
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground text-xs sm:text-sm">
                     Ver notificaciones
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-orange-600">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-orange-600 text-xs sm:text-sm font-mono break-all">
                     PUT /webhook/configure/:userId
                   </code>
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground text-xs sm:text-sm">
                     Configurar webhook
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                  <code className="text-blue-600">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded gap-1 sm:gap-2">
+                  <code className="text-blue-600 text-xs sm:text-sm font-mono break-all">
                     GET /webhook/stats/:userId
                   </code>
-                  <span className="text-muted-foreground">Estadísticas</span>
+                  <span className="text-muted-foreground text-xs sm:text-sm">Estadísticas</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
-              <Key className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-blue-900 dark:text-blue-100">
+              <Key className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <span className="font-medium text-blue-900 dark:text-blue-100 text-sm sm:text-base">
                 Autenticación
               </span>
             </div>
-            <p className="text-sm text-blue-700 dark:text-blue-200">
+            <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-200 leading-relaxed">
               Todos los endpoints requieren el header{" "}
-              <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">
+              <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded text-xs">
                 x-access-token
               </code>
-              con tu token de autenticación, excepto los webhooks que son
+              {" "}con tu token de autenticación, excepto los webhooks que son
               públicos.
             </p>
           </div>
@@ -905,118 +928,175 @@ export default function DeveloperPage() {
       </Card>
 
       {/* Additional Resources */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Terminal className="h-5 w-5 mr-2" />
-              API Testing
-            </CardTitle>
-            <CardDescription>Herramientas para probar la API</CardDescription>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center text-sm sm:text-base">
+                  <Terminal className="h-4 w-4 mr-2" />
+                  API Testing
+                </CardTitle>
+                <CardDescription className="text-xs">Herramientas para probar la API</CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowApiTesting(!showApiTesting)}
+                className="h-6 w-6 p-0"
+              >
+                {showApiTesting ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button asChild variant="outline" className="w-full">
+          {showApiTesting && (
+          <CardContent className="pt-0">
+            <div className="space-y-2 sm:space-y-3">
+              <Button asChild variant="outline" className="w-full h-8 sm:h-9 text-xs sm:text-sm">
                 <Link href="/dashboard/developer/playground">
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   API Playground
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" className="w-full h-8 sm:h-9 text-xs sm:text-sm">
                 <a href="#" target="_blank">
-                  <Download className="h-4 w-4 mr-2" />
-                  Postman Collection
+                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Postman Collection</span>
+                  <span className="sm:hidden">Postman</span>
                 </a>
               </Button>
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" className="w-full h-8 sm:h-9 text-xs sm:text-sm">
                 <a href="#" target="_blank">
-                  <FileText className="h-4 w-4 mr-2" />
-                  OpenAPI Spec
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">OpenAPI Spec</span>
+                  <span className="sm:hidden">OpenAPI</span>
                 </a>
               </Button>
             </div>
           </CardContent>
+        )}
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Puzzle className="h-5 w-5 mr-2" />
-              Plataformas No-Code
-            </CardTitle>
-            <CardDescription>Integra sin programar</CardDescription>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center text-sm sm:text-base">
+                  <Puzzle className="h-4 w-4 mr-2" />
+                  Plataformas No-Code
+                </CardTitle>
+                <CardDescription className="text-xs">Integra sin programar</CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowNoCodePlatforms(!showNoCodePlatforms)}
+                className="h-6 w-6 p-0"
+              >
+                {showNoCodePlatforms ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
-                <span className="mr-2">📱</span>
-                <div className="text-left">
-                  <div className="font-medium">AppSheet</div>
-                  <div className="text-xs text-muted-foreground">Google Apps</div>
+          {showNoCodePlatforms && (
+          <CardContent className="pt-0">
+            <div className="space-y-2 sm:space-y-3">
+              <Button variant="outline" className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3">
+                <span className="mr-1 sm:mr-2 text-sm sm:text-base">📱</span>
+                <div className="text-left min-w-0 flex-1">
+                  <div className="font-medium truncate">AppSheet</div>
+                  <div className="text-xs text-muted-foreground hidden sm:block">Google Apps</div>
                 </div>
               </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <span className="mr-2">⚡</span>
-                <div className="text-left">
-                  <div className="font-medium">Zapier</div>
-                  <div className="text-xs text-muted-foreground">Automatización</div>
+              <Button variant="outline" className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3">
+                <span className="mr-1 sm:mr-2 text-sm sm:text-base">⚡</span>
+                <div className="text-left min-w-0 flex-1">
+                  <div className="font-medium truncate">Zapier</div>
+                  <div className="text-xs text-muted-foreground hidden sm:block">Automatización</div>
                 </div>
               </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <span className="mr-2">🔷</span>
-                <div className="text-left">
-                  <div className="font-medium">Make.com</div>
-                  <div className="text-xs text-muted-foreground">Integrator</div>
+              <Button variant="outline" className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3">
+                <span className="mr-1 sm:mr-2 text-sm sm:text-base">🔷</span>
+                <div className="text-left min-w-0 flex-1">
+                  <div className="font-medium truncate">Make.com</div>
+                  <div className="text-xs text-muted-foreground hidden sm:block">Integrator</div>
                 </div>
               </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <span className="mr-2">🔶</span>
-                <div className="text-left">
-                  <div className="font-medium">Power Automate</div>
-                  <div className="text-xs text-muted-foreground">Microsoft</div>
+              <Button variant="outline" className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3">
+                <span className="mr-1 sm:mr-2 text-sm sm:text-base">🔶</span>
+                <div className="text-left min-w-0 flex-1">
+                  <div className="font-medium truncate">Power Automate</div>
+                  <div className="text-xs text-muted-foreground hidden sm:block">Microsoft</div>
                 </div>
               </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <span className="mr-2">📊</span>
-                <div className="text-left">
-                  <div className="font-medium">Airtable</div>
-                  <div className="text-xs text-muted-foreground">Base de datos</div>
+              <Button variant="outline" className="w-full justify-start h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3">
+                <span className="mr-1 sm:mr-2 text-sm sm:text-base">📊</span>
+                <div className="text-left min-w-0 flex-1">
+                  <div className="font-medium truncate">Airtable</div>
+                  <div className="text-xs text-muted-foreground hidden sm:block">Base de datos</div>
                 </div>
               </Button>
             </div>
           </CardContent>
+        )}
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <BookOpen className="h-5 w-5 mr-2" />
-              Recursos
-            </CardTitle>
-            <CardDescription>Documentación y soporte</CardDescription>
+        <Card className="sm:col-span-2 lg:col-span-1">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center text-sm sm:text-base">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Recursos
+                </CardTitle>
+                <CardDescription className="text-xs">Documentación y soporte</CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowResources(!showResources)}
+                className="h-6 w-6 p-0"
+              >
+                {showResources ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button asChild variant="outline" className="w-full">
+          {showResources && (
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2 sm:gap-3">
+              <Button asChild variant="outline" className="w-full h-8 sm:h-9 text-xs sm:text-sm">
                 <Link href="/dashboard/developer/docs">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Documentación
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Documentación</span>
+                  <span className="sm:hidden">Docs</span>
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" className="w-full h-8 sm:h-9 text-xs sm:text-sm">
                 <a href="#" target="_blank">
-                  <MessageSquare className="h-4 w-4 mr-2" />
+                  <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Discord
                 </a>
               </Button>
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" className="w-full h-8 sm:h-9 text-xs sm:text-sm col-span-2 sm:col-span-1">
                 <a href="#" target="_blank">
-                  <ExternalLink className="h-4 w-4 mr-2" />
+                  <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   GitHub
                 </a>
               </Button>
             </div>
           </CardContent>
+        )}
         </Card>
       </div>
     </div>

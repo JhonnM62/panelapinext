@@ -48,6 +48,8 @@ import {
   Key,
   Lock,
   MessageSquare,
+  ChevronDown,
+  ChevronUp,
   Image,
   Video,
   Mic,
@@ -523,6 +525,8 @@ export default function APIPlaygroundPage() {
   const [requestHistory, setRequestHistory] = useState<RequestHistory[]>([]);
   const [savedRequests, setSavedRequests] = useState<SavedRequest[]>([]);
   const [activeTab, setActiveTab] = useState("request");
+  const [showRequestBody, setShowRequestBody] = useState(true);
+  const [showHeaders, setShowHeaders] = useState(false);
 
   // Cargar datos guardados al inicializar
   useEffect(() => {
@@ -798,41 +802,40 @@ curl -X ${selectedEndpoint.method} \\
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-2">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             API Playground
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
-            Prueba y experimenta con los endpoints de la API de WhatsApp en
-            tiempo real
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-0.5">
+            Prueba endpoints de WhatsApp en tiempo real
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={fillExampleData}>
-            <Zap className="h-4 w-4 mr-2" />
-            Cargar Ejemplos
+        <div className="flex flex-row items-center gap-2">
+          <Button variant="outline" onClick={fillExampleData} size="sm" className="text-xs h-7">
+            <Zap className="h-3 w-3 mr-1" />
+            Ejemplos
           </Button>
 
-          <Button variant="outline" onClick={saveRequest}>
-            <Star className="h-4 w-4 mr-2" />
-            Guardar Request
+          <Button variant="outline" onClick={saveRequest} size="sm" className="text-xs h-7">
+            <Star className="h-3 w-3 mr-1" />
+            Guardar
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
         {/* Sidebar - Endpoints */}
-        <div className="space-y-4">
+        <div className="space-y-2 order-2 lg:order-1">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Endpoints Disponibles</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm sm:text-base">Endpoints Disponibles</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {/* Agrupar endpoints por categoría */}
                 {Object.entries(
                   endpoints.reduce((acc, endpoint) => {
@@ -843,11 +846,11 @@ curl -X ${selectedEndpoint.method} \\
                     return acc;
                   }, {} as { [key: string]: typeof endpoints })
                 ).map(([category, categoryEndpoints]) => (
-                  <div key={category} className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
+                  <div key={category} className="space-y-1">
+                    <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 px-1">
                       {category}
                     </h4>
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       {categoryEndpoints.map((endpoint) => {
                         const getIcon = () => {
                           switch (endpoint.id) {
@@ -876,16 +879,16 @@ curl -X ${selectedEndpoint.method} \\
                                 ? "default"
                                 : "outline"
                             }
-                            className="w-full justify-start h-auto py-3"
+                            className="w-full justify-start h-auto py-1.5"
                             onClick={() => {
                               setSelectedEndpoint(endpoint);
                               setParameters({});
                               setResponse(null);
                             }}
                           >
-                            <div className="flex items-center gap-3 w-full">
-                              <div className="flex items-center gap-2">
-                                {getIcon()}
+                            <div className="flex items-center gap-2 sm:gap-3 w-full min-w-0">
+                              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                                <div className="hidden sm:block">{getIcon()}</div>
                                 <Badge
                                   variant={
                                     endpoint.method === "GET"
@@ -901,11 +904,11 @@ curl -X ${selectedEndpoint.method} \\
                                   {endpoint.method}
                                 </Badge>
                               </div>
-                              <div className="flex-1 text-left">
-                                <div className="font-medium text-sm">
+                              <div className="flex-1 text-left min-w-0">
+                                <div className="font-medium text-xs sm:text-sm truncate">
                                   {endpoint.title}
                                 </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate hidden sm:block">
                                   {endpoint.description}
                                 </div>
                               </div>
@@ -922,24 +925,25 @@ curl -X ${selectedEndpoint.method} \\
 
           {/* Auth Token */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <Key className="h-5 w-5 mr-2" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm sm:text-base flex items-center">
+                <Key className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 Autenticación
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="authToken">Token de Acceso</Label>
-                  <div className="relative">
-                    <Input
-                      id="authToken"
-                      type={showToken ? "text" : "password"}
-                      value={authToken}
-                      onChange={(e) => setAuthToken(e.target.value)}
-                      placeholder="Ingresa tu token..."
-                    />
+              <div className="space-y-2">
+                <div className="space-y-1">
+                    <Label htmlFor="authToken" className="text-xs sm:text-sm">Token de Acceso</Label>
+                    <div className="relative">
+                      <Input
+                        id="authToken"
+                        type={showToken ? "text" : "password"}
+                        value={authToken}
+                        onChange={(e) => setAuthToken(e.target.value)}
+                        placeholder="Ingresa tu token..."
+                        className="h-8 sm:h-9 text-sm pr-8"
+                      />
                     <Button
                       variant="ghost"
                       size="sm"
@@ -967,13 +971,13 @@ curl -X ${selectedEndpoint.method} \\
         </div>
 
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-2 sm:space-y-3 order-1 lg:order-2">
           {/* Endpoint Info */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center">
+            <CardHeader className="pb-2">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="flex flex-row items-center gap-2">
                     <Badge
                       variant={
                         selectedEndpoint.method === "GET"
@@ -984,31 +988,31 @@ curl -X ${selectedEndpoint.method} \\
                           ? "destructive"
                           : "outline"
                       }
-                      className="mr-2"
+                      className="w-fit text-xs"
                     >
                       {selectedEndpoint.method}
                     </Badge>
-                    {selectedEndpoint.title}
+                    <span className="text-sm sm:text-base">{selectedEndpoint.title}</span>
                   </CardTitle>
-                  <CardDescription className="mt-2">
+                  <CardDescription className="mt-0.5 text-xs">
                     {selectedEndpoint.description}
                   </CardDescription>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{selectedEndpoint.category}</Badge>
+                <div className="flex flex-wrap items-center gap-1">
+                  <Badge variant="outline" className="text-xs">{selectedEndpoint.category}</Badge>
                   {selectedEndpoint.requiresAuth && (
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-xs">
                       <Lock className="h-3 w-3 mr-1" />
-                      Auth Required
+                      Auth
                     </Badge>
                   )}
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
-                <code className="text-sm">
+              <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg overflow-x-auto">
+                <code className="text-xs whitespace-nowrap">
                   {selectedEndpoint.method} {buildUrl()}
                 </code>
               </div>
@@ -1017,35 +1021,37 @@ curl -X ${selectedEndpoint.method} \\
 
           {/* Request Configuration */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="request">Request</TabsTrigger>
-              <TabsTrigger value="response">Response</TabsTrigger>
-              <TabsTrigger value="code">Code</TabsTrigger>
-              <TabsTrigger value="history">History</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 h-8">
+              <TabsTrigger value="request" className="text-xs">Request</TabsTrigger>
+              <TabsTrigger value="response" className="text-xs">Response</TabsTrigger>
+              <TabsTrigger value="code" className="text-xs">Code</TabsTrigger>
+              <TabsTrigger value="history" className="text-xs">History</TabsTrigger>
             </TabsList>
 
             {/* Request Tab */}
-            <TabsContent value="request" className="space-y-4">
+            <TabsContent value="request" className="space-y-2">
               {/* Parameters */}
               {selectedEndpoint.parameters.length > 0 && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Parámetros</CardTitle>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm sm:text-base">Parámetros</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {selectedEndpoint.parameters.map((param) => (
-                        <div key={param.name} className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor={param.name}>{param.name}</Label>
-                            {param.required && (
-                              <Badge variant="destructive" className="text-xs">
-                                Required
+                        <div key={param.name} className="space-y-1">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                            <Label htmlFor={param.name} className="text-xs sm:text-sm font-medium">{param.name}</Label>
+                            <div className="flex gap-1 sm:gap-2">
+                              {param.required && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Required
+                                </Badge>
+                              )}
+                              <Badge variant="outline" className="text-xs">
+                                {param.type}
                               </Badge>
-                            )}
-                            <Badge variant="outline" className="text-xs">
-                              {param.type}
-                            </Badge>
+                            </div>
                           </div>
                           <Input
                             id={param.name}
@@ -1060,8 +1066,9 @@ curl -X ${selectedEndpoint.method} \\
                               param.example?.toString() ||
                               `Enter ${param.name}...`
                             }
+                            className="h-8 sm:h-9 text-sm"
                           />
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             {param.description}
                           </p>
                         </div>
@@ -1074,26 +1081,41 @@ curl -X ${selectedEndpoint.method} \\
               {/* Request Body */}
               {selectedEndpoint.bodySchema && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Request Body</CardTitle>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm sm:text-base">Request Body</CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowRequestBody(!showRequestBody)}
+                        className="h-6 w-6 p-0"
+                      >
+                        {showRequestBody ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </CardHeader>
+                  {showRequestBody && (
                   <CardContent>
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <Textarea
                         value={requestBody}
                         onChange={(e) => setRequestBody(e.target.value)}
                         placeholder="Enter JSON request body..."
-                        rows={10}
-                        className="font-mono text-sm"
+                        rows={6}
+                        className="font-mono text-xs"
                       />
 
                       {/* Body Schema Info */}
-                      <div className="space-y-2">
-                        <Label>Schema:</Label>
-                        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Schema:</Label>
+                        <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded-lg overflow-x-auto">
                           {Object.entries(selectedEndpoint.bodySchema).map(
                             ([key, schema]) => (
-                              <div key={key} className="text-sm mb-2">
+                              <div key={key} className="text-xs mb-1 break-words">
                                 <code className="font-mono">{key}</code>
                                 <span className="text-muted-foreground ml-2">
                                   ({schema.type}) - {schema.description}
@@ -1108,21 +1130,37 @@ curl -X ${selectedEndpoint.method} \\
                       </div>
                     </div>
                   </CardContent>
+                  )}
                 </Card>
               )}
 
               {/* Headers */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Headers</CardTitle>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm sm:text-base">Headers</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowHeaders(!showHeaders)}
+                      className="h-6 w-6 p-0"
+                    >
+                      {showHeaders ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </CardHeader>
+                {showHeaders && (
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {/* Default Headers Display */}
                     <div>
-                      <Label>Headers por defecto:</Label>
-                      <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                        <pre className="text-sm">
+                      <Label className="text-xs">Headers por defecto:</Label>
+                      <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded-lg overflow-x-auto">
+                        <pre className="text-xs">
                           {JSON.stringify({
                             "Content-Type": "application/json",
                             ...(selectedEndpoint.requiresAuth && authToken ? { "x-access-token": authToken } : {})
@@ -1133,7 +1171,7 @@ curl -X ${selectedEndpoint.method} \\
                     
                     {/* Custom Headers */}
                     <div>
-                      <Label>Headers personalizados:</Label>
+                      <Label className="text-xs">Headers personalizados:</Label>
                       <Textarea
                         value={JSON.stringify(customHeaders, null, 2)}
                         onChange={(e) => {
@@ -1144,58 +1182,62 @@ curl -X ${selectedEndpoint.method} \\
                           }
                         }}
                         placeholder="Enter additional headers as JSON..."
-                        rows={4}
-                        className="font-mono text-sm"
+                        rows={3}
+                        className="font-mono text-xs"
                       />
                     </div>
                   </div>
                 </CardContent>
+                )}
               </Card>
 
               {/* Execute Button */}
-              <div className="flex gap-2">
+              <div className="flex flex-row gap-2">
                 <Button
                   onClick={executeRequest}
                   disabled={isLoading}
-                  className="flex-1"
-                  size="lg"
+                  className="flex-1 h-8"
+                  size="sm"
                 >
                   {isLoading ? (
-                    <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                    <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 mr-2 animate-spin" />
                   ) : (
-                    <Play className="h-5 w-5 mr-2" />
+                    <Play className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                   )}
-                  {isLoading ? "Ejecutando..." : "Ejecutar Request"}
+                  <span className="text-sm sm:text-base">
+                    {isLoading ? "Ejecutando..." : "Ejecutar Request"}
+                  </span>
                 </Button>
 
-                <Button variant="outline" onClick={() => setResponse(null)}>
-                  <Trash2 className="h-4 w-4" />
+                <Button variant="outline" onClick={() => setResponse(null)} size="sm" className="h-8">
+                  <Trash2 className="h-3 w-3" />
+                  <span className="ml-1">Limpiar</span>
                 </Button>
               </div>
             </TabsContent>
 
             {/* Response Tab */}
-            <TabsContent value="response" className="space-y-4">
+            <TabsContent value="response" className="space-y-2">
               {response ? (
                 <>
                   {/* Response Status */}
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        Response Status
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm sm:text-base flex flex-row items-center gap-2">
+                        <span>Response Status</span>
                         {response.status >= 200 && response.status < 300 ? (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                         ) : (
-                          <XCircle className="h-5 w-5 text-red-600" />
+                          <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                         )}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
-                          <Label>Status Code</Label>
+                          <Label className="text-xs">Status Code</Label>
                           <p
-                            className={`text-lg font-mono ${
+                            className={`text-sm font-mono ${
                               response.status >= 200 && response.status < 300
                                 ? "text-green-600"
                                 : "text-red-600"
@@ -1205,15 +1247,15 @@ curl -X ${selectedEndpoint.method} \\
                           </p>
                         </div>
                         <div>
-                          <Label>Status Text</Label>
-                          <p className="text-lg font-mono">
+                          <Label className="text-xs">Status Text</Label>
+                          <p className="text-sm font-mono break-words">
                             {response.statusText}
                           </p>
                         </div>
                         <div>
-                          <Label>Response Time</Label>
-                          <p className="text-lg font-mono flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
+                          <Label className="text-xs">Response Time</Label>
+                          <p className="text-sm font-mono flex items-center">
+                            <Clock className="h-3 w-3 mr-1" />
                             {responseTime}ms
                           </p>
                         </div>
@@ -1224,13 +1266,13 @@ curl -X ${selectedEndpoint.method} \\
                   {/* Response Headers */}
                   {response.headers && (
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">
+                      <CardHeader className="pb-3 sm:pb-4">
+                        <CardTitle className="text-base sm:text-lg">
                           Response Headers
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg text-sm overflow-x-auto">
+                        <pre className="bg-gray-100 dark:bg-gray-800 p-2 sm:p-3 rounded-lg text-xs sm:text-sm overflow-x-auto">
                           {JSON.stringify(response.headers, null, 2)}
                         </pre>
                       </CardContent>
@@ -1239,9 +1281,9 @@ curl -X ${selectedEndpoint.method} \\
 
                   {/* Response Body */}
                   <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Response Body</CardTitle>
+                    <CardHeader className="pb-3 sm:pb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <CardTitle className="text-base sm:text-lg">Response Body</CardTitle>
                         <Button
                           variant="outline"
                           size="sm"
@@ -1254,14 +1296,15 @@ curl -X ${selectedEndpoint.method} \\
                               )
                             )
                           }
+                          className="w-full sm:w-auto h-8 sm:h-9"
                         >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy
+                          <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                          <span className="text-xs sm:text-sm">Copy</span>
                         </Button>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg text-sm overflow-x-auto">
+                      <pre className="bg-gray-100 dark:bg-gray-800 p-2 sm:p-3 rounded-lg text-xs sm:text-sm overflow-x-auto">
                         {JSON.stringify(
                           response.data || response.error,
                           null,
@@ -1273,12 +1316,12 @@ curl -X ${selectedEndpoint.method} \\
                 </>
               ) : (
                 <Card>
-                  <CardContent className="text-center py-12">
-                    <Send className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  <CardContent className="text-center py-8 sm:py-12">
+                    <Send className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                       No Response Yet
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                       Ejecuta un request para ver la respuesta aquí
                     </p>
                   </CardContent>
@@ -1291,9 +1334,9 @@ curl -X ${selectedEndpoint.method} \\
               <div className="space-y-4">
                 {["javascript", "python", "curl"].map((lang) => (
                   <Card key={lang}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg capitalize">
+                    <CardHeader className="pb-3 sm:pb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <CardTitle className="text-base sm:text-lg capitalize">
                           {lang}
                         </CardTitle>
                         <Button
@@ -1302,14 +1345,15 @@ curl -X ${selectedEndpoint.method} \\
                           onClick={() =>
                             copyCode(generateCodeExample(lang as any))
                           }
+                          className="w-full sm:w-auto h-8 sm:h-9"
                         >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy
+                          <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                          <span className="text-xs sm:text-sm">Copy</span>
                         </Button>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                      <pre className="bg-gray-900 text-gray-100 p-2 sm:p-4 rounded-lg overflow-x-auto text-xs sm:text-sm">
                         <code>{generateCodeExample(lang as any)}</code>
                       </pre>
                     </CardContent>
@@ -1323,24 +1367,25 @@ curl -X ${selectedEndpoint.method} \\
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Request History */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Request History</CardTitle>
+                  <CardHeader className="pb-3 sm:pb-4">
+                    <CardTitle className="text-base sm:text-lg">Request History</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {requestHistory.length > 0 ? (
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                      <div className="space-y-2 max-h-80 sm:max-h-96 overflow-y-auto">
                         {requestHistory.map((entry) => (
-                          <div key={entry.id} className="p-3 border rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
+                          <div key={entry.id} className="p-2 sm:p-3 border rounded-lg">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-2">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <Badge
                                   variant={
                                     entry.success ? "default" : "destructive"
                                   }
+                                  className="text-xs"
                                 >
                                   {entry.method}
                                 </Badge>
-                                <span className="text-sm font-medium">
+                                <span className="text-xs sm:text-sm font-medium truncate">
                                   {entry.endpoint}
                                 </span>
                               </div>
@@ -1348,7 +1393,7 @@ curl -X ${selectedEndpoint.method} \\
                                 {new Date(entry.timestamp).toLocaleTimeString()}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center justify-between text-xs sm:text-sm">
                               <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                                 {entry.status || "Error"}
                               </code>
@@ -1362,9 +1407,9 @@ curl -X ${selectedEndpoint.method} \\
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <History className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">
+                      <div className="text-center py-6 sm:py-8">
+                        <History className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-xs sm:text-sm text-gray-500">
                           No hay historial
                         </p>
                       </div>
@@ -1374,19 +1419,19 @@ curl -X ${selectedEndpoint.method} \\
 
                 {/* Saved Requests */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Saved Requests</CardTitle>
+                  <CardHeader className="pb-3 sm:pb-4">
+                    <CardTitle className="text-base sm:text-lg">Saved Requests</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {savedRequests.length > 0 ? (
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                      <div className="space-y-2 max-h-80 sm:max-h-96 overflow-y-auto">
                         {savedRequests.map((saved) => (
-                          <div key={saved.id} className="p-3 border rounded-lg">
+                          <div key={saved.id} className="p-2 sm:p-3 border rounded-lg">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium">
+                              <span className="text-xs sm:text-sm font-medium truncate pr-2">
                                 {saved.name}
                               </span>
-                              <div className="flex gap-1">
+                              <div className="flex gap-1 flex-shrink-0">
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -1421,9 +1466,9 @@ curl -X ${selectedEndpoint.method} \\
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <Star className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">
+                      <div className="text-center py-6 sm:py-8">
+                        <Star className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-xs sm:text-sm text-gray-500">
                           No hay requests guardados
                         </p>
                       </div>
