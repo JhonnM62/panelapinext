@@ -596,7 +596,7 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="max-w-full overflow-x-hidden pt-6 pb-4 px-2 sm:px-4 lg:px-6 xl:px-8 space-y-6 lg:space-y-8">
+    <div className="max-w-full overflow-x-hidden pt-6 pb-4 px-1 sm:px-2 md:px-4 lg:px-2 xl:px-4 space-y-4 sm:space-y-6">
       {/* 🎯 HEADER - Super Responsive */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6 mt-2 sm:mt-0 w-full">
         <div className="space-y-2 px-1 sm:px-0 flex-1 min-w-0">

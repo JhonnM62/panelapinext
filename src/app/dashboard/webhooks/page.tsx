@@ -393,7 +393,7 @@ export default function WebhooksPage() {
   );
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="max-w-full overflow-x-hidden pt-6 pb-4 px-2 sm:px-4 lg:px-6 xl:px-8 space-y-4 sm:space-y-6">
       {/* 🎯 HEADER - Optimizado para móvil */}
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">

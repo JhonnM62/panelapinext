@@ -381,7 +381,11 @@ export default function ChatBotsList() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6" style={{
+        paddingTop: '5px',
+        paddingLeft: '5px',
+        paddingRight: '5px'
+    }}>
       {/* Header con botón de crear */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
         <div className="flex-1 min-w-0">

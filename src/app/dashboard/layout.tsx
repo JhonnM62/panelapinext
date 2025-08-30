@@ -383,7 +383,7 @@ export default function DashboardLayout({
         <main 
           className={cn(
             "flex-1 bg-gray-50 dark:bg-gray-900",
-            "p-3 sm:p-4 lg:p-6",
+            "py-3 sm:py-4 lg:py-6",
             "min-h-0" // Permite que el contenido se ajuste naturalmente
           )}
         >

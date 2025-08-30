@@ -138,7 +138,7 @@ export default function SettingsPage() {
   const isExpiringSoon = daysRemaining <= 7
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-full overflow-x-hidden pt-6 pb-4 px-2 sm:px-4 lg:px-6 xl:px-8 space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">

@@ -610,7 +610,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen w-full space-y-4 sm:space-y-6 lg:space-y-8 p-4 sm:p-6">
+    <div className="max-w-full overflow-x-hidden pt-6 pb-4 px-2 sm:px-4 lg:px-6 xl:px-8 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

@@ -797,9 +797,9 @@ export default function ChatBotForm({
           </TabsContent>
 
           {/* Configuración de IA */}
-          <TabsContent value="ia" className="space-y-3 sm:space-y-4">
-            <div className="space-y-3 sm:space-y-4">
-              <div className="grid grid-cols-1 gap-3 sm:gap-4">
+          <TabsContent value="ia" className="space-y-4">
+            <div className="space-y-4 max-w-[312px]">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="apikey">
                     API Key de Gemini
@@ -811,7 +811,6 @@ export default function ChatBotForm({
                     value={formData.apikey}
                     onChange={(e) => updateField("apikey", e.target.value)}
                     placeholder="Tu API Key de Google Gemini"
-                    className="w-full"
                   />
                 </div>
 
@@ -821,7 +820,7 @@ export default function ChatBotForm({
                     value={formData.ai_model}
                     onValueChange={(value) => updateField("ai_model", value)}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -840,7 +839,7 @@ export default function ChatBotForm({
                     value={formData.pais}
                     onValueChange={(value) => updateField("pais", value)}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -859,7 +858,7 @@ export default function ChatBotForm({
                     value={formData.idioma}
                     onValueChange={(value) => updateField("idioma", value)}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -883,19 +882,18 @@ export default function ChatBotForm({
                   value={formData.promt}
                   onChange={(e) => updateField("promt", e.target.value)}
                   placeholder="Describe el comportamiento y personalidad del bot..."
-                  rows={4}
-                  className="min-h-[100px] resize-y"
+                  rows={6}
                 />
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Define cómo debe comportarse tu bot y qué tipo de respuestas
                   debe dar
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label>Temperatura</Label>
-                  <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="flex items-center gap-4">
                     <Slider
                       value={[formData.temperature]}
                       onValueChange={([value]) =>
@@ -906,18 +904,18 @@ export default function ChatBotForm({
                       step={0.1}
                       className="flex-1"
                     />
-                    <span className="text-sm font-medium w-10 sm:w-12 text-right">
+                    <span className="text-sm font-medium w-12 text-right">
                       {formData.temperature}
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Controla la creatividad (0 = conservador, 1 = creativo)
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Tokens máximos de salida</Label>
-                  <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="flex items-center gap-4">
                     <Slider
                       value={[formData.maxOutputTokens]}
                       onValueChange={([value]) =>
@@ -928,11 +926,11 @@ export default function ChatBotForm({
                       step={128}
                       className="flex-1"
                     />
-                    <span className="text-sm font-medium w-12 sm:w-16 text-right">
+                    <span className="text-sm font-medium w-16 text-right">
                       {formData.maxOutputTokens}
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Longitud máxima de las respuestas
                   </p>
                 </div>
@@ -940,79 +938,79 @@ export default function ChatBotForm({
 
               <div className="space-y-2">
                 <Card className="border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20">
-                  <CardHeader className="pb-3 sm:pb-4">
-                    <Label className="flex items-center gap-2 text-base sm:text-lg">
-                      <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                      <span className="break-words">Presupuesto de Pensamiento</span>
+                  <CardHeader className="pb-4">
+                    <Label className="flex items-center gap-2 text-lg">
+                      <Brain className="h-5 w-5 text-blue-600" />
+                      Presupuesto de Pensamiento (Thinking Budget)
                       <span className="text-red-500">*</span>
                     </Label>
                   </CardHeader>
-                  <CardContent className="space-y-3 sm:space-y-4">
+                  <CardContent className="space-y-4">
                     <Select
                       value={formData.thinking_budget.toString()}
                       onValueChange={(value) =>
                         updateField("thinking_budget", parseInt(value))
                       }
                     >
-                      <SelectTrigger className="border-blue-300 dark:border-blue-700 w-full">
+                      <SelectTrigger className="border-blue-300 dark:border-blue-700">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="-1">
-                          <div className="flex items-center gap-1 sm:gap-2">
-                            <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
-                            <span className="font-medium text-sm sm:text-base">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium">
                               Razonamiento Ilimitado
                             </span>
-                            <Badge variant="default" className="ml-1 sm:ml-2 text-xs">
+                            <Badge variant="default" className="ml-2">
                               Recomendado
                             </Badge>
                           </div>
                         </SelectItem>
                         <SelectItem value="0">
-                          <div className="flex items-center gap-1 sm:gap-2">
-                            <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
-                            <span className="font-medium text-sm sm:text-base">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4 text-orange-600" />
+                            <span className="font-medium">
                               Sin Razonamiento
                             </span>
-                            <Badge variant="secondary" className="ml-1 sm:ml-2 text-xs">
+                            <Badge variant="secondary" className="ml-2">
                               Rápido
                             </Badge>
                           </div>
                         </SelectItem>
                         <SelectItem value="1000">
-                          <span className="text-sm sm:text-base">1,000 tokens de razonamiento</span>
+                          1,000 tokens de razonamiento
                         </SelectItem>
                         <SelectItem value="5000">
-                          <span className="text-sm sm:text-base">5,000 tokens de razonamiento</span>
+                          5,000 tokens de razonamiento
                         </SelectItem>
                         <SelectItem value="10000">
-                          <span className="text-sm sm:text-base">10,000 tokens de razonamiento</span>
+                          10,000 tokens de razonamiento
                         </SelectItem>
                       </SelectContent>
                     </Select>
 
                     <Alert className="border-blue-200 dark:border-blue-800">
-                      <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <AlertDescription className="text-xs sm:text-sm">
+                      <Brain className="h-4 w-4" />
+                      <AlertDescription>
                         <strong>Importante:</strong> Este parámetro controla la
                         capacidad de razonamiento del bot.
                         <div className="mt-2 space-y-1">
                           <div className="flex items-start gap-2">
-                            <span className="text-green-600 dark:text-green-400 text-xs sm:text-sm">
+                            <span className="text-green-600 dark:text-green-400">
                               •
                             </span>
-                            <span className="text-xs sm:text-sm">
+                            <span>
                               <strong>-1 (Ilimitado):</strong> El bot puede
                               pensar todo lo necesario para dar respuestas más
                               inteligentes y contextuales
                             </span>
                           </div>
                           <div className="flex items-start gap-2">
-                            <span className="text-orange-600 dark:text-orange-400 text-xs sm:text-sm">
+                            <span className="text-orange-600 dark:text-orange-400">
                               •
                             </span>
-                            <span className="text-xs sm:text-sm">
+                            <span>
                               <strong>0 (Desactivado):</strong> Respuestas
                               rápidas pero menos elaboradas, sin proceso de
                               razonamiento
