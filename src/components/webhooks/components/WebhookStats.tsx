@@ -40,84 +40,67 @@ export default function WebhookStatsCards({
   isConnected
 }: WebhookStatsProps) {
   return (
-    <div 
-      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 w-full" 
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        width: '100%'
-      }}
-    >
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 w-full">
       {/* Total Notificaciones */}
       <Card className="w-full">
-        <CardContent className="flex items-center p-4">
-          <Bell className="h-6 w-6 flex-shrink-0 text-blue-600" />
-          <div className="ml-3 min-w-0 flex-1">
-            <p className="text-lg font-bold truncate">
-              {stats?.totalNotifications || 0}
-            </p>
-            <p className="text-xs text-gray-600 truncate">
-              Total Notificaciones
-            </p>
-          </div>
+        <CardContent className="flex flex-col items-center p-2 sm:p-3 text-center">
+          <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mb-1" />
+          <p className="text-sm sm:text-lg font-bold">
+            {stats?.totalNotifications || 0}
+          </p>
+          <p className="text-xs text-gray-600 leading-tight">
+            Total
+          </p>
         </CardContent>
       </Card>
 
       {/* Sin Leer */}
       <Card className="w-full">
-        <CardContent className="flex items-center p-4">
-          <AlertTriangle className="h-6 w-6 flex-shrink-0 text-orange-600" />
-          <div className="ml-3 min-w-0 flex-1">
-            <p className="text-lg font-bold truncate">
-              {stats?.unreadNotifications || 0}
-            </p>
-            <p className="text-xs text-gray-600 truncate">Sin Leer</p>
-          </div>
+        <CardContent className="flex flex-col items-center p-2 sm:p-3 text-center">
+          <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 mb-1" />
+          <p className="text-sm sm:text-lg font-bold">
+            {stats?.unreadNotifications || 0}
+          </p>
+          <p className="text-xs text-gray-600 leading-tight">Sin Leer</p>
         </CardContent>
       </Card>
 
       {/* Estado WebSocket */}
       <Card className="w-full">
-        <CardContent className="flex items-center p-4">
+        <CardContent className="flex flex-col items-center p-2 sm:p-3 text-center">
           <Activity
-            className={`h-6 w-6 flex-shrink-0 ${
+            className={`h-4 w-4 sm:h-5 sm:w-5 mb-1 ${
               isConnected ? "text-green-600" : "text-red-600"
             }`}
           />
-          <div className="ml-3 min-w-0 flex-1">
-            <p className="text-lg font-bold truncate">
-              {isConnected ? "Conectado" : "Desconectado"}
-            </p>
-            <p className="text-xs text-gray-600 truncate">WebSocket</p>
-          </div>
+          <p className="text-xs sm:text-sm font-bold">
+            {isConnected ? "ON" : "OFF"}
+          </p>
+          <p className="text-xs text-gray-600 leading-tight">Estado</p>
         </CardContent>
       </Card>
 
       {/* Webhooks Creados */}
       <Card className="w-full">
-        <CardContent className="flex items-center p-4">
-          <Webhook className="h-6 w-6 flex-shrink-0 text-green-600" />
-          <div className="ml-3 min-w-0 flex-1">
-            <p className="text-lg font-bold truncate">
-              {webhookConfigs.length}
-            </p>
-            <p className="text-xs text-gray-600 truncate">Webhooks Creados</p>
-          </div>
+        <CardContent className="flex flex-col items-center p-2 sm:p-3 text-center">
+          <Webhook className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 mb-1" />
+          <p className="text-sm sm:text-lg font-bold">
+            {webhookConfigs.length}
+          </p>
+          <p className="text-xs text-gray-600 leading-tight">Creados</p>
         </CardContent>
       </Card>
 
       {/* Disponibles */}
       <Card className="w-full">
-        <CardContent className="flex items-center p-4">
-          <Users className="h-6 w-6 flex-shrink-0 text-purple-600" />
-          <div className="ml-3 min-w-0 flex-1">
-            <p className="text-lg font-bold truncate">
-              {resourceLimits?.webhooks.remaining || 0}
-            </p>
-            <p className="text-xs text-gray-600 truncate">
-              Disponibles
-            </p>
-          </div>
+        <CardContent className="flex flex-col items-center p-2 sm:p-3 text-center">
+          <Users className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 mb-1" />
+          <p className="text-sm sm:text-lg font-bold">
+            {resourceLimits?.webhooks.remaining || 0}
+          </p>
+          <p className="text-xs text-gray-600 leading-tight">
+            Disponibles
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -393,40 +393,41 @@ export default function WebhooksPage() {
   );
 
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-      {/* 🎯 HEADER - Responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
-        <div className="flex-1 min-w-0 space-y-2">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2 sm:gap-3">
-            <Webhook className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-blue-600 flex-shrink-0" />
-            <span className="truncate">Sistema de Webhooks</span>
-          </h1>
-          <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300 max-w-3xl">
-            Configura webhooks para recibir notificaciones en tiempo real cuando
-            lleguen mensajes a tus sesiones WhatsApp. Ideal para integrar con
-            CRM, chatbots y sistemas de atención al cliente.
-          </p>
-        </div>
-
-        {/* 📊 Plan Info - Mobile responsive */}
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-          <div className="text-center px-3 sm:px-4 py-2 sm:py-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700 flex-1 sm:flex-none">
-            <div className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
-              {resourceLimits.webhooks.current}/{resourceLimits.webhooks.limit}
-            </div>
-            <div className="text-xs text-blue-600/80 dark:text-blue-400/80">
-              Webhooks Configurados
-            </div>
+    <div className="space-y-3 sm:space-y-4">
+      {/* 🎯 HEADER - Optimizado para móvil */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
+              <Webhook className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
+              <span className="truncate">Webhooks</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
+              Notificaciones en tiempo real para tus sesiones WhatsApp
+            </p>
           </div>
-          <Button
-            onClick={loadSessions}
-            variant="outline"
-            disabled={loading}
-            className="flex items-center justify-center gap-2 h-auto py-2 sm:py-3 w-full sm:w-auto flex-1 sm:flex-none"
-          >
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-            <span className="whitespace-nowrap">Actualizar</span>
-          </Button>
+
+          {/* 📊 Plan Info - Compacto */}
+          <div className="flex items-center gap-2">
+            <div className="text-center px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                {resourceLimits.webhooks.current}/{resourceLimits.webhooks.limit}
+              </div>
+              <div className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                Webhooks
+              </div>
+            </div>
+            <Button
+              onClick={loadSessions}
+              variant="outline"
+              size="sm"
+              disabled={loading}
+              className="flex items-center gap-1 px-2"
+            >
+              <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
+              <span className="hidden sm:inline">Actualizar</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -464,36 +465,35 @@ export default function WebhooksPage() {
         </Card>
       )}
 
-      {/* 🎨 MAIN CONTENT TABS - Mobile optimized */}
+      {/* 🎨 MAIN CONTENT TABS - Compacto */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-
-
-        {/* 📱💻 Responsive Tabs */}
-          <TabsList className="grid w-full grid-cols-3 h-auto p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
-            <TabsTrigger
-              value="manager"
-              className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200"
-            >
-              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden md:inline">Gestión de Webhooks</span>
-              <span className="md:hidden">Gestión</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="analytics"
-              className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200"
-            >
-              <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span>Análisis</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="docs"
-              className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200"
-            >
-              <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Documentación</span>
-              <span className="sm:hidden">Docs</span>
-            </TabsTrigger>
-          </TabsList>
+        {/* 📱💻 Pestañas compactas */}
+        <TabsList className="grid w-full grid-cols-3 h-auto p-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg">
+          <TabsTrigger
+            value="manager"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
+          >
+            <Settings className="h-3 w-3" />
+            <span className="hidden sm:inline">Gestión</span>
+            <span className="sm:hidden">Gest</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="analytics"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
+          >
+            <Activity className="h-3 w-3" />
+            <span className="hidden sm:inline">Análisis</span>
+            <span className="sm:hidden">Stats</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="docs"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
+          >
+            <Globe className="h-3 w-3" />
+            <span className="hidden sm:inline">Docs</span>
+            <span className="sm:hidden">Info</span>
+          </TabsTrigger>
+        </TabsList>
         
 
         {/* 📄 TAB CONTENT */}
@@ -530,53 +530,57 @@ export default function WebhooksPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="docs" className="mt-4 sm:mt-6 space-y-6">
+          <TabsContent value="docs" className="mt-2 sm:mt-3 space-y-3">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-blue-600" />
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Globe className="h-4 w-4 text-blue-600" />
                   Documentación de Webhooks
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   Aprende cómo integrar webhooks con tu sistema
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="prose dark:prose-invert max-w-none">
-                  <h3>¿Qué es un Webhook?</h3>
-                  <p>
-                    Un webhook es una forma de recibir notificaciones
-                    automáticas cuando ocurre un evento específico en tu cuenta,
-                    como recibir un nuevo mensaje en WhatsApp.
-                  </p>
+              <CardContent className="space-y-3 pt-0">
+                {/* Sección colapsable: ¿Qué es un Webhook? */}
+                <details className="group">
+                  <summary className="flex items-center gap-2 cursor-pointer p-2 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <span className="text-sm font-medium">¿Qué es un Webhook?</span>
+                    <span className="ml-auto text-xs text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="mt-2 p-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-900 rounded border">
+                    Un webhook es una forma de recibir notificaciones automáticas cuando ocurre un evento específico en tu cuenta, como recibir un nuevo mensaje en WhatsApp.
+                  </div>
+                </details>
 
-                  <h3>Configuración Básica</h3>
-                  <ol>
-                    <li>
-                      Selecciona la sesión WhatsApp que quieres monitorear
-                    </li>
-                    <li>
-                      Ingresa la URL de tu servidor donde quieres recibir las
-                      notificaciones
-                    </li>
-                    <li>Configura los eventos que quieres escuchar</li>
-                    <li>
-                      Prueba la conexión para asegurar que funciona
-                      correctamente
-                    </li>
-                  </ol>
+                {/* Sección colapsable: Configuración Básica */}
+                <details className="group">
+                  <summary className="flex items-center gap-2 cursor-pointer p-2 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <span className="text-sm font-medium">Configuración Básica</span>
+                    <span className="ml-auto text-xs text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="mt-2 p-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-900 rounded border">
+                    <ol className="list-decimal list-inside space-y-1">
+                      <li>Selecciona la sesión WhatsApp que quieres monitorear</li>
+                      <li>Ingresa la URL de tu servidor donde quieres recibir las notificaciones</li>
+                      <li>Configura los eventos que quieres escuchar</li>
+                      <li>Prueba la conexión para asegurar que funciona correctamente</li>
+                    </ol>
+                  </div>
+                </details>
 
-                  <h3>Formato de Datos</h3>
-                  <p>
-                    Los webhooks envían datos en formato JSON con información
-                    sobre el mensaje recibido, incluyendo el remitente,
-                    contenido del mensaje, timestamp, y metadatos adicionales.
-                  </p>
-
-                  <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-                    <h4>Ejemplo de Payload:</h4>
-                    <pre className="text-sm overflow-x-auto">
-                      {`{
+                {/* Sección colapsable: Formato de Datos */}
+                <details className="group">
+                  <summary className="flex items-center gap-2 cursor-pointer p-2 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <span className="text-sm font-medium">Formato de Datos y Ejemplo</span>
+                    <span className="ml-auto text-xs text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="mt-2 p-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-900 rounded border space-y-3">
+                    <p>Los webhooks envían datos en formato JSON con información sobre el mensaje recibido, incluyendo el remitente, contenido del mensaje, timestamp, y metadatos adicionales.</p>
+                    <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+                      <h4 className="text-xs font-medium mb-2">Ejemplo de Payload:</h4>
+                      <pre className="text-xs overflow-x-auto">
+{`{
   "event": "message.received",
   "sessionId": "session123",
   "from": "573001234567",
@@ -590,9 +594,10 @@ export default function WebhooksPage() {
     "pushname": "Juan"
   }
 }`}
-                    </pre>
+                      </pre>
+                    </div>
                   </div>
-                </div>
+                </details>
               </CardContent>
             </Card>
           </TabsContent>

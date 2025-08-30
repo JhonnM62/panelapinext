@@ -1161,8 +1161,8 @@ export default function WebhookManagerClean({ sessions = [] }: WebhookManagerPro
   }
 
   return (
-    <div className="w-full max-w-full overflow-hidden space-y-6">
-      {/* Header con estadísticas */}
+    <div className="w-full max-w-full overflow-hidden space-y-3 sm:space-y-4">
+      {/* Header con estadísticas - Más compacto */}
       <div className="w-full">
         <WebhookStatsCards
           stats={webhookStats}
@@ -1172,24 +1172,24 @@ export default function WebhookManagerClean({ sessions = [] }: WebhookManagerPro
         />
       </div>
 
-      {/* Alerta de webhooks fantasma detectados */}
+      {/* Alerta de webhooks fantasma detectados - Más compacta */}
       {phantomWebhooks.length > 0 && (
-        <div className="w-full max-w-full p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <div className="w-full max-w-full p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
-            <h3 className="font-medium text-red-800 dark:text-red-200 truncate">
+            <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0" />
+            <h3 className="font-medium text-red-800 dark:text-red-200 truncate text-sm">
               👻 Webhooks Fantasma Detectados
             </h3>
           </div>
-          <p className="text-red-700 dark:text-red-300 text-sm mb-3">
+          <p className="text-red-700 dark:text-red-300 text-xs mb-2">
             Se encontraron {phantomWebhooks.length} webhook(s) que existen en la
             lista local pero no en el servidor:
           </p>
-          <div className="flex flex-wrap gap-1 mb-3 max-w-full overflow-hidden">
+          <div className="flex flex-wrap gap-1 mb-2 max-w-full overflow-hidden">
             {phantomWebhooks.map((phantomId, index) => (
               <code
                 key={index}
-                className="text-xs bg-red-100 dark:bg-red-800 px-2 py-1 rounded truncate max-w-[200px]"
+                className="text-xs bg-red-100 dark:bg-red-800 px-1.5 py-0.5 rounded truncate max-w-[200px]"
               >
                 {phantomId}
               </code>
@@ -1227,28 +1227,28 @@ export default function WebhookManagerClean({ sessions = [] }: WebhookManagerPro
         </div>
       )}
 
-      {/* Error de conexión WebSocket */}
+      {/* Error de conexión WebSocket - Más compacto */}
       {connectionError && (
-        <div className="w-full max-w-full p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-          <p className="text-red-700 dark:text-red-300 text-sm break-words">
+        <div className="w-full max-w-full p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+          <p className="text-red-700 dark:text-red-300 text-xs break-words mb-2">
             ⚠️ Error de conexión WebSocket: {connectionError}
           </p>
           <Button
             variant="outline"
             size="sm"
             onClick={connectWebSocket}
-            className="mt-2"
+            className="h-8 text-xs"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-3 w-3 mr-1" />
             Reconectar
           </Button>
         </div>
       )}
 
-      {/* Navegación de tabs */}
+      {/* Navegación de tabs - Más compacta */}
       <div className="w-full max-w-full">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="space-y-4 w-full max-w-full overflow-hidden">
+          <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-hidden">
           {/* 📱 Mobile Tab Selector */}
           <div className="sm:hidden relative w-full max-w-full">
             <select
@@ -1276,8 +1276,8 @@ export default function WebhookManagerClean({ sessions = [] }: WebhookManagerPro
             </div>
           </div>
 
-          {/* 📱 Mobile Actions */}
-          <div className="sm:hidden space-y-3 w-full max-w-full">
+          {/* 📱 Mobile Actions - Más compactas */}
+          <div className="sm:hidden space-y-2 w-full max-w-full">
             {/* Primera fila de botones principales */}
             <div className="grid grid-cols-2 gap-2 w-full">
               <Button
