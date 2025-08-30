@@ -798,8 +798,8 @@ export default function ChatBotForm({
 
           {/* Configuración de IA */}
           <TabsContent value="ia" className="space-y-4">
-            <div className="space-y-4 max-w-[312px]">
-              <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-4 max-w-[350px] sm:max-w-[400px] overflow-hidden">
+              <div className="grid grid-cols-1 gap-4 w-full">
                 <div className="space-y-2">
                   <Label htmlFor="apikey">
                     API Key de Gemini
@@ -811,6 +811,7 @@ export default function ChatBotForm({
                     value={formData.apikey}
                     onChange={(e) => updateField("apikey", e.target.value)}
                     placeholder="Tu API Key de Google Gemini"
+                    className="w-full max-w-full"
                   />
                 </div>
 
@@ -820,7 +821,7 @@ export default function ChatBotForm({
                     value={formData.ai_model}
                     onValueChange={(value) => updateField("ai_model", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full max-w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -839,7 +840,7 @@ export default function ChatBotForm({
                     value={formData.pais}
                     onValueChange={(value) => updateField("pais", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full max-w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -858,7 +859,7 @@ export default function ChatBotForm({
                     value={formData.idioma}
                     onValueChange={(value) => updateField("idioma", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full max-w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -883,6 +884,7 @@ export default function ChatBotForm({
                   onChange={(e) => updateField("promt", e.target.value)}
                   placeholder="Describe el comportamiento y personalidad del bot..."
                   rows={6}
+                  className="w-full max-w-full resize-none"
                 />
                 <p className="text-sm text-muted-foreground">
                   Define cómo debe comportarse tu bot y qué tipo de respuestas
@@ -890,10 +892,10 @@ export default function ChatBotForm({
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-4 w-full">
                 <div className="space-y-2">
                   <Label>Temperatura</Label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 w-full max-w-full">
                     <Slider
                       value={[formData.temperature]}
                       onValueChange={([value]) =>
@@ -915,7 +917,7 @@ export default function ChatBotForm({
 
                 <div className="space-y-2">
                   <Label>Tokens máximos de salida</Label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 w-full max-w-full">
                     <Slider
                       value={[formData.maxOutputTokens]}
                       onValueChange={([value]) =>
@@ -939,7 +941,7 @@ export default function ChatBotForm({
               <div className="space-y-2">
                 <Card className="border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20">
                   <CardHeader className="pb-4">
-                    <Label className="flex items-center gap-2 text-lg">
+                    <Label className="flex items-center gap-2 text-lg flex-wrap">
                       <Brain className="h-5 w-5 text-blue-600" />
                       Presupuesto de Pensamiento (Thinking Budget)
                       <span className="text-red-500">*</span>
